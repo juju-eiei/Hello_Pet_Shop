@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Hello Pet Shop</title>
+    <link rel="stylesheet" href="assets/css/auth_styles.css?v=4">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav>
+        <div class="nav-brand">
+            <i class="fas fa-paw"></i>
+            <span>Hello Pet Shop</span>
+        </div>
+        <div class="nav-links">
+            <a href="#">Product</a>
+            <a href="login.html" class="nav-btn">Sign In</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <div class="auth-card">
+            <h2>Sign Up</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="full_name" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" placeholder="Enter your username" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" placeholder="Enter your email address" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" id="password" placeholder="Enter your password" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="confirm_password" placeholder="Confirm your password" required>
+                </div>
+                <button type="submit" class="auth-btn">Create Account</button>
+                <div class="auth-links">
+                    <a href="login.html">Already have an account? <span>Sign in</span></a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const confirm = document.getElementById('confirm_password').value;
+
+            if (password !== confirm) {
+                showToast("รหัสผ่านไม่ตรงกัน", "error");
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast("สมัครสมาชิกสำเร็จ! กำลังพาไปหน้า Login...", "success");
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                } else {
+                    showToast(result.message || "การสมัครสมาชิกไม่สำเร็จ", "error");
+                }
+            } catch (error) {
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        });
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Management - Hello Pet Shop</title>
+    <link rel="stylesheet" href="assets/css/admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-paw"></i>
+                <span>Hello Pet Shop</span>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="menu-group">
+                    <a href="admin_stock.html" class="menu-item active">
+                        <i class="fas fa-box"></i>
+                        <span>Products</span>
+                    </a>
+                    <div class="submenu">
+                        <a href="admin_stock.html" class="active">Stock Management</a>
+                        <a href="#">Product Management</a>
+                        <a href="#">Promotions</a>
+                    </div>
+                </div>
+                <a href="#" class="menu-item">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Staff Management</span>
+                </a>
+                <a href="#" class="menu-item">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="#" class="menu-item">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="#" class="menu-item logout-item" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Stock Management</h1>
+            </div>
+
+            <!-- Search -->
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search products...">
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-tabs">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="low_stock">Low Stock</button>
+                <button class="filter-btn" data-filter="out_of_stock">Out of Stock</button>
+            </div>
+
+            <!-- Table -->
+            <div class="stock-table">
+                <div class="table-header">
+                    <span style="flex: 2;">Product</span>
+                    <span style="flex: 1; text-align: center;">Status</span>
+                    <span style="flex: 1; text-align: right;">Stock Quantity</span>
+                </div>
+                <div id="productContainer">
+                    <!-- Products will be loaded here -->
+                    <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let currentFilter = 'all';
+        let currentKeyword = '';
+
+        // Authentication Check
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            // Use case-insensitive check for role_name (some DBs return "Admin")
+            if (!user || user.role_name.toLowerCase() !== 'admin') {
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function fetchProducts() {
+            try {
+                const url = `api/products?keyword=${encodeURIComponent(currentKeyword)}&filter=${currentFilter}`;
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    renderProducts(result.data);
+                } else {
+                    showToast(result.message, "error");
+                }
+            } catch (error) {
+                showToast("เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
+            }
+        }
+
+        function renderProducts(products) {
+            const container = document.getElementById('productContainer');
+            if (products.length === 0) {
+                container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบสินค้า</div>';
+                return;
+            }
+
+            container.innerHTML = products.map(p => {
+                let statusClass = 'status-in-stock';
+                let statusText = 'In Stock';
+                const qty = parseInt(p.stock_qty) || 0;
+
+                if (qty === 0) {
+                    statusClass = 'status-out-of-stock';
+                    statusText = 'Out of Stock';
+                } else if (qty < 5) {
+                    statusClass = 'status-low-stock';
+                    statusText = 'Low Stock';
+                }
+
+                return `
+                    <div class="product-row">
+                        <div class="product-info">
+                            <img src="${p.image_url || 'assets/img/pet_product_placeholder.png'}" 
+                                 onerror="this.src='https://via.placeholder.com/60/314d2a/ffffff?text=PET'" 
+                                 class="product-img">
+                            <span class="product-name">${p.product_name}</span>
+                        </div>
+                        <div class="stock-status ${statusClass}">${statusText}</div>
+                        <div class="stock-actions">
+                            <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty - 1})">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" class="qty-input" value="${qty}" onchange="updateQty(${p.product_id}, parseInt(this.value))">
+                            <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty + 1})">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateQty(id, newQty) {
+            if (isNaN(newQty) || newQty < 0) {
+                showToast("กรุณากรอกตัวเลขที่ถูกต้อง", "error");
+                fetchProducts(); // Reset to current value
+                return;
+            }
+
+            try {
+                const response = await fetch('api/products/update-stock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product_id: id, new_quantity: newQty })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showToast("อัปเดตสต็อกเรียบร้อย", "success");
+                    fetchProducts(); // Refresh list
+                } else {
+                    showToast(result.message, "error");
+                }
+            } catch (error) {
+                showToast("เกิดข้อผิดพลาดในการอัปเดต", "error");
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentKeyword = e.target.value;
+            fetchProducts();
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                fetchProducts();
+            });
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        // Initialize
+        checkAuth();
+        fetchProducts();
+    </script>
+</body>
+</html>
