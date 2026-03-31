@@ -13,9 +13,9 @@ class Promotion {
     public function getAll($keyword = '') {
         $sql = "SELECT * FROM " . $this->table;
         if (!empty($keyword)) {
-            $sql .= " WHERE code LIKE :keyword OR description LIKE :keyword";
+            $sql .= " WHERE promo_name LIKE :keyword";
         }
-        $sql .= " ORDER BY created_at DESC";
+        $sql .= " ORDER BY promo_id DESC";
         
         $stmt = $this->db->prepare($sql);
         if (!empty($keyword)) {
@@ -26,7 +26,7 @@ class Promotion {
     }
 
     public function getById($id) {
-        $sql = "SELECT * FROM " . $this->table . " WHERE id = :id";
+        $sql = "SELECT * FROM " . $this->table . " WHERE promo_id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -35,12 +35,11 @@ class Promotion {
 
     public function create($data) {
         $sql = "INSERT INTO " . $this->table . " 
-                (code, description, discount_type, discount_value, start_date, end_date, is_active) 
-                VALUES (:code, :description, :discount_type, :discount_value, :start_date, :end_date, :is_active)";
+                (promo_name, discount_type, discount_value, start_date, end_date, is_active, employee_id) 
+                VALUES (:code, :discount_type, :discount_value, :start_date, :end_date, :is_active, 1)";
         
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':code', $data['code']);
-        $stmt->bindParam(':description', $data['description']);
         $stmt->bindParam(':discount_type', $data['discount_type']);
         $stmt->bindParam(':discount_value', $data['discount_value']);
         $stmt->bindParam(':start_date', $data['start_date']);
@@ -52,10 +51,10 @@ class Promotion {
 
     public function update($id, $data) {
         $sql = "UPDATE " . $this->table . " 
-                SET code = :code, description = :description, 
-                    discount_type = :discount_type, discount_value = :discount_value, 
-                    start_date = :start_date, end_date = :end_date, is_active = :is_active 
-                WHERE id = :id";
+                SET promo_name = :code, discount_type = :discount_type, 
+                    discount_value = :discount_value, start_date = :start_date, 
+                    end_date = :end_date, is_active = :is_active 
+                WHERE promo_id = :id";
         
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $id);
@@ -71,7 +70,7 @@ class Promotion {
     }
 
     public function delete($id) {
-        $sql = "DELETE FROM " . $this->table . " WHERE id = :id";
+        $sql = "DELETE FROM " . $this->table . " WHERE promo_id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $id);
         return $stmt->execute();

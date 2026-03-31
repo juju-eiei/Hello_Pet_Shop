@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Management - Hello Pet Shop</title>
-    <link rel="stylesheet" href="assets/css/admin_styles.css?v=3.6">
+    <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -29,10 +29,11 @@
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span>
                 </a>
-                <div class="menu-group">
-                    <a href="admin_stock.html" class="menu-item active">
+                <div class="menu-group open">
+                    <a class="menu-item active" onclick="toggleSubmenu(this)">
                         <i class="fas fa-box"></i>
                         <span>Products</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
                     </a>
                     <div class="submenu">
                         <a href="admin_stock.html" class="active">Stock Management</a>
@@ -161,19 +162,23 @@
                 }
 
                 return `
-                    <div class="product-row">
-                        <img src="${p.image_url || 'assets/img/pet_product_placeholder.png'}" 
-                             onerror="this.src='https://via.placeholder.com/60/314d2a/ffffff?text=PET'" 
-                             class="product-img">
-                        <div class="product-details">
-                            <div class="product-name">${p.product_name}</div>
+                    <div class="product-row" style="display: flex; align-items: center; width: 100%;">
+                        <div style="flex: 2; display: flex; align-items: center; justify-content: flex-start; margin-right: 20px;">
+                            <img src="${p.image_url || 'assets/img/pet_product_placeholder.png'}" 
+                                 onerror="this.src='https://via.placeholder.com/60/314d2a/ffffff?text=PET'" 
+                                 class="product-img" style="margin-right: 20px;">
+                            <div class="product-details">
+                                <div class="product-name">${p.product_name}</div>
+                            </div>
                         </div>
-                        <div class="stock-status ${statusClass}">${statusText}</div>
-                        <div class="stock-actions">
+                        <div class="stock-status ${statusClass}" style="flex: 1; text-align: center; font-weight: 600;">
+                            ${statusText}
+                        </div>
+                        <div class="stock-actions" style="flex: 1; justify-content: flex-end;">
                             <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty - 1})">
                                 <i class="fas fa-minus"></i>
                             </button>
-                            <input type="number" class="qty-input" value="${qty}" onchange="updateQty(${p.product_id}, parseInt(this.value))">
+                            <input type="number" class="qty-input" value="${qty}" onchange="updateQty(${p.product_id}, parseInt(this.value))" style="text-align: center;">
                             <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty + 1})">
                                 <i class="fas fa-plus"></i>
                             </button>
@@ -243,6 +248,10 @@
 
         document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+
+        function toggleSubmenu(el) {
+            el.closest('.menu-group').classList.toggle('open');
+        }
 
         checkAuth();
         fetchProducts();
