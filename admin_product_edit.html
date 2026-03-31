@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Product - Hello Pet Shop</title>
-    <link rel="stylesheet" href="assets/css/admin_styles.css?v=3.6">
+    <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -33,10 +33,11 @@
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span>
                 </a>
-                <div class="menu-group">
-                    <a href="admin_stock.html" class="menu-item active">
+                <div class="menu-group open">
+                    <a class="menu-item active" onclick="toggleSubmenu(this)">
                         <i class="fas fa-box"></i>
                         <span>Products</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
                     </a>
                     <div class="submenu">
                         <a href="admin_stock.html">Stock Management</a>
@@ -346,6 +347,10 @@
 
         document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+
+        function toggleSubmenu(el) {
+            el.closest('.menu-group').classList.toggle('open');
+        }
 
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
             e.preventDefault();

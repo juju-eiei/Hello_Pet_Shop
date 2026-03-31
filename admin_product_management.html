@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product Management - Hello Pet Shop</title>
-    <link rel="stylesheet" href="assets/css/admin_styles.css?v=3.6">
+    <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -29,10 +29,11 @@
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span>
                 </a>
-                <div class="menu-group">
-                    <a href="admin_stock.html" class="menu-item active">
+                <div class="menu-group open">
+                    <a class="menu-item active" onclick="toggleSubmenu(this)">
                         <i class="fas fa-box"></i>
                         <span>Products</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
                     </a>
                     <div class="submenu">
                         <a href="admin_stock.html">Stock Management</a>
@@ -163,16 +164,22 @@
             }
 
             container.innerHTML = products.map(p => `
-                <div class="product-row">
-                    <img src="${p.image_url || 'https://via.placeholder.com/60/cbd5e0/4a5568?text=PET'}" 
-                         class="product-img"
-                         onerror="this.src='https://via.placeholder.com/60/cbd5e0/4a5568?text=PET'">
-                    <div class="product-details">
+                <div class="product-row" style="display: flex; align-items: center; width: 100%;">
+                    <div class="product-details" style="flex: 2; margin-right: 20px;">
                         <div class="product-name">${p.product_name}</div>
                     </div>
-                    <div class="stock-status" style="flex: 1; text-align: center;">$${parseFloat(p.selling_price).toFixed(2)}</div>
-                    <div class="stock-status" style="flex: 1; text-align: center;">${p.stock_qty}</div>
-                    <div class="stock-actions">
+                    <div style="flex: 1; display: flex; justify-content: center;">
+                        <img src="${p.image_url || 'https://via.placeholder.com/60/cbd5e0/4a5568?text=PET'}" 
+                             class="product-img" style="margin-right: 0;"
+                             onerror="this.src='https://via.placeholder.com/60/cbd5e0/4a5568?text=PET'">
+                    </div>
+                    <div class="stock-status" style="flex: 1; text-align: center; color: #475569; font-weight: 500;">
+                        $${parseFloat(p.selling_price).toFixed(2)}
+                    </div>
+                    <div class="stock-status" style="flex: 1; text-align: center; color: #475569; font-weight: 500;">
+                        ${p.stock_qty}
+                    </div>
+                    <div class="stock-actions" style="flex: 1; text-align: right; justify-content: flex-end;">
                         <a href="admin_product_edit.html?id=${p.product_id}" class="action-link edit-link" title="Edit Product">
                             <i class="fas fa-edit"></i>
                         </a>
@@ -257,6 +264,10 @@
 
         document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+
+        function toggleSubmenu(el) {
+            el.closest('.menu-group').classList.toggle('open');
+        }
 
         checkAuth();
         fetchProducts();
