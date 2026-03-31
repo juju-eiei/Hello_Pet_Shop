@@ -18,7 +18,7 @@
 }
 
 body {
-    background-color: var(--bg-dark);
+    background-color: #ffffff;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -41,6 +41,7 @@ nav {
     gap: 10px;
     font-size: 20px;
     font-weight: 700;
+    color: white;
 }
 
 .nav-links {
@@ -54,6 +55,12 @@ nav {
     text-decoration: none;
     font-size: 16px;
     font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav-links a:hover {
+    opacity: 0.8;
+    color: white;
 }
 
 .nav-btn {
@@ -68,6 +75,7 @@ nav {
 
 .nav-btn:hover {
     background-color: #839d53;
+    transform: translateY(-1px);
 }
 
 /* Main Content Area */
@@ -82,10 +90,11 @@ main {
 .auth-card {
     background-color: white;
     width: 100%;
-    max-width: 600px;
-    padding: 50px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-width: 450px;
+    padding: 60px 40px;
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+    border: 1px solid #f0f0f0;
     animation: slideIn 0.5s ease-out;
 }
 
@@ -113,10 +122,9 @@ main {
     width: 100%;
     padding: 15px 20px;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 16px;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    background-color: #f8fafc;
     transition: var(--transition);
 }
 
@@ -128,16 +136,17 @@ main {
 
 .auth-btn {
     width: 100%;
-    padding: 18px;
+    padding: 16px;
     background-color: var(--accent-green);
     color: white;
     border: none;
-    border-radius: 10px;
-    font-size: 18px;
+    border-radius: 12px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    margin-top: 10px;
+    margin-top: 15px;
     transition: var(--transition);
+    box-shadow: 0 8px 20px rgba(148, 173, 94, 0.2);
 }
 
 .auth-btn:hover {

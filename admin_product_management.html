@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Management - Hello Pet Shop</title>
+    <title>Product Management - Hello Pet Shop</title>
     <link rel="stylesheet" href="assets/css/admin_styles.css?v=3.6">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -12,7 +12,7 @@
         <!-- Mobile Header -->
         <header class="mobile-header">
             <i class="fas fa-bars" id="hamburgerBtn"></i>
-            <h2>Stock Management</h2>
+            <h2>Product Management</h2>
             <i class="fas fa-bell"></i>
         </header>
 
@@ -35,8 +35,8 @@
                         <span>Products</span>
                     </a>
                     <div class="submenu">
-                        <a href="admin_stock.html" class="active">Stock Management</a>
-                        <a href="admin_product_management.html">Product Management</a>
+                        <a href="admin_stock.html">Stock Management</a>
+                        <a href="admin_product_management.html" class="active">Product Management</a>
                         <a href="admin_promotions.html">Promotions</a>
                     </div>
                 </div>
@@ -61,8 +61,12 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <div class="page-header">
-                <h1>Stock Management</h1>
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h1>Products</h1>
+                <a href="admin_product_edit.html" class="save-btn" style="padding: 10px 24px; font-size: 14px;">
+                    <i class="fas fa-plus" style="margin-right: 8px;"></i>
+                    Add New Product
+                </a>
             </div>
 
             <!-- Search -->
@@ -71,25 +75,25 @@
                 <input type="text" id="searchInput" placeholder="Search products...">
             </div>
 
-            <!-- Filters -->
-            <div class="filter-tabs">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="low_stock">Low Stock</button>
-                <button class="filter-btn" data-filter="out_of_stock">Out of Stock</button>
-            </div>
-
             <!-- Table -->
             <div class="stock-table">
                 <div class="table-header">
-                    <span style="flex: 2;">Product</span>
-                    <span style="flex: 1; text-align: center;">Status</span>
-                    <span style="flex: 1; text-align: right;">Stock Quantity</span>
+                    <span style="flex: 2;">Product Name</span>
+                    <span style="flex: 1; text-align: center;">Image</span>
+                    <span style="flex: 1; text-align: center;">Price</span>
+                    <span style="flex: 1; text-align: center;">Stock Quantity</span>
+                    <span style="flex: 1; text-align: right;">Actions</span>
                 </div>
                 <div id="productContainer">
                     <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
                 </div>
             </div>
         </main>
+
+        <!-- Floating Add Button for Mobile -->
+        <a href="admin_product_edit.html" class="fab-add">
+            <i class="fas fa-plus"></i>
+        </a>
 
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
@@ -118,8 +122,19 @@
 
     <div id="toast" class="toast"></div>
 
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title" id="modalTitle">ยืนยันการลบ</div>
+            <div class="modal-text" id="modalText">คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?</div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" id="cancelModalBtn">ยกเลิก</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmModalBtn">ลบสินค้า</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        let currentFilter = 'all';
         let currentKeyword = '';
 
         function checkAuth() {
@@ -131,7 +146,7 @@
 
         async function fetchProducts() {
             try {
-                const url = `api/products?keyword=${encodeURIComponent(currentKeyword)}&filter=${currentFilter}`;
+                const url = `api/products?keyword=${encodeURIComponent(currentKeyword)}`;
                 const response = await fetch(url);
                 const result = await response.json();
                 if (response.ok) renderProducts(result.data);
@@ -147,80 +162,78 @@
                 return;
             }
 
-            container.innerHTML = products.map(p => {
-                let statusClass = 'status-in-stock';
-                let statusText = 'In Stock';
-                const qty = parseInt(p.stock_qty) || 0;
-
-                if (qty === 0) {
-                    statusClass = 'status-out-of-stock';
-                    statusText = 'Out of Stock';
-                } else if (qty < 5) {
-                    statusClass = 'status-low-stock';
-                    statusText = 'Low Stock';
-                }
-
-                return `
-                    <div class="product-row">
-                        <img src="${p.image_url || 'assets/img/pet_product_placeholder.png'}" 
-                             onerror="this.src='https://via.placeholder.com/60/314d2a/ffffff?text=PET'" 
-                             class="product-img">
-                        <div class="product-details">
-                            <div class="product-name">${p.product_name}</div>
-                        </div>
-                        <div class="stock-status ${statusClass}">${statusText}</div>
-                        <div class="stock-actions">
-                            <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty - 1})">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <input type="number" class="qty-input" value="${qty}" onchange="updateQty(${p.product_id}, parseInt(this.value))">
-                            <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty + 1})">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
+            container.innerHTML = products.map(p => `
+                <div class="product-row">
+                    <img src="${p.image_url || 'https://via.placeholder.com/60/cbd5e0/4a5568?text=PET'}" 
+                         class="product-img"
+                         onerror="this.src='https://via.placeholder.com/60/cbd5e0/4a5568?text=PET'">
+                    <div class="product-details">
+                        <div class="product-name">${p.product_name}</div>
                     </div>
-                `;
-            }).join('');
+                    <div class="stock-status" style="flex: 1; text-align: center;">$${parseFloat(p.selling_price).toFixed(2)}</div>
+                    <div class="stock-status" style="flex: 1; text-align: center;">${p.stock_qty}</div>
+                    <div class="stock-actions">
+                        <a href="admin_product_edit.html?id=${p.product_id}" class="action-link edit-link" title="Edit Product">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="#" onclick="deleteProduct(${p.product_id}, '${p.product_name.replace(/'/g, "\\'")}')" class="action-link delete-link" title="Delete Product">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        async function updateQty(id, newQty) {
-            if (isNaN(newQty) || newQty < 0) {
-                showToast("กรุณากรอกตัวเลขที่ถูกต้อง", "error");
-                fetchProducts();
-                return;
-            }
-
+        async function deleteProduct(id, name) {
+            const confirmed = await showConfirmModal("ยืนยันการลบสินค้า", `คุณต้องการลบสินค้า "${name}" ใช่หรือไม่?`);
+            if (!confirmed) return;
+            
             try {
-                const response = await fetch('api/products/update-stock', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ product_id: id, new_quantity: newQty })
-                });
-
+                const response = await fetch(`api/products/delete?id=${id}`, { method: 'DELETE' });
                 if (response.ok) {
-                    showToast("อัปเดตสต็อกเรียบร้อย", "success");
+                    showToast("ลบสินค้าเรียบร้อย", "success");
                     fetchProducts();
                 } else {
-                    const result = await response.json();
-                    showToast(result.message, "error");
+                    const res = await response.json();
+                    showToast(res.message || "ลบไม่สำเร็จ", "error");
                 }
             } catch (error) {
-                showToast("เกิดข้อผิดพลาดในการอัปเดต", "error");
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
             }
+        }
+
+        function showConfirmModal(title, text) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const titleEl = document.getElementById('modalTitle');
+                const textEl = document.getElementById('modalText');
+                const confirmBtn = document.getElementById('confirmModalBtn');
+                const cancelBtn = document.getElementById('cancelModalBtn');
+
+                titleEl.textContent = title;
+                textEl.textContent = text;
+                
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+
+                const handleConfirm = () => { cleanup(); resolve(true); };
+                const handleCancel = () => { cleanup(); resolve(false); };
+
+                const cleanup = () => {
+                    modal.classList.remove('show');
+                    setTimeout(() => modal.style.display = 'none', 300);
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                };
+
+                confirmBtn.addEventListener('click', handleConfirm);
+                cancelBtn.addEventListener('click', handleCancel);
+            });
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
             currentKeyword = e.target.value;
             fetchProducts();
-        });
-
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
-                fetchProducts();
-            });
         });
 
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
@@ -231,6 +244,7 @@
 
         function showToast(message, type) {
             const toast = document.getElementById('toast');
+            if (!toast) return;
             toast.textContent = message;
             toast.className = `toast show ${type}`;
             setTimeout(() => toast.className = 'toast', 3000);

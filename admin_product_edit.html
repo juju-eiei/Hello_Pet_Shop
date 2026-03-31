@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Product - Hello Pet Shop</title>
+    <link rel="stylesheet" href="assets/css/admin_styles.css?v=3.6">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <a href="admin_product_management.html" style="color: white; text-decoration: none;">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h2 id="mobileTitle">Edit Product</h2>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <i class="fas fa-save" onclick="document.getElementById('productForm').requestSubmit()"></i>
+                <i class="fas fa-bars" id="hamburgerBtn"></i>
+            </div>
+        </header>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-paw"></i>
+                <span>Hello Pet Shop</span>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="menu-group">
+                    <a href="admin_stock.html" class="menu-item active">
+                        <i class="fas fa-box"></i>
+                        <span>Products</span>
+                    </a>
+                    <div class="submenu">
+                        <a href="admin_stock.html">Stock Management</a>
+                        <a href="admin_product_management.html" class="active">Product Management</a>
+                        <a href="admin_promotions.html">Promotions</a>
+                    </div>
+                </div>
+                <a href="#" class="menu-item">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Staff Management</span>
+                </a>
+                <a href="#" class="menu-item">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="#" class="menu-item">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="#" class="menu-item logout-item" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <a href="admin_product_management.html" style="color: var(--primary-green); font-size: 24px; text-decoration: none;">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 id="pageTitle" style="margin: 0;">Add/Edit Product</h1>
+                </div>
+            </div>
+            
+            <div class="form-card">
+                <form id="productForm" enctype="multipart/form-data">
+                    <input type="hidden" name="id" id="productId">
+                    
+                    <div class="form-grid">
+                        <!-- Left Side -->
+                        <div class="form-left">
+                            <div class="form-group">
+                                <label>Product Name</label>
+                                <input type="text" name="name" id="pName" required placeholder="e.g. Premium Dog Food">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Category</label>
+                                <div class="category-input-group">
+                                    <select name="category_id" id="pCategory" required>
+                                        <option value="">Loading categories...</option>
+                                    </select>
+                                    <button type="button" class="add-category-btn" onclick="addNewCategory()">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Price ($)</label>
+                                <input type="number" step="0.01" name="price" id="pPrice" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Stock Quantity</label>
+                                <input type="number" name="stock_quantity" id="pStock" required value="0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Weight (e.g. 5kg, 500g)</label>
+                                <input type="text" name="weight" id="pWeight">
+                            </div>
+                        </div>
+
+                        <!-- Right Side (Image & Options) -->
+                        <div class="form-right">
+                            <div class="form-group">
+                                <label>Product Image</label>
+                                <div class="image-preview-container">
+                                    <img id="imgPreview" src="" class="preview-img" onerror="this.src='https://via.placeholder.com/300/f8fafc/718096?text=No+Image'">
+                                    <div class="upload-selector">
+                                        <button type="button" class="upload-mode-btn active" id="modeUrl" onclick="switchUploadMode('url')">Use URL</button>
+                                        <button type="button" class="upload-mode-btn" id="modeFile" onclick="switchUploadMode('file')">Upload File</button>
+                                    </div>
+                                    <input type="text" id="pImageUrl" name="image_url" placeholder="Paste image URL here" oninput="previewImage(this.value)">
+                                    <input type="file" id="pImageFile" name="image" style="display: none;" accept="image/*" onchange="previewFile(this)">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Barcode</label>
+                                <input type="text" name="barcode" id="pBarcode">
+                            </div>
+                        </div>
+
+                        <!-- Full Width -->
+                        <div class="form-group full-width">
+                            <label>Product Description</label>
+                            <textarea name="description" id="pDesc" rows="4" placeholder="Enter product details..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="submit" class="save-btn">Save Product</button>
+                        <a href="admin_product_management.html" class="back-btn">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <!-- Modal for New Category -->
+    <div id="promptModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title" id="modalTitle">เพิ่มหมวดหมู่ใหม่</div>
+            <input type="text" id="modalInput" class="modal-input" placeholder="ระบุชื่อหมวดหมู่...">
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal()">ยกเลิก</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmModalBtn">ตกลง</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const productId = new URLSearchParams(window.location.search).get('id');
+        let uploadMode = 'url';
+
+        async function init() {
+            await loadCategories();
+            if (productId) {
+                document.getElementById('pageTitle').textContent = "Edit Product";
+                document.getElementById('mobileTitle').textContent = "Edit Product";
+                await loadProductData(productId);
+            } else {
+                document.getElementById('pageTitle').textContent = "Add New Product";
+                document.getElementById('mobileTitle').textContent = "Add New Product";
+            }
+        }
+
+        async function loadCategories() {
+            const res = await fetch('api/categories');
+            const result = await res.json();
+            const select = document.getElementById('pCategory');
+            select.innerHTML = '<option value="">-- Select Category --</option>' + 
+                result.data.map(c => `<option value="${c.category_id}">${c.category_name}</option>`).join('');
+        }
+
+        async function loadProductData(id) {
+            const res = await fetch(`api/products?id=${id}`);
+            const result = await res.json();
+            const p = result.data;
+            
+            document.getElementById('productId').value = p.product_id;
+            document.getElementById('pName').value = p.product_name;
+            document.getElementById('pCategory').value = p.category_id;
+            document.getElementById('pPrice').value = p.selling_price;
+            document.getElementById('pStock').value = p.stock_qty;
+            document.getElementById('pWeight').value = p.weight;
+            document.getElementById('pBarcode').value = p.barcode;
+            document.getElementById('pDesc').value = p.description;
+            
+            if (p.image_url) {
+                previewImage(p.image_url);
+                document.getElementById('pImageUrl').value = p.image_url;
+            }
+        }
+
+        function switchUploadMode(mode) {
+            uploadMode = mode;
+            document.getElementById('modeUrl').classList.toggle('active', mode === 'url');
+            document.getElementById('modeFile').classList.toggle('active', mode === 'file');
+            document.getElementById('pImageUrl').style.display = mode === 'url' ? 'block' : 'none';
+            document.getElementById('pImageFile').style.display = mode === 'file' ? 'block' : 'none';
+        }
+
+        function previewImage(url) {
+            const img = document.getElementById('imgPreview');
+            if (url) {
+                img.src = url;
+                img.style.display = 'block';
+            } else {
+                img.style.display = 'none';
+            }
+        }
+
+        function previewFile(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.getElementById('imgPreview');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function addNewCategory() {
+            const name = await showPromptModal("เพิ่มหมวดหมู่ใหม่", "ระบุชื่อหมวดหมู่...");
+            if (!name) return;
+            const res = await fetch('api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            if (res.ok) {
+                const result = await res.json();
+                const newId = result.data.id;
+                showToast("เพิ่มหมวดหมู่สำเร็จ", "success");
+                await loadCategories();
+                if (newId) {
+                    document.getElementById('pCategory').value = newId;
+                }
+            } else {
+                showToast("ไม่สามารถเพิ่มหมวดหมู่ได้", "error");
+            }
+        }
+
+        function showPromptModal(title, placeholder) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('promptModal');
+                const titleEl = document.getElementById('modalTitle');
+                const inputEl = document.getElementById('modalInput');
+                const confirmBtn = document.getElementById('confirmModalBtn');
+
+                titleEl.textContent = title;
+                inputEl.placeholder = placeholder;
+                inputEl.value = '';
+                
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+                inputEl.focus();
+
+                const handleConfirm = () => {
+                    const value = inputEl.value.trim();
+                    if (value) {
+                        cleanup();
+                        resolve(value);
+                    }
+                };
+
+                const handleCancel = () => {
+                    cleanup();
+                    resolve(null);
+                };
+
+                const handleKey = (e) => {
+                    if (e.key === 'Enter') handleConfirm();
+                    if (e.key === 'Escape') handleCancel();
+                };
+
+                const cleanup = () => {
+                    modal.classList.remove('show');
+                    setTimeout(() => modal.style.display = 'none', 300);
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    document.querySelector('.modal-btn-cancel').removeEventListener('click', handleCancel);
+                    document.removeEventListener('keydown', handleKey);
+                };
+
+                confirmBtn.addEventListener('click', handleConfirm);
+                document.querySelector('.modal-btn-cancel').addEventListener('click', handleCancel);
+                document.addEventListener('keydown', handleKey);
+            });
+        }
+
+        function closeModal() {
+            // This is just a fallback, the Promise handle handles the cleanup
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            // If in URL mode, make sure file is removed or clarified
+            if (uploadMode === 'url') formData.set('image', '');
+
+            const endpoint = productId ? 'api/products/update' : 'api/products';
+            const res = await fetch(endpoint, {
+                method: 'POST', // We use POST for both create and update to handle Multipart (files)
+                body: formData
+            });
+
+            if (res.ok) {
+                showToast("บันทึกข้อมูลสำเร็จ!", "success");
+                setTimeout(() => window.location.href = 'admin_product_management.html', 1500);
+            } else {
+                const result = await res.json();
+                showToast(result.message || "เกิดข้อผิดพลาด", "error");
+            }
+        });
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
+        document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+
+        init();
+    </script>
+</body>
+</html>

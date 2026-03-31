@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Management - Hello Pet Shop</title>
-    <link rel="stylesheet" href="assets/css/admin_styles.css?v=3.6">
+    <title>Promotions - Hello Pet Shop</title>
+    <link rel="stylesheet" href="assets/css/admin_styles.css?v=3.5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
         <!-- Mobile Header -->
         <header class="mobile-header">
             <i class="fas fa-bars" id="hamburgerBtn"></i>
-            <h2>Stock Management</h2>
+            <h2>Promotions</h2>
             <i class="fas fa-bell"></i>
         </header>
 
@@ -35,9 +35,9 @@
                         <span>Products</span>
                     </a>
                     <div class="submenu">
-                        <a href="admin_stock.html" class="active">Stock Management</a>
+                        <a href="admin_stock.html">Stock Management</a>
                         <a href="admin_product_management.html">Product Management</a>
-                        <a href="admin_promotions.html">Promotions</a>
+                        <a href="admin_promotions.html" class="active">Promotions</a>
                     </div>
                 </div>
                 <a href="#" class="menu-item">
@@ -61,35 +61,38 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <div class="page-header">
-                <h1>Stock Management</h1>
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h1>Promotions</h1>
+                <button class="save-btn" id="addPromoBtn" style="padding: 10px 24px; font-size: 14px; background: #94ad5e;">
+                    <i class="fas fa-plus" style="margin-right: 8px;"></i>
+                    Create New Promotion
+                </button>
             </div>
 
             <!-- Search -->
-            <div class="search-container">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search products...">
-            </div>
-
-            <!-- Filters -->
-            <div class="filter-tabs">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="low_stock">Low Stock</button>
-                <button class="filter-btn" data-filter="out_of_stock">Out of Stock</button>
+            <div class="search-container" style="background: #dbeafe; border-radius: 12px; margin-bottom: 24px;">
+                <i class="fas fa-search" style="color: #60a5fa;"></i>
+                <input type="text" id="searchInput" placeholder="Search promotions..." style="background: transparent;">
             </div>
 
             <!-- Table -->
             <div class="stock-table">
                 <div class="table-header">
-                    <span style="flex: 2;">Product</span>
-                    <span style="flex: 1; text-align: center;">Status</span>
-                    <span style="flex: 1; text-align: right;">Stock Quantity</span>
+                    <span style="flex: 2;">Promotion Name</span>
+                    <span style="flex: 1; text-align: center;">Discount Type</span>
+                    <span style="flex: 2; text-align: center;">Validity Period</span>
+                    <span style="flex: 1; text-align: right;">Actions</span>
                 </div>
-                <div id="productContainer">
+                <div id="promoContainer">
                     <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
                 </div>
             </div>
         </main>
+
+        <!-- Floating Add Button for Mobile -->
+        <button class="fab-add" id="mobileAddBtn">
+            <i class="fas fa-plus"></i>
+        </button>
 
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
@@ -101,7 +104,7 @@
                 <i class="fas fa-file-invoice"></i>
                 <span>Orders</span>
             </a>
-            <a href="admin_stock.html" class="nav-item active">
+            <a href="admin_stock.html" class="nav-item">
                 <i class="fas fa-box"></i>
                 <span>Stock</span>
             </a>
@@ -109,7 +112,7 @@
                 <i class="fas fa-users"></i>
                 <span>Customers</span>
             </a>
-            <a href="admin_promotions.html" class="nav-item">
+            <a href="admin_promotions.html" class="nav-item active">
                 <i class="fas fa-bullhorn"></i>
                 <span>Promotions</span>
             </a>
@@ -119,7 +122,6 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        let currentFilter = 'all';
         let currentKeyword = '';
 
         function checkAuth() {
@@ -129,98 +131,64 @@
             }
         }
 
-        async function fetchProducts() {
+        async function fetchPromotions() {
             try {
-                const url = `api/products?keyword=${encodeURIComponent(currentKeyword)}&filter=${currentFilter}`;
-                const response = await fetch(url);
+                const response = await fetch(`api/promotions?keyword=${encodeURIComponent(currentKeyword)}`);
                 const result = await response.json();
-                if (response.ok) renderProducts(result.data);
+                if (response.ok) renderPromotions(result.data);
             } catch (error) {
                 showToast("เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
             }
         }
 
-        function renderProducts(products) {
-            const container = document.getElementById('productContainer');
-            if (products.length === 0) {
-                container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบสินค้า</div>';
+        function renderPromotions(promos) {
+            const container = document.getElementById('promoContainer');
+            if (promos.length === 0) {
+                container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบโปรโมชัน</div>';
                 return;
             }
 
-            container.innerHTML = products.map(p => {
-                let statusClass = 'status-in-stock';
-                let statusText = 'In Stock';
-                const qty = parseInt(p.stock_qty) || 0;
-
-                if (qty === 0) {
-                    statusClass = 'status-out-of-stock';
-                    statusText = 'Out of Stock';
-                } else if (qty < 5) {
-                    statusClass = 'status-low-stock';
-                    statusText = 'Low Stock';
-                }
-
+            container.innerHTML = promos.map(p => {
+                const discount = p.discount_type === 'percent' ? `${parseFloat(p.discount_value)}% off` : `$${parseFloat(p.discount_value)} off`;
+                const validity = `${p.start_date} - ${p.end_date}`;
+                
                 return `
                     <div class="product-row">
-                        <img src="${p.image_url || 'assets/img/pet_product_placeholder.png'}" 
-                             onerror="this.src='https://via.placeholder.com/60/314d2a/ffffff?text=PET'" 
-                             class="product-img">
-                        <div class="product-details">
-                            <div class="product-name">${p.product_name}</div>
+                        <div class="product-details" style="grid-area: info;">
+                            <div class="product-name">${p.code}</div>
                         </div>
-                        <div class="stock-status ${statusClass}">${statusText}</div>
+                        <div class="stock-status" style="grid-area: status; color: #10b981;">
+                            ${discount}
+                        </div>
+                        <div style="grid-column: 2; font-size: 13px; color: #64748b; margin-bottom: 5px;">
+                            <i class="far fa-calendar-alt"></i> ${validity}
+                        </div>
                         <div class="stock-actions">
-                            <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty - 1})">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <input type="number" class="qty-input" value="${qty}" onchange="updateQty(${p.product_id}, parseInt(this.value))">
-                            <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty + 1})">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                            <a href="#" class="action-link edit-link" style="color: #60a5fa;">Edit</a>
+                            <span style="color: #e2e8f0; margin: 0 5px;">|</span>
+                            <a href="#" onclick="deletePromo(${p.id})" class="action-link delete-link" style="color: #ef4444;">Delete</a>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        async function updateQty(id, newQty) {
-            if (isNaN(newQty) || newQty < 0) {
-                showToast("กรุณากรอกตัวเลขที่ถูกต้อง", "error");
-                fetchProducts();
-                return;
-            }
-
+        async function deletePromo(id) {
+            if (!confirm("ยืนยันการลบโปรโมชัน?")) return;
             try {
-                const response = await fetch('api/products/update-stock', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ product_id: id, new_quantity: newQty })
-                });
-
+                const response = await fetch(`api/promotions/delete?id=${id}`, { method: 'DELETE' });
                 if (response.ok) {
-                    showToast("อัปเดตสต็อกเรียบร้อย", "success");
-                    fetchProducts();
-                } else {
-                    const result = await response.json();
-                    showToast(result.message, "error");
+                    showToast("ลบสำเร็จ", "success");
+                    fetchPromotions();
                 }
             } catch (error) {
-                showToast("เกิดข้อผิดพลาดในการอัปเดต", "error");
+                showToast("เกิดข้อผิดพลาด", "error");
             }
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
             currentKeyword = e.target.value;
-            fetchProducts();
-        });
-
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
-                fetchProducts();
-            });
+            fetchPromotions();
         });
 
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
@@ -245,7 +213,7 @@
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
 
         checkAuth();
-        fetchProducts();
+        fetchPromotions();
     </script>
 </body>
 </html>
