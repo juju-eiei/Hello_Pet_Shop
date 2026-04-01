@@ -111,5 +111,200 @@ class OrderController {
             Response::json(400, "Failed to create order", ["error" => $e->getMessage()]);
         }
     }
+
+    public function index() {
+        try {
+            $query = "SELECT order_id as id, 
+                             order_date as date, 
+                             CONCAT('ORD-', DATE_FORMAT(order_date, '%Y'), '-', LPAD(order_id, 3, '0')) as number, 
+                             net_total as amount, 
+                             status 
+                      FROM orders 
+                      ORDER BY order_date DESC";
+            $stmt = $this->db->query($query);
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $statusMap = [
+                1 => 'Pending',
+                2 => 'Processing',
+                3 => 'In Transit',
+                4 => 'Completed',
+                5 => 'Cancelled'
+            ];
+
+            foreach ($orders as &$order) {
+                $order['amount'] = (float)$order['amount'];
+                $sId = (int)$order['status'];
+                $order['status'] = isset($statusMap[$sId]) ? $statusMap[$sId] : 'Pending';
+                $order['date'] = date('Y-m-d', strtotime($order['date']));
+            }
+
+            Response::json(200, "Orders retrieved successfully", $orders);
+        } catch (Exception $e) {
+            Response::json(500, "Failed to retrieve orders", ["error" => $e->getMessage()]);
+        }
+    }
+
+    public function show() {
+        try {
+            if (!isset($_GET['id'])) {
+                Response::json(400, "Order ID is required");
+                return;
+            }
+            $orderId = (int)$_GET['id'];
+
+            $qOrder = "SELECT o.order_id, o.order_date, CONCAT('ORD-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0')) as number, o.status, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, 
+                              c.first_name, c.last_name, c.phone, u.email,
+                              a.address_detail, a.province, a.zip_code
+                       FROM orders o
+                       JOIN customers c ON o.customer_id = c.customer_id
+                       JOIN users u ON c.user_id = u.user_id
+                       LEFT JOIN addresses a ON o.address_id = a.address_id
+                       WHERE o.order_id = ?";
+            $stmt = $this->db->prepare($qOrder);
+            $stmt->execute([$orderId]);
+            $order = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$order) {
+                Response::json(404, "Order not found");
+                return;
+            }
+
+            $qItems = "SELECT od.quantity as qty, od.unit_price as price, p.product_name as name, p.image_url as image
+                       FROM order_details od
+                       JOIN products p ON od.product_id = p.product_id
+                       WHERE od.order_id = ?";
+            $stmtI = $this->db->prepare($qItems);
+            $stmtI->execute([$orderId]);
+            $items = $stmtI->fetchAll(PDO::FETCH_ASSOC);
+
+            // Fetch delivery details
+            $tracking_number = null; 
+            $company_id = null;
+            try {
+                $qDel = "SELECT tracking_number, company_id FROM deliveries WHERE order_id = ?";
+                $stmtD = $this->db->prepare($qDel);
+                $stmtD->execute([$orderId]);
+                $d = $stmtD->fetch(PDO::FETCH_ASSOC);
+                if ($d) {
+                    $tracking_number = $d['tracking_number'];
+                    $company_id = $d['company_id'];
+                }
+            } catch(Exception $ex) {}
+
+            $statusMap = [1 => 'Pending', 2 => 'Processing', 3 => 'In Transit', 4 => 'Completed', 5 => 'Cancelled'];
+            $sId = (int)$order['status'];
+            $statusStr = isset($statusMap[$sId]) ? $statusMap[$sId] : 'Pending';
+
+            $data = [
+                'id' => $order['order_id'],
+                'date' => date('Y-m-d H:i', strtotime($order['order_date'])),
+                'number' => $order['number'],
+                'status' => $statusStr,
+                'tracking_number' => $tracking_number,
+                'company_id' => $company_id,
+                'customer' => [
+                    'name' => trim($order['first_name'] . ' ' . $order['last_name']),
+                    'email' => $order['email'] ? $order['email'] : '-',
+                    'phone' => $order['phone'] ? $order['phone'] : '-',
+                    'address' => trim($order['address_detail'] . ' ' . $order['province'] . ' ' . $order['zip_code'])
+                ],
+                'items' => $items,
+                'summary' => [
+                    'subtotal' => (float)$order['subtotal'],
+                    'shipping' => (float)$order['shipping_fee'],
+                    'discount' => (float)$order['discount_amount'],
+                    'total' => (float)$order['net_total']
+                ]
+            ];
+
+            Response::json(200, "Order loaded", $data);
+        } catch (Exception $e) {
+            Response::json(500, "Error loading order", ["error" => $e->getMessage()]);
+        }
+    }
+
+    public function updateStatus() {
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!isset($data['order_id']) || !isset($data['status'])) {
+                Response::json(400, "Missing parameters");
+                return;
+            }
+
+            $orderId = (int)$data['order_id'];
+            $statusStr = $data['status'];
+            $tracking = isset($data['tracking_number']) ? trim($data['tracking_number']) : null;
+            $companyIdReq = isset($data['company_id']) && $data['company_id'] != '' ? (int)$data['company_id'] : null;
+
+            $map = [
+                'Pending' => 1,
+                'Processing' => 2,
+                'In Transit' => 3,
+                'Completed' => 4,
+                'Cancelled' => 5
+            ];
+
+            $sId = isset($map[$statusStr]) ? $map[$statusStr] : 1;
+
+            $stmt = $this->db->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
+            if ($stmt->execute([$sId, $orderId])) {
+                
+                // Allow delivery table insertion even if tracking is blank
+                if ($sId == 3 || $sId == 4) {
+                    $cStmt = $this->db->prepare("SELECT delivery_id FROM deliveries WHERE order_id = ?");
+                    $cStmt->execute([$orderId]);
+                    if ($cStmt->rowCount() > 0) {
+                        $updateParams = [];
+                        $updateQuery = "UPDATE deliveries SET status = ?";
+                        $updateParams[] = ($sId == 4 ? 3 : 2);
+                        
+                        if ($tracking !== null) {
+                            $updateQuery .= ", tracking_number = ?";
+                            $updateParams[] = $tracking;
+                        }
+                        if ($companyIdReq !== null) {
+                            $updateQuery .= ", company_id = ?";
+                            $updateParams[] = $companyIdReq;
+                        }
+                        
+                        $updateQuery .= " WHERE order_id = ?";
+                        $updateParams[] = $orderId;
+                        
+                        $uStmt = $this->db->prepare($updateQuery);
+                        $uStmt->execute($updateParams);
+                    } else {
+                        // Use requested company, or fallback to first company, or 1
+                        if ($companyIdReq !== null) {
+                            $companyId = $companyIdReq;
+                        } else {
+                            $chk = $this->db->query("SELECT * FROM delivery_companies LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+                            $companyId = $chk ? (isset($chk['company_id']) ? $chk['company_id'] : current($chk)) : 1;
+                        }
+                        
+                        // Insert using company_id
+                        $iStmt = $this->db->prepare("INSERT INTO deliveries (order_id, company_id, tracking_number, status) VALUES (?, ?, ?, ?)");
+                        $iStmt->execute([$orderId, $companyId, $tracking, $sId == 4 ? 3 : 2]);
+                    }
+                }
+
+                Response::json(200, "Order status updated");
+            } else {
+                Response::json(500, "Failed to update status");
+            }
+        } catch (Exception $e) {
+            Response::json(500, "Error updating status", ["error" => $e->getMessage()]);
+        }
+    }
+
+    public function getDeliveryCompanies() {
+        try {
+            $stmt = $this->db->query("SELECT * FROM delivery_companies");
+            $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            Response::json(200, "Success", $companies);
+        } catch (Exception $e) {
+            Response::json(500, "Error loading companies", ["error" => $e->getMessage()]);
+        }
+    }
 }
 ?>
