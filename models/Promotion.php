@@ -59,7 +59,6 @@ class Promotion {
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':code', $data['code']);
-        $stmt->bindParam(':description', $data['description']);
         $stmt->bindParam(':discount_type', $data['discount_type']);
         $stmt->bindParam(':discount_value', $data['discount_value']);
         $stmt->bindParam(':start_date', $data['start_date']);

@@ -93,6 +93,49 @@ if (preg_match('/\/api\/products$/', $path)) {
     } else {
         http_response_code(405);
     }
+} elseif (preg_match('/\/api\/staff$/', $path)) {
+    require_once __DIR__ . '/../controllers/StaffController.php';
+    $controller = new StaffController();
+    if ($request_method === 'GET') {
+        if (isset($_GET['id'])) $controller->show();
+        else $controller->index();
+    } elseif ($request_method === 'POST') {
+        $controller->create();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/staff\/create$/', $path)) {
+    require_once __DIR__ . '/../controllers/StaffController.php';
+    $controller = new StaffController();
+    if ($request_method === 'POST') {
+        $controller->create();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/staff\/update$/', $path)) {
+    require_once __DIR__ . '/../controllers/StaffController.php';
+    $controller = new StaffController();
+    if ($request_method === 'POST') {
+        $controller->update();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/staff\/delete$/', $path)) {
+    require_once __DIR__ . '/../controllers/StaffController.php';
+    $controller = new StaffController();
+    if ($request_method === 'DELETE') {
+        $controller->delete();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/staff\/roles$/', $path)) {
+    require_once __DIR__ . '/../controllers/StaffController.php';
+    $controller = new StaffController();
+    if ($request_method === 'GET') {
+        $controller->roles();
+    } else {
+        http_response_code(405);
+    }
 } else {
     http_response_code(404);
     echo json_encode(["message" => "Endpoint not found"]);
