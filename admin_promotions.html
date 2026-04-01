@@ -41,7 +41,7 @@
                         <a href="admin_promotions.html" class="active">Promotions</a>
                     </div>
                 </div>
-                <a href="#" class="menu-item">
+                <a href="admin_staff.html" class="menu-item">
                     <i class="fas fa-users-cog"></i>
                     <span>Staff Management</span>
                 </a>
@@ -120,10 +120,58 @@
         </nav>
     </div>
 
+    <!-- Promotion Modal -->
+    <div id="promoModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 500px; text-align: left;">
+            <h2 class="modal-title" id="promoModalTitle" style="margin-bottom: 20px;">Create Promotion</h2>
+            <form id="promoForm">
+                <input type="hidden" id="promo_id" name="id">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #4a5568; font-weight: bold; font-size: 14px;">Promotion Name</label>
+                    <input type="text" id="promo_name" name="code" required style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; color: #4a5568; font-weight: bold; font-size: 14px;">Discount Type</label>
+                        <select id="discount_type" name="discount_type" required style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <option value="1">Percentage (%)</option>
+                            <option value="2">Fixed Amount (฿)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; color: #4a5568; font-weight: bold; font-size: 14px;">Discount Value</label>
+                        <input type="number" step="0.01" id="discount_value" name="discount_value" required style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; color: #4a5568; font-weight: bold; font-size: 14px;">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" required style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; color: #4a5568; font-weight: bold; font-size: 14px;">End Date</label>
+                        <input type="date" id="end_date" name="end_date" required style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; color: #4a5568; cursor: pointer;">
+                        <input type="checkbox" id="is_active" name="is_active" value="1" checked>
+                        <span style="font-weight: bold; font-size: 14px;">Active Promotion</span>
+                    </label>
+                </div>
+                <div class="modal-btns" style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="modal-btn modal-btn-cancel" onclick="closePromoModal()" style="padding: 10px 20px; border-radius: 8px; border: none; background: #e2e8f0; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="modal-btn modal-btn-confirm" id="savePromoBtn" style="padding: 10px 20px; border-radius: 8px; border: none; background: #94ad5e; color: white; cursor: pointer;">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script>
         let currentKeyword = '';
+        let currentPromotions = [];
 
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
@@ -136,7 +184,10 @@
             try {
                 const response = await fetch(`api/promotions?keyword=${encodeURIComponent(currentKeyword)}`);
                 const result = await response.json();
-                if (response.ok) renderPromotions(result.data);
+                if (response.ok) {
+                    currentPromotions = result.data;
+                    renderPromotions(result.data);
+                }
             } catch (error) {
                 showToast("เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
             }
@@ -164,9 +215,13 @@
                         <div style="flex: 2; text-align: center; font-size: 14px; color: #64748b;">
                             <i class="far fa-calendar-alt" style="margin-right: 6px;"></i> ${validity}
                         </div>
-                        <div class="stock-actions" style="flex: 1; text-align: right; justify-content: flex-end; display: flex; gap: 8px;">
-                            <a href="#" class="action-link edit-link" style="width: auto; padding: 6px 16px; border-radius: 8px;">Edit</a>
-                            <a href="#" onclick="deletePromo(${p.promo_id})" class="action-link delete-link" style="width: auto; padding: 6px 16px; border-radius: 8px;">Delete</a>
+                        <div class="stock-actions" style="flex: 1; justify-content: flex-end; display: flex; gap: 12px;">
+                            <a href="#" onclick="editPromo(${p.promo_id})" class="action-link" style="width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background-color: #ebfbee; color: #2b7a3b; font-size: 18px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="#" onclick="deletePromo(${p.promo_id})" class="action-link" style="width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background-color: #fff0f2; color: #e03131; font-size: 18px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Delete">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
                         </div>
                     </div>
                 `;
@@ -215,6 +270,73 @@
         function toggleSubmenu(el) {
             el.closest('.menu-group').classList.toggle('open');
         }
+
+        const promoModal = document.getElementById('promoModal');
+        const promoForm = document.getElementById('promoForm');
+
+        document.getElementById('addPromoBtn').addEventListener('click', () => {
+            document.getElementById('promoModalTitle').textContent = "Create Promotion";
+            promoForm.reset();
+            document.getElementById('promo_id').value = '';
+            document.getElementById('is_active').checked = true;
+            openPromoModal();
+        });
+
+        function openPromoModal() {
+            promoModal.style.display = 'flex';
+            setTimeout(() => promoModal.classList.add('show'), 10);
+        }
+
+        function closePromoModal() {
+            promoModal.classList.remove('show');
+            setTimeout(() => promoModal.style.display = 'none', 300);
+        }
+
+        function editPromo(id) {
+            const promo = currentPromotions.find(p => p.promo_id == id);
+            if (!promo) return;
+            document.getElementById('promoModalTitle').textContent = "Edit Promotion";
+            document.getElementById('promo_id').value = promo.promo_id;
+            document.getElementById('promo_name').value = promo.promo_name;
+            document.getElementById('discount_type').value = promo.discount_type;
+            document.getElementById('discount_value').value = parseFloat(promo.discount_value);
+            document.getElementById('start_date').value = promo.start_date.split(' ')[0];
+            document.getElementById('end_date').value = promo.end_date.split(' ')[0];
+            document.getElementById('is_active').checked = (promo.is_active == 1);
+            openPromoModal();
+        }
+
+        promoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(promoForm);
+            const data = Object.fromEntries(formData.entries());
+            data.is_active = document.getElementById('is_active').checked ? 1 : 0;
+            
+            data.start_date = data.start_date + ' 00:00:00';
+            data.end_date = data.end_date + ' 23:59:59';
+            
+            const isUpdate = !!data.id;
+            const url = isUpdate ? `api/promotions/update?id=${data.id}` : `api/promotions`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showToast(isUpdate ? "อัปเดตสำเร็จ" : "สร้างสำเร็จ", "success");
+                    closePromoModal();
+                    fetchPromotions();
+                } else {
+                    const res = await response.json();
+                    showToast(res.message || "เกิดข้อผิดพลาด", "error");
+                }
+            } catch (error) {
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        });
 
         checkAuth();
         fetchPromotions();

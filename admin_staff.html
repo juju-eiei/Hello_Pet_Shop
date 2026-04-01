@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Management - Hello Pet Shop</title>
+    <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .staff-tabs {
+            display: flex; gap: 24px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px;
+        }
+        .staff-tab {
+            padding: 12px 0; color: #64748b; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;
+        }
+        .staff-tab.active {
+            color: #0f172a; border-bottom-color: #0f172a;
+        }
+        .search-container-staff {
+            background: #dbeafe; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; width: 100%; max-width: 500px;
+        }
+        .search-container-staff input {
+            background: transparent; border: none; outline: none; margin-left: 10px; width: 100%; color: #1e3a8a;
+        }
+        .search-container-staff i {
+            color: #60a5fa;
+        }
+        
+        /* Modal Styles */
+        .drawer-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; display: none; opacity: 0; transition: opacity 0.3s; align-items: center; justify-content: center;
+        }
+        .drawer-overlay.show { display: flex; opacity: 1; }
+        
+        .drawer {
+            position: relative; width: 100%; max-width: 600px; max-height: 90vh; background: white; z-index: 1000; transition: transform 0.3s ease, opacity 0.3s ease; overflow-y: auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: scale(0.95); opacity: 0;
+        }
+        .drawer.open { transform: scale(1); opacity: 1; }
+
+        .drawer-header {
+            font-size: 20px; font-weight: bold; margin-bottom: 24px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 18px; font-weight: 700; margin-bottom: 16px; margin-top: 32px; color: #1e293b;
+        }
+        .section-title:first-child { margin-top: 0; }
+        
+        .form-group label {
+            display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;
+        }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; color: #334155; margin-bottom: 16px; outline: none;
+        }
+        .form-group input:focus, .form-group select:focus { border-color: #94ad5e; }
+
+        .checkbox-group {
+            display: flex; align-items: center; margin-bottom: 12px; cursor: pointer;
+        }
+        .checkbox-group input { margin-right: 10px; width: 16px; height: 16px; cursor: pointer; }
+        .checkbox-group span { font-size: 14px; color: #475569; }
+
+        .drawer-footer {
+            margin-top: 40px; display: flex; justify-content: flex-end; gap: 12px;
+        }
+        .btn-cancel { padding: 10px 24px; border-radius: 6px; border: none; background: #fb7185; color: white; cursor: pointer; font-weight: 600; }
+        .btn-save { padding: 10px 24px; border-radius: 6px; border: none; background: #a3e635; color: #064e3b; cursor: pointer; font-weight: 600; }
+        .action-text-link { color: #10b981; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 14px; margin: 0 4px; }
+        .action-text-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <header class="mobile-header">
+            <i class="fas fa-bars" id="hamburgerBtn"></i>
+            <h2>Staff Management</h2>
+            <i class="fas fa-bell"></i>
+        </header>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-paw"></i>
+                <span>Hello Pet Shop</span>
+            </div>
+            <nav class="sidebar-menu">
+                <div class="menu-label" style="padding: 0 20px 10px; font-size: 12px; color: #3b82f6;">Admin</div>
+                <a href="#" class="menu-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <a href="admin_product_management.html" class="menu-item"><i class="fas fa-box"></i><span>Products</span></a>
+                <a href="admin_staff.html" class="menu-item active"><i class="fas fa-users-cog"></i><span>Staff Management</span></a>
+                <a href="#" class="menu-item"><i class="fas fa-file-invoice"></i><span>Orders</span></a>
+                <a href="#" class="menu-item"><i class="fas fa-users"></i><span>Customers</span></a>
+                <a href="#" class="menu-item logout-item" id="logoutBtn" style="margin-top: auto;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h1 style="font-size: 24px; color: #0f172a;">Staff Management</h1>
+                <button class="save-btn" id="addStaffBtn" style="padding: 10px 20px; font-size: 14px; background: #94ad5e;">Add New Staff</button>
+            </div>
+
+            <div class="search-container-staff">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search staff">
+            </div>
+
+            <div class="staff-tabs">
+                <div class="staff-tab active" data-tab="info">Employee Information</div>
+                <div class="staff-tab" data-tab="salary">Salary Details</div>
+                <div class="staff-tab" data-tab="roles">Roles & Permissions</div>
+            </div>
+
+            <div class="stock-table">
+                <div class="table-header" id="tableHeader">
+                    <!-- Dynamic Headers rendering via JS -->
+                </div>
+                <div id="staffContainer">
+                    <div style="padding: 50px; text-align: center; color: #718096;">Loading data...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Center Modal for Form -->
+    <div class="drawer-overlay" id="drawerOverlay">
+        <div class="drawer" id="staffDrawer">
+            <div class="drawer-header" id="drawerHeader">ส่วนงานจัดการพนักงาน - Add New Staff</div>
+            <form id="staffForm">
+            <input type="hidden" id="employee_id" name="id">
+            
+            <div class="section-title">Employee Information</div>
+            
+            <div class="form-group">
+                <label>First Name</label>
+                <input type="text" id="first_name" name="first_name" placeholder="Enter first name" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Last Name</label>
+                <input type="text" id="last_name" name="last_name" placeholder="Enter last name">
+            </div>
+
+            <div class="form-group">
+                <label>Contact Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter contact email" required>
+            </div>
+
+            <div class="form-group">
+                <label>Password (for Login)</label>
+                <input type="password" id="password" name="password" placeholder="Enter new password (leave blank to keep current)">
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="phone" name="phone" placeholder="Enter phone number">
+            </div>
+
+            <div class="form-group">
+                <label>Address</label>
+                <input type="text" id="address" name="address" placeholder="Enter address">
+            </div>
+
+            <div class="section-title">Salary Details</div>
+
+            <div class="form-group">
+                <label>Base Salary</label>
+                <input type="number" step="100" id="base_salary" name="base_salary" placeholder="Enter base salary">
+            </div>
+
+            <div class="form-group">
+                <label>Payment Frequency</label>
+                <select id="payment_frequency" name="payment_frequency">
+                    <option value="Monthly">Monthly</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Bi-weekly">Bi-weekly</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Bank Account Details</label>
+                <input type="text" id="bank_account_details" name="bank_account_details" placeholder="Enter bank account details">
+            </div>
+
+            <div class="section-title">Roles & Permissions</div>
+
+            <div class="form-group">
+                <label>Role</label>
+                <select id="role_id" name="role_id" required>
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+
+            <label class="checkbox-group"><input type="checkbox" name="permissions[]" value="Manage Products"> <span>Manage Products</span></label>
+            <label class="checkbox-group"><input type="checkbox" name="permissions[]" value="View Orders"> <span>View Orders</span></label>
+            <label class="checkbox-group"><input type="checkbox" name="permissions[]" value="Manage Promotions"> <span>Manage Promotions</span></label>
+            <label class="checkbox-group"><input type="checkbox" name="permissions[]" value="Manage Staff"> <span>Manage Staff</span></label>
+
+            <div class="drawer-footer">
+                <button type="button" class="btn-cancel" onclick="closeDrawer()">Cancel</button>
+                <button type="button" class="btn-save" id="saveStaffBtn">Save Staff Member</button>
+            </div>
+        </form>
+    </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let currentKeyword = '';
+        let currentStaff = [];
+        let rolesList = [];
+        let activeTab = 'info';
+
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role_name.toLowerCase() !== 'admin') {
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function init() {
+            checkAuth();
+            await fetchRoles();
+            await fetchStaff();
+            renderHeaders();
+        }
+
+        async function fetchRoles() {
+            try {
+                const res = await fetch('api/staff/roles');
+                const result = await res.json();
+                if (res.ok) {
+                    rolesList = result.data;
+                    const select = document.getElementById('role_id');
+                    select.innerHTML = rolesList.map(r => `<option value="${r.role_id}">${r.role_name}</option>`).join('');
+                }
+            } catch (error) { console.error("Error fetching roles", error); }
+        }
+
+        async function fetchStaff() {
+            try {
+                const response = await fetch(`api/staff?keyword=${encodeURIComponent(currentKeyword)}`);
+                const result = await response.json();
+                if (response.ok) {
+                    currentStaff = result.data;
+                    renderStaff();
+                }
+            } catch (error) {
+                showToast("เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
+            }
+        }
+
+        function renderHeaders() {
+            const header = document.getElementById('tableHeader');
+            if (activeTab === 'info') {
+                header.innerHTML = `<span style="flex: 2;">Name</span><span style="flex: 2;">Role</span><span style="flex: 2;">Contact Information</span><span style="flex: 1; text-align: right;">Actions</span>`;
+            } else if (activeTab === 'salary') {
+                header.innerHTML = `<span style="flex: 2;">Name</span><span style="flex: 1;">Base Salary</span><span style="flex: 1;">Frequency</span><span style="flex: 2;">Bank Account</span><span style="flex: 1; text-align: right;">Actions</span>`;
+            } else {
+                header.innerHTML = `<span style="flex: 2;">Name</span><span style="flex: 1;">Role</span><span style="flex: 3;">Permissions</span><span style="flex: 1; text-align: right;">Actions</span>`;
+            }
+            renderStaff();
+        }
+
+        function renderStaff() {
+            const container = document.getElementById('staffContainer');
+            if (currentStaff.length === 0) {
+                container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบพนักงาน</div>';
+                return;
+            }
+
+            container.innerHTML = currentStaff.map(s => {
+                const name = `${s.first_name} ${s.last_name}`;
+                let rowHtml = `<div class="product-row">`;
+                
+                rowHtml += `<div style="flex: 2; font-weight: 500; color: #334155;">${name}</div>`;
+
+                if (activeTab === 'info') {
+                    rowHtml += `<div style="flex: 2; color: #64748b;">${s.role_name || 'N/A'}</div>`;
+                    rowHtml += `<div style="flex: 2; color: #3b82f6;">${s.email}</div>`;
+                } else if (activeTab === 'salary') {
+                    rowHtml += `<div style="flex: 1; color: #64748b;">฿${parseFloat(s.base_salary || 0).toLocaleString()}</div>`;
+                    rowHtml += `<div style="flex: 1; color: #64748b;">${s.payment_frequency || '-'}</div>`;
+                    rowHtml += `<div style="flex: 2; color: #64748b;">${s.bank_account_details || '-'}</div>`;
+                } else {
+                    rowHtml += `<div style="flex: 1; color: #64748b;">${s.role_name || 'N/A'}</div>`;
+                    const perms = Array.isArray(s.permissions) && s.permissions.length > 0 ? s.permissions.join(', ') : 'None';
+                    rowHtml += `<div style="flex: 3; color: #64748b; font-size: 13px;">${perms}</div>`;
+                }
+
+                rowHtml += `<div style="flex: 1; justify-content: flex-end; display: flex; gap: 12px;">
+                    <a href="#" onclick="editStaff(${s.employee_id})" class="action-link" style="width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background-color: #ebfbee; color: #2b7a3b; font-size: 18px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="#" onclick="deleteStaff(${s.employee_id})" class="action-link" style="width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background-color: #fff0f2; color: #e03131; font-size: 18px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Delete">
+                        <i class="fas fa-trash-alt"></i>
+                    </a>
+                </div></div>`;
+                return rowHtml;
+            }).join('');
+        }
+
+        // Drawer logic
+        const drawer = document.getElementById('staffDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        const dHeader = document.getElementById('drawerHeader');
+        
+        document.getElementById('addStaffBtn').addEventListener('click', () => {
+            document.getElementById('staffForm').reset();
+            document.getElementById('employee_id').value = '';
+            document.getElementById('password').setAttribute('required', 'true');
+            openDrawer("ส่วนงานจัดการพนักงาน - Add New Staff");
+        });
+
+        function editStaff(id) {
+            const s = currentStaff.find(x => x.employee_id == id);
+            if (!s) return;
+            document.getElementById('staffForm').reset();
+            document.getElementById('employee_id').value = s.employee_id;
+            document.getElementById('first_name').value = s.first_name;
+            document.getElementById('last_name').value = s.last_name;
+            document.getElementById('email').value = s.email;
+            document.getElementById('password').removeAttribute('required'); // Optional on edit
+            document.getElementById('phone').value = s.phone || '';
+            document.getElementById('address').value = s.address || '';
+            document.getElementById('base_salary').value = parseFloat(s.base_salary || 0);
+            document.getElementById('payment_frequency').value = s.payment_frequency || 'Monthly';
+            document.getElementById('bank_account_details').value = s.bank_account_details || '';
+            document.getElementById('role_id').value = s.role_id;
+            
+            const perms = Array.isArray(s.permissions) ? s.permissions : [];
+            document.querySelectorAll('input[name="permissions[]"]').forEach(cb => {
+                cb.checked = perms.includes(cb.value);
+            });
+
+            openDrawer("ส่วนงานจัดการพนักงาน - Edit Staff");
+        }
+
+        function openDrawer(titleCode) {
+            dHeader.textContent = titleCode;
+            overlay.classList.add('show');
+            setTimeout(() => {
+                drawer.classList.add('open');
+            }, 10);
+        }
+
+        function closeDrawer() {
+            drawer.classList.remove('open');
+            setTimeout(() => {
+                overlay.classList.remove('show');
+            }, 300);
+        }
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeDrawer();
+        });
+
+        // Form Submit
+        document.getElementById('saveStaffBtn').addEventListener('click', async () => {
+            const form = document.getElementById('staffForm');
+            if(!form.checkValidity()) { form.reportValidity(); return; }
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            data.permissions = Array.from(formData.getAll("permissions[]"));
+            
+            const isUpdate = !!data.id;
+            const url = isUpdate ? `api/staff/update?id=${data.id}` : `api/staff/create`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (response.ok) {
+                    showToast(isUpdate ? "อัปเดตพนักงานสำเร็จ" : "เพิ่มพนักงานสำเร็จ", "success");
+                    closeDrawer();
+                    fetchStaff();
+                } else {
+                    const res = await response.json();
+                    showToast(res.message || "เกิดข้อผิดพลาด", "error");
+                }
+            } catch (error) { showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error"); }
+        });
+
+        async function deleteStaff(id) {
+            if(!confirm("ยืนยันการลบพนักงาน?")) return;
+            try {
+                const response = await fetch(`api/staff/delete?id=${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showToast("ลบพนักงานสำเร็จ", "success");
+                    fetchStaff();
+                }
+            } catch (error) { showToast("เกิดข้อผิดพลาด", "error"); }
+        }
+
+        // Tabs
+        document.querySelectorAll('.staff-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.staff-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                activeTab = e.target.getAttribute('data-tab');
+                renderHeaders();
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentKeyword = e.target.value;
+            fetchStaff();
+        });
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+
+        init();
+    </script>
+</body>
+</html>
