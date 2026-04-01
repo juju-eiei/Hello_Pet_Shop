@@ -52,6 +52,62 @@ if (preg_match('/\/api\/products$/', $path)) {
     $controller = new OrderController();
     if ($request_method === 'POST') {
         $controller->createOnlineOrder();
+    } elseif ($request_method === 'GET') {
+        $controller->index();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/orders\/details$/', $path)) {
+    $controller = new OrderController();
+    if ($request_method === 'GET') {
+        if(isset($_GET['id'])) $controller->show();
+        else { http_response_code(400); echo json_encode(["message" => "Order ID required"]); }
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/orders\/update-status$/', $path)) {
+    $controller = new OrderController();
+    if ($request_method === 'POST') {
+        $controller->updateStatus();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/deliveries\/companies$/', $path)) {
+    $controller = new OrderController();
+    if ($request_method === 'GET') {
+        $controller->getDeliveryCompanies();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/customers$/', $path)) {
+    require_once __DIR__ . '/../controllers/CustomerController.php';
+    $controller = new CustomerController();
+    if ($request_method === 'GET') {
+        $controller->index();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/customers\/details$/', $path)) {
+    require_once __DIR__ . '/../controllers/CustomerController.php';
+    $controller = new CustomerController();
+    if ($request_method === 'GET') {
+        $controller->show();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/pets\/save$/', $path)) {
+    require_once __DIR__ . '/../controllers/CustomerController.php';
+    $controller = new CustomerController();
+    if ($request_method === 'POST') {
+        $controller->savePet();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/pets\/delete$/', $path)) {
+    require_once __DIR__ . '/../controllers/CustomerController.php';
+    $controller = new CustomerController();
+    if ($request_method === 'POST') {
+        $controller->deletePet();
     } else {
         http_response_code(405);
     }
