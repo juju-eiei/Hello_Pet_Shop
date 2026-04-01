@@ -18,6 +18,7 @@ if (strpos($request_uri, '/api/') !== false) {
         '/' => 'login.html', // Default to login for now
         '/login' => 'login.html',
         '/register' => 'register.html',
+        '/products' => 'products.html',
         '/admin/stock' => 'admin_stock.html',
         '/admin/products' => 'admin_product_management.html',
         '/admin/products/edit' => 'admin_product_edit.html',
