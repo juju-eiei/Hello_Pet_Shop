@@ -101,8 +101,8 @@
             </div>
             <nav class="sidebar-menu">
                 <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="#" class="menu-item">
-                    <i class="fas fa-th-large"></i>
+                <a href="admin_dashboard.html" class="menu-item">
+                    <i class="fas fa-home"></i>
                     <span>Dashboard</span>
                 </a>
                 <div class="menu-group">
@@ -165,8 +165,8 @@
 
         <!-- Bottom Navigation for Mobile -->
         <nav class="bottom-nav">
-            <a href="#" class="nav-item">
-                <i class="fas fa-th-large"></i>
+            <a href="admin_dashboard.html" class="nav-item">
+                <i class="fas fa-home"></i>
                 <span>Dashboard</span>
             </a>
             <a href="admin_orders.html" class="nav-item">
@@ -208,14 +208,8 @@
             overlay.classList.remove('active');
         });
 
-        function toggleSubmenu(element) {
-            element.classList.toggle('active');
-            const submenu = element.nextElementSibling;
-            if (submenu.style.display === 'block') {
-                submenu.style.display = 'none';
-            } else {
-                submenu.style.display = 'block';
-            }
+        function toggleSubmenu(el) {
+            el.closest('.menu-group').classList.toggle('open');
         }
 
         // Fetch Customers

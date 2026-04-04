@@ -18,6 +18,13 @@ if (preg_match('/\/api\/products$/', $path)) {
     } else {
         http_response_code(405);
     }
+} elseif (preg_match('/\/api\/products\/top$/', $path)) {
+    $controller = new ProductController();
+    if ($request_method === 'GET') {
+        $controller->top();
+    } else {
+        http_response_code(405);
+    }
 } elseif (preg_match('/\/api\/products\/update$/', $path)) {
     $controller = new ProductController();
     if ($request_method === 'POST') {

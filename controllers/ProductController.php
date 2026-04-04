@@ -66,6 +66,19 @@ class ProductController {
         }
     }
 
+    public function top() {
+        $query = "SELECT p.product_id, p.product_name, p.image_url, p.selling_price as price, COALESCE(SUM(od.quantity), 0) as sales
+                  FROM products p
+                  LEFT JOIN order_details od ON p.product_id = od.product_id
+                  LEFT JOIN orders o ON od.order_id = o.order_id AND o.status != 5
+                  GROUP BY p.product_id
+                  ORDER BY sales DESC
+                  LIMIT 5";
+        $stmt = $this->db->query($query);
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        Response::json(200, "Success", $products);
+    }
+
     public function update() {
         if (!$this->isAdmin()) {
             Response::json(403, "Admins only"); return;
