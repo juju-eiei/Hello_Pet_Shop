@@ -85,15 +85,39 @@
                 <span>Hello Pet Shop</span>
             </div>
             <nav class="sidebar-menu">
-                <div class="menu-label" style="padding: 0 20px 10px; font-size: 12px; color: #3b82f6;">Admin</div>
-                <a href="#" class="menu-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
-                <a href="admin_product_management.html" class="menu-item"><i class="fas fa-box"></i><span>Products</span></a>
-                <a href="admin_staff.html" class="menu-item active"><i class="fas fa-users-cog"></i><span>Staff Management</span></a>
-                <a href="admin_orders.html" class="menu-item"><i class="fas fa-file-invoice"></i><span>Orders</span></a>
+                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
+                <a href="admin_dashboard.html" class="menu-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="menu-group">
+                    <a class="menu-item" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-box"></i>
+                        <span>Products</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
+                    </a>
+                    <div class="submenu">
+                        <a href="admin_stock.html">Stock Management</a>
+                        <a href="admin_product_management.html">Product Management</a>
+                        <a href="admin_promotions.html">Promotions</a>
+                    </div>
+                </div>
+                <a href="admin_staff.html" class="menu-item active">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Staff Management</span>
+                </a>
+                <a href="admin_orders.html" class="menu-item">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Orders</span>
+                </a>
                 <a href="admin_customers.html" class="menu-item">
                     <i class="fas fa-users"></i>
-                    <span>Customers</span></a>
-                <a href="#" class="menu-item logout-item" id="logoutBtn" style="margin-top: auto;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+                    <span>Customers</span>
+                </a>
+                <a href="#" class="menu-item logout-item" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
             </nav>
         </aside>
 
@@ -412,6 +436,10 @@
             currentKeyword = e.target.value;
             fetchStaff();
         });
+
+        function toggleSubmenu(el) {
+            el.closest('.menu-group').classList.toggle('open');
+        }
 
         function showToast(message, type) {
             const toast = document.getElementById('toast');
