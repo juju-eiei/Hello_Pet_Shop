@@ -23,6 +23,7 @@
             align-items: center;
             border: 1px solid #f1f5f9;
             transition: transform 0.2s;
+            cursor: pointer;
         }
         .stat-card:hover {
             transform: translateY(-2px);
@@ -182,6 +183,13 @@
             width: 100%;
         }
     </style>
+
+    <!-- Mobile User-Agent Check -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
 </head>
 <body>
     <div class="admin-wrapper">
@@ -200,7 +208,7 @@
             </div>
             <nav class="sidebar-menu">
                 <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="menu-item active">
+                <a href="admin_dashboard.html" class="desktop-only-menu menu-item active">
                     <i class="fas fa-home"></i>
                     <span>Dashboard</span>
                 </a>
@@ -243,32 +251,39 @@
 
             <!-- Stats -->
             <div class="dashboard-cards">
-                <div class="stat-card">
+                <div class="stat-card" onclick="window.location.href='admin_orders.html'">
                     <div class="stat-icon blue"><i class="fas fa-wallet"></i></div>
                     <div class="stat-details">
                         <h3>ยอดขายรวม (เดือนนี้)</h3>
                         <div class="value" id="statSales">฿0.00</div>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" onclick="window.location.href='admin_orders.html'">
                     <div class="stat-icon green"><i class="fas fa-shopping-bag"></i></div>
                     <div class="stat-details">
                         <h3>คำสั่งซื้อทั้งหมด</h3>
                         <div class="value" id="statOrders">0</div>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" onclick="window.location.href='admin_customers.html'">
                     <div class="stat-icon purple"><i class="fas fa-users"></i></div>
                     <div class="stat-details">
                         <h3>ลูกค้าทั้งหมด</h3>
                         <div class="value" id="statCustomers">0</div>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" onclick="window.location.href='admin_stock.html?filter=low_stock'">
                     <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
                     <div class="stat-details">
                         <h3>สินค้าใกล้หมดสต็อก</h3>
                         <div class="value" id="statLowStock">0</div>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="window.location.href='admin_stock.html?filter=out_of_stock'">
+                    <div class="stat-icon" style="background-color: #f3f4f6; color: #4b5563;"><i class="fas fa-times-circle"></i></div>
+                    <div class="stat-details">
+                        <h3>สินค้าหมดสต็อก</h3>
+                        <div class="value" id="statOutOfStock">0</div>
                     </div>
                 </div>
             </div>
@@ -322,7 +337,7 @@
 
                     <div class="dashboard-panel">
                         <div class="panel-header">
-                            <h2>สินค้าใกล้หมดสต็อก</h2>
+                            <h2>สินค้าใกล้หมด / หมดสต็อก</h2>
                             <a href="admin_stock.html">จัดการสต็อก</a>
                         </div>
                         <ul class="item-list" id="lowStockList">
@@ -374,9 +389,21 @@
         document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
 
-        function toggleSubmenu(el) {
-            el.closest('.menu-group').classList.toggle('open');
+                function toggleSubmenu(el) {
+            const group = el.closest('.menu-group');
+            group.classList.toggle('open');
+            localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
         }
+
+        // Restore submenu state
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuGroup = document.querySelector('.menu-group');
+            if (menuGroup) {
+                const isOpen = localStorage.getItem('productsMenuOpen');
+                if (isOpen === 'true') menuGroup.classList.add('open');
+                else if (isOpen === 'false') menuGroup.classList.remove('open');
+            }
+        });
 
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
             e.preventDefault();
@@ -521,33 +548,46 @@
                     document.getElementById('topProductsList').innerHTML = '<li style="color: #ef4444; justify-content: center;">ไม่สามารถโหลดข้อมูลสินค้ายอดฮิตได้</li>';
                 });
 
-            // Low Stock - Real Data from API
-            fetch('api/products?filter=low_stock')
+            // Stock Status - Fetch all to split Low Stock and Out of Stock
+            fetch('api/products')
                 .then(res => res.json())
                 .then(result => {
-                    const lowStock = result.data || [];
-                    document.getElementById('statLowStock').textContent = lowStock.length;
+                    const products = result.data || [];
+                    const outOfStock = products.filter(p => !p.stock_qty || p.stock_qty <= 0);
+                    const lowStock = products.filter(p => p.stock_qty > 0 && p.stock_qty <= 5);
                     
-                    if (lowStock.length === 0) {
+                    document.getElementById('statLowStock').textContent = lowStock.length;
+                    document.getElementById('statOutOfStock').textContent = outOfStock.length;
+                    
+                    const displayStock = [...outOfStock, ...lowStock].slice(0, 5);
+                    
+                    if (displayStock.length === 0) {
                         document.getElementById('lowStockList').innerHTML = '<li style="color: #10b981; justify-content: center; padding: 20px 0;"><i class="fas fa-check-circle" style="margin-right: 8px;"></i> สต็อกสินค้าปกติทั้งหมด</li>';
                         return;
                     }
 
-                    // Show top 5 items
-                    const displayStock = lowStock.slice(0, 5);
-                    document.getElementById('lowStockList').innerHTML = displayStock.map(p => `
+                    document.getElementById('lowStockList').innerHTML = displayStock.map(p => {
+                        const isOut = !p.stock_qty || p.stock_qty <= 0;
+                        const label = isOut ? 'หมดสต็อก' : `เหลือเพียง ${p.stock_qty} ชิ้น`;
+                        const colorClass = isOut ? 'color: #991b1b;' : 'color: #ef4444;';
+                        const bgIconClass = isOut ? 'fee2e2/991b1b' : 'fee2e2/ef4444';
+                        const textIcon = isOut ? 'OUT' : 'LOW';
+                        
+                        return `
                         <li>
-                            <img src="${p.image_url || 'assets/img/pet_product_placeholder.png'}" onerror="this.src='https://via.placeholder.com/60/fee2e2/ef4444?text=LOW'" class="product-img" style="width: 48px; height: 48px; object-fit: cover;">
+                            <img src="${p.image_url || 'assets/img/pet_product_placeholder.png'}" onerror="this.src='https://via.placeholder.com/60/${bgIconClass}?text=${textIcon}'" class="product-img" style="width: 48px; height: 48px; object-fit: cover;">
                             <div class="product-info">
                                 <div class="product-title" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${p.product_name}</div>
-                                <div class="product-meta" style="color: #ef4444; font-weight: 600;">เหลือเพียง ${p.stock_qty || 0} ชิ้น</div>
+                                <div class="product-meta" style="${colorClass} font-weight: 600;">${label}</div>
                             </div>
                             <button style="border: none; background: #eff6ff; color: #3b82f6; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onclick="window.location.href='admin_stock.html'">จัดการสต็อก</button>
                         </li>
-                    `).join('');
+                        `;
+                    }).join('');
                 })
                 .catch(err => {
                     document.getElementById('statLowStock').textContent = '0';
+                    document.getElementById('statOutOfStock').textContent = '0';
                     document.getElementById('lowStockList').innerHTML = '<li style="color: #ef4444; justify-content: center;">ไม่สามารถโหลดข้อมูลสต็อกได้</li>';
                 });
         };

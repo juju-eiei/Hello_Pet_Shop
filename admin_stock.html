@@ -6,6 +6,151 @@
     <title>Stock Management - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Mobile User-Agent Check -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
+    
+    <style>
+        /* Modern UI Redesign */
+        body { background-color: #f8fafc; font-family: 'Inter', 'Noto Sans Thai', sans-serif; }
+        
+        /* Product Card Layout */
+        .stock-card {
+            pointer-events: auto !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            padding: 16px !important;
+            background: #ffffff !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
+            margin-bottom: 16px !important;
+            border: 1px solid #f1f5f9 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stock-card:active { transform: scale(0.98); }
+        .stock-card-left {
+            flex: 0 0 60px;
+            margin-right: 16px;
+        }
+        .stock-card-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: #f1f5f9;
+        }
+        .stock-card-middle {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .stock-card-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .stock-status-pill {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .pill-in-stock { background: #dcfce7; color: #15803d; }
+        .pill-low-stock { background: #fef9c3; color: #b45309; }
+        .pill-out-of-stock { background: #fee2e2; color: #b91c1c; }
+
+        .stock-card-right {
+            flex: 0 0 auto;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            padding-left: 12px;
+        }
+        .stock-qty-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+        .stock-qty-number {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        /* Search Bar */
+        .search-container {
+            background: #f1f5f9 !important;
+            border-radius: 50px !important;
+            padding: 4px 20px !important;
+            box-shadow: none !important;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px !important;
+            display: flex;
+            align-items: center;
+        }
+        .search-container input {
+            background: transparent !important;
+            font-size: 15px !important;
+        }
+        .search-container i { color: #64748b !important; font-size: 16px; margin-right: 12px; }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+            gap: 4px;
+            margin-bottom: 24px;
+            border: none !important;
+        }
+        .filter-btn {
+            flex: 1;
+            padding: 8px 12px !important;
+            border-radius: 10px !important;
+            background: transparent !important;
+            border: none !important;
+            color: #64748b !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+            transition: all 0.2s;
+            box-shadow: none !important;
+        }
+        .filter-btn.active {
+            background: #2f5d3a !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(47, 93, 58, 0.3) !important;
+        }
+
+        /* Hide desktop table header on mobile */
+        @media (max-width: 768px) {
+            .table-header { display: none !important; }
+            .stock-table { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+        }
+
+    </style>
+
+
 </head>
 <body>
     <div class="admin-wrapper">
@@ -26,7 +171,7 @@
             </div>
             <nav class="sidebar-menu">
                 <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="menu-item">
+                <a href="admin_dashboard.html" class="desktop-only-menu menu-item">
                     <i class="fas fa-home"></i>
                     <span>Dashboard</span>
                 </a>
@@ -121,7 +266,8 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        let currentFilter = 'all';
+        let currentFilter = new URLSearchParams(window.location.search).get('filter') || 'all';
+        if (!['all', 'low_stock', 'out_of_stock'].includes(currentFilter)) currentFilter = 'all';
         let currentKeyword = '';
 
         function checkAuth() {
@@ -163,26 +309,19 @@
                 }
 
                 return `
-                    <div class="product-row" style="display: flex; align-items: center; width: 100%;">
-                        <div style="flex: 2; display: flex; align-items: center; justify-content: flex-start; margin-right: 20px;">
+                    <div class="product-row stock-card" onclick="window.location.href='admin_product_edit.html?id=${p.product_id}'; return false;" style="cursor: pointer;">
+                        <div class="stock-card-left">
                             <img src="${p.image_url || 'assets/img/pet_product_placeholder.png'}" 
-                                 onerror="this.src='https://via.placeholder.com/60/314d2a/ffffff?text=PET'" 
-                                 class="product-img" style="margin-right: 20px;">
-                            <div class="product-details">
-                                <div class="product-name">${p.product_name}</div>
-                            </div>
+                                 onerror="this.src='https://placehold.co/100x100/f1f5f9/94a3b8?text=Image'" 
+                                 class="stock-card-img">
                         </div>
-                        <div class="stock-status ${statusClass}" style="flex: 1; text-align: center; font-weight: 600;">
-                            ${statusText}
+                        <div class="stock-card-middle">
+                            <div class="stock-card-name">${p.product_name}</div>
+                            <div class="stock-status-pill ${statusClass}">${statusText}</div>
                         </div>
-                        <div class="stock-actions" style="flex: 1; justify-content: flex-end;">
-                            <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty - 1})">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <input type="number" class="qty-input" value="${qty}" onchange="updateQty(${p.product_id}, parseInt(this.value))" style="text-align: center;">
-                            <button class="qty-btn" onclick="updateQty(${p.product_id}, ${qty + 1})">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                        <div class="stock-card-right">
+                            <div class="stock-qty-text">Qty</div>
+                            <div class="stock-qty-number">${qty}</div>
                         </div>
                     </div>
                 `;
@@ -250,10 +389,28 @@
         document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
 
-        function toggleSubmenu(el) {
-            el.closest('.menu-group').classList.toggle('open');
+                function toggleSubmenu(el) {
+            const group = el.closest('.menu-group');
+            group.classList.toggle('open');
+            localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
         }
 
+        // Restore submenu state
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuGroup = document.querySelector('.menu-group');
+            if (menuGroup) {
+                const isOpen = localStorage.getItem('productsMenuOpen');
+                if (isOpen === 'true') menuGroup.classList.add('open');
+                else if (isOpen === 'false') menuGroup.classList.remove('open');
+            }
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.filter === currentFilter) {
+                btn.classList.add('active');
+            }
+        });
         checkAuth();
         fetchProducts();
     </script>

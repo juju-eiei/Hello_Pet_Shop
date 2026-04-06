@@ -41,7 +41,52 @@
             background-color: transparent;
             color: #475569;
         }
+        /* Order Row Layouts for Mobile */
+        @media (max-width: 768px) {
+            .order-row {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 12px;
+                background: white;
+                border-radius: 16px;
+                padding: 20px;
+                margin-bottom: 16px;
+                border: 1px solid #f1f5f9;
+                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            }
+            .order-date { grid-column: 1 / -1; color: #94a3b8; font-size: 13px; }
+            .order-number { font-weight: 700; color: #1e293b; font-size: 15px; }
+            .order-amount { font-weight: 600; color: #3b82f6; text-align: right; }
+            .order-status { grid-column: 1 / -1; display: flex; justify-content: flex-start; }
+            .order-actions { display: none !important; }
+            .stock-table { border: none; box-shadow: none; overflow: visible; background: transparent; }
+            .table-header { display: none !important; }
+        }
+
+        @media (min-width: 769px) {
+            .order-row {
+                display: flex;
+                align-items: center;
+                width: 100%;
+                padding: 16px 25px;
+                border-bottom: 1px solid #f1f5f9;
+                transition: 0.2s;
+            }
+            .order-row:hover { background: #fcfdfe; }
+            .order-date { flex: 1.5; }
+            .order-number { flex: 2; color: #334155; font-weight: 500; }
+            .order-amount { flex: 1.5; text-align: left; }
+            .order-status { flex: 1; display: flex; justify-content: center; }
+            .order-actions { flex: 1; display: flex; justify-content: flex-end; }
+        }
     </style>
+
+    <!-- Mobile User-Agent Check -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
 </head>
 <body>
     <div class="admin-wrapper">
@@ -62,7 +107,7 @@
             </div>
             <nav class="sidebar-menu">
                 <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="menu-item">
+                <a href="admin_dashboard.html" class="desktop-only-menu menu-item">
                     <i class="fas fa-home"></i>
                     <span>Dashboard</span>
                 </a>
@@ -194,14 +239,14 @@
             }
 
             container.innerHTML = filteredOrders.map(o => `
-                <div class="product-row" style="display: flex; align-items: center; width: 100%;">
-                    <div class="table-cell-text" style="flex: 1.5;">${o.date}</div>
-                    <div class="table-cell-text" style="flex: 2; color: #334155; font-weight: 500;">${o.number}</div>
-                    <div class="table-cell-text" style="flex: 1.5; text-align: left;">$${o.amount.toFixed(2)}</div>
-                    <div style="flex: 1; text-align: center; display: flex; justify-content: center;">
+                <div class="order-row" onclick="window.location.href='admin_order_details.html?id=${o.id}'" style="cursor: pointer;">
+                    <div class="order-date">${o.date}</div>
+                    <div class="order-number">${o.number}</div>
+                    <div class="order-amount">${o.amount.toFixed(2)}</div>
+                    <div class="order-status">
                         <span class="status-pill ${getStatusClass(o.status)}">${o.status}</span>
                     </div>
-                    <div style="flex: 1; display: flex; justify-content: flex-end;">
+                    <div class="order-actions desktop-action">
                         <a href="admin_order_details.html?id=${o.id}" class="action-link" style="width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; background-color: #eff6ff; color: #3b82f6; font-size: 16px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="View Order Details">
                             <i class="fas fa-eye"></i>
                         </a>
@@ -233,9 +278,21 @@
         document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
 
-        function toggleSubmenu(el) {
-            el.closest('.menu-group').classList.toggle('open');
+                function toggleSubmenu(el) {
+            const group = el.closest('.menu-group');
+            group.classList.toggle('open');
+            localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
         }
+
+        // Restore submenu state
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuGroup = document.querySelector('.menu-group');
+            if (menuGroup) {
+                const isOpen = localStorage.getItem('productsMenuOpen');
+                if (isOpen === 'true') menuGroup.classList.add('open');
+                else if (isOpen === 'false') menuGroup.classList.remove('open');
+            }
+        });
 
         // Initialize
         checkAuth();

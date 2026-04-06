@@ -144,10 +144,52 @@
 
         @media (max-width: 1024px) {
             .details-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: minmax(0, 1fr);
+            }
+            .left-col, .right-col {
+                min-width: 0;
             }
         }
+        @media (max-width: 768px) {
+            .page-header > div {
+                align-items: flex-start !important;
+            }
+            .page-header h1 {
+                flex-wrap: wrap;
+                font-size: 22px !important;
+                line-height: 1.4;
+            }
+            .details-card { 
+                padding: 16px; 
+                max-width: 100%; 
+                overflow: hidden; 
+                box-sizing: border-box; 
+            }
+            .order-items-table {
+                min-width: 400px;
+            }
+            /* Ensure the table wrapper scrolls properly without stretching the card */
+            .table-responsive-wrapper {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .info-row {
+                flex-direction: column;
+                margin-bottom: 16px;
+            }
+            .info-label { margin-bottom: 2px; font-size: 13px; }
+            .info-value { font-size: 15px; word-break: break-all; }
+            .status-pill { padding: 4px 12px; font-size: 12px; }
+        }
     </style>
+
+    <!-- Mobile User-Agent Check -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
 </head>
 <body>
     <div class="admin-wrapper">
@@ -170,7 +212,7 @@
             </div>
             <nav class="sidebar-menu">
                 <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="menu-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <a href="admin_dashboard.html" class="desktop-only-menu menu-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
                 <div class="menu-group">
                     <a class="menu-item" onclick="toggleSubmenu(this)"><i class="fas fa-box"></i><span>Products</span><i class="fas fa-chevron-down menu-arrow"></i></a>
                     <div class="submenu">
@@ -225,7 +267,7 @@
 
                     <div class="details-card">
                         <div class="card-header"><i class="fas fa-shopping-basket" style="color: #10b981;"></i> Order Items</div>
-                        <div style="overflow-x: auto;">
+                        <div class="table-responsive-wrapper">
                             <table class="order-items-table">
                                 <thead>
                                     <tr>
@@ -460,9 +502,21 @@
         document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
 
-        function toggleSubmenu(el) {
-            el.closest('.menu-group').classList.toggle('open');
+                function toggleSubmenu(el) {
+            const group = el.closest('.menu-group');
+            group.classList.toggle('open');
+            localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
         }
+
+        // Restore submenu state
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuGroup = document.querySelector('.menu-group');
+            if (menuGroup) {
+                const isOpen = localStorage.getItem('productsMenuOpen');
+                if (isOpen === 'true') menuGroup.classList.add('open');
+                else if (isOpen === 'false') menuGroup.classList.remove('open');
+            }
+        });
 
         // Initialize
         checkAuth();

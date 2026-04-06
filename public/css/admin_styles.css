@@ -114,8 +114,8 @@ body {
 .submenu {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin: 0 0 0 52px;
+    gap: 6px;
+    margin: 0 8px 0 46px;
     max-height: 0;
     overflow: hidden;
     opacity: 0;
@@ -125,9 +125,9 @@ body {
 }
 
 .menu-group.open .submenu {
-    max-height: 200px;
+    max-height: 220px;
     opacity: 1;
-    margin: 8px 0 16px 52px;
+    margin: 8px 8px 16px 46px;
 }
 
 .submenu a {
@@ -135,8 +135,22 @@ body {
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    transition: var(--transition);
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.submenu a::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    margin-right: 12px;
     transition: var(--transition);
 }
 
@@ -145,10 +159,20 @@ body {
     background: #f0fdf4;
 }
 
+.submenu a:hover::before {
+    background: var(--accent-green);
+    transform: scale(1.2);
+}
+
 .submenu a.active {
     color: var(--primary-green);
     font-weight: 700;
     background: #f0fdf4;
+}
+
+.submenu a.active::before {
+    background: var(--primary-green);
+    transform: scale(1.2);
 }
 
 .logout-item {
@@ -630,4 +654,44 @@ body {
     .btn-group { flex-direction: column; gap: 15px; }
     .btn-group button, .btn-group a { width: 100%; }
     .full-width { grid-column: auto; }
+}
+
+/* --- User-Agent Detected Mobile Device Overrides (View Only Mode) --- */
+html.mobile-device .desktop-only-menu {
+    display: none !important;
+}
+
+/* Hide buttons related to Adding, Editing, or Deleting */
+html.mobile-device .add-btn,
+html.mobile-device .add-category-btn,
+html.mobile-device .fab-add,
+html.mobile-device .action-col,
+html.mobile-device .action-link,
+html.mobile-device .edit-link,
+html.mobile-device .delete-link,
+html.mobile-device .stock-actions {
+    display: none !important;
+}
+
+/* Remove hover effects indicating clickability on tables */
+html.mobile-device .product-row:hover {
+    background: white;
+}
+
+/* Override grid templates for responsive Action hiding on mobile layout */
+html.mobile-device .product-row {
+    grid-template-areas: 
+        "img info"
+        "img status" !important;
+    padding-bottom: 12px;
+}
+
+/* Forms (Save button) on mobile should be hidden */
+html.mobile-device .save-btn {
+    display: none !important;
+}
+
+/* Adjust pointer events inside rows to prevent detail fetching if unneeded */
+html.mobile-device .product-row {
+    pointer-events: none;
 }
