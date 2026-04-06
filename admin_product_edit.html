@@ -6,6 +6,13 @@
     <title>Edit Product - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Mobile User-Agent Check -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
 </head>
 <body>
     <div class="admin-wrapper">
@@ -30,7 +37,7 @@
             </div>
             <nav class="sidebar-menu">
                 <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="menu-item">
+                <a href="admin_dashboard.html" class="desktop-only-menu menu-item">
                     <i class="fas fa-home"></i>
                     <span>Dashboard</span>
                 </a>
@@ -42,7 +49,7 @@
                     </a>
                     <div class="submenu">
                         <a href="admin_stock.html">Stock Management</a>
-                        <a href="admin_product_management.html" class="active">Product Management</a>
+                        <a href="admin_product_management.html" class="desktop-only-menu active">Product Management</a>
                         <a href="admin_promotions.html">Promotions</a>
                     </div>
                 </div>
@@ -349,9 +356,21 @@
         document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
 
-        function toggleSubmenu(el) {
-            el.closest('.menu-group').classList.toggle('open');
+                function toggleSubmenu(el) {
+            const group = el.closest('.menu-group');
+            group.classList.toggle('open');
+            localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
         }
+
+        // Restore submenu state
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuGroup = document.querySelector('.menu-group');
+            if (menuGroup) {
+                const isOpen = localStorage.getItem('productsMenuOpen');
+                if (isOpen === 'true') menuGroup.classList.add('open');
+                else if (isOpen === 'false') menuGroup.classList.remove('open');
+            }
+        });
 
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
             e.preventDefault();
