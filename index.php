@@ -22,7 +22,8 @@ if (strpos($request_uri, '/api/') !== false) {
         '/admin/stock' => 'admin_stock.html',
         '/admin/products' => 'admin_product_management.html',
         '/admin/products/edit' => 'admin_product_edit.html',
-        '/admin/promotions' => 'admin_promotions.html'
+        '/admin/promotions' => 'admin_promotions.html',
+        '/staff/profile' => 'staff_profile.html'
     ];
 
     $path = rtrim($request_uri, '/');

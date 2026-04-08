@@ -31,6 +31,23 @@ class StaffController {
         }
     }
 
+    public function me() {
+        $user_id = $_GET['user_id'] ?? null;
+        if (!$user_id) {
+            http_response_code(400);
+            echo json_encode(["message" => "User ID is required"]);
+            return;
+        }
+
+        $staff = $this->model->getByUserId($user_id);
+        if ($staff) {
+            echo json_encode(["data" => $staff]);
+        } else {
+            http_response_code(404);
+            echo json_encode(["message" => "Staff profile not found"]);
+        }
+    }
+
     public function create() {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);

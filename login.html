@@ -76,10 +76,25 @@
     <script type="module">
         import { showToast } from '/src/js/utils.js';
 
+        // Check if already logged in
+        const existingUser = JSON.parse(localStorage.getItem('user'));
+        if (existingUser) {
+            const role = existingUser.role_name ? existingUser.role_name.toLowerCase() : 'customer';
+            if (role === 'admin') {
+                window.location.href = 'admin_stock.html';
+            } else if (role === 'customer') {
+                window.location.href = 'products.html';
+            } else {
+                window.location.href = 'staff_profile.html';
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log('Login form submitted!');
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
+            console.log('Login Request Data:', data);
 
             try {
                 const response = await fetch('/api/login', {
@@ -95,8 +110,15 @@
                     localStorage.setItem('user', JSON.stringify(result.data));
                     
                     setTimeout(() => {
-                        window.location.href = result.data.role_name.toLowerCase() === 'admin' ? '/admin/stock' : '/products';
-                    }, 1500);
+                        const role = result.data.role_name ? result.data.role_name.toLowerCase() : 'customer';
+                        if (role === 'admin') {
+                            window.location.href = 'admin_stock.html';
+                        } else if (role === 'customer') {
+                            window.location.href = 'products.html';
+                        } else {
+                            window.location.href = 'staff_profile.html';
+                        }
+                    }, 1000);
                 } else {
                     showToast(result.message || "Invalid credentials", "error");
                 }
