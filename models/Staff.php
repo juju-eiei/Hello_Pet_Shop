@@ -10,7 +10,7 @@ class Staff {
     }
 
     public function getAll($keyword = '') {
-        $sql = "SELECT e.*, u.email, u.role_id, u.permissions, r.role_name 
+        $sql = "SELECT e.*, u.email, u.username, u.role_id, u.permissions, r.role_name 
                 FROM employees e 
                 JOIN users u ON e.user_id = u.user_id 
                 LEFT JOIN roles r ON u.role_id = r.role_id ";
@@ -34,7 +34,7 @@ class Staff {
     }
 
     public function getById($id) {
-        $sql = "SELECT e.*, u.email, u.role_id, u.permissions, r.role_name 
+        $sql = "SELECT e.*, u.email, u.username, u.role_id, u.permissions, r.role_name 
                 FROM employees e 
                 JOIN users u ON e.user_id = u.user_id 
                 LEFT JOIN roles r ON u.role_id = r.role_id 
@@ -50,12 +50,31 @@ class Staff {
         return $result;
     }
 
+    public function getByUserId($user_id) {
+        $sql = "SELECT e.*, u.email, u.username, u.role_id, u.permissions, r.role_name 
+                FROM employees e 
+                JOIN users u ON e.user_id = u.user_id 
+                LEFT JOIN roles r ON u.role_id = r.role_id 
+                WHERE e.user_id = :user_id";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($result) {
+            $result['permissions'] = $result['permissions'] ? json_decode($result['permissions'], true) : [];
+        }
+        return $result;
+    }
+
     public function create($data) {
         try {
             $this->db->beginTransaction();
 
             $password = password_hash($data['password'], PASSWORD_DEFAULT);
-            $username = strtolower(str_replace(' ', '', $data['first_name'])) . rand(100, 999);
+            
+            // Allow manual username or fallback to generated
+            $username = !empty($data['username']) ? $data['username'] : (strtolower(str_replace(' ', '', $data['first_name'])) . rand(100, 999));
             
             $sqlUser = "INSERT INTO users (role_id, username, password, email, permissions) 
                         VALUES (:role_id, :username, :password, :email, :permissions)";
@@ -100,7 +119,7 @@ class Staff {
             if (!$emp) throw new Exception("Employee not found");
             $userId = $emp['user_id'];
 
-            $sqlUser = "UPDATE users SET role_id = :role_id, email = :email, permissions = :permissions";
+            $sqlUser = "UPDATE users SET role_id = :role_id, email = :email, username = :username, permissions = :permissions";
             if (!empty($data['password'])) {
                 $sqlUser .= ", password = :password";
             }
@@ -109,6 +128,8 @@ class Staff {
             $stmtUser = $this->db->prepare($sqlUser);
             $stmtUser->bindValue(':role_id', $data['role_id']);
             $stmtUser->bindValue(':email', $data['email']);
+            // If username is provided, update it, otherwise keep the old one
+            $stmtUser->bindValue(':username', !empty($data['username']) ? $data['username'] : $emp['username']);
             $stmtUser->bindValue(':permissions', json_encode($data['permissions'] ?? []));
             $stmtUser->bindValue(':user_id', $userId);
             

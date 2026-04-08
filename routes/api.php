@@ -167,6 +167,14 @@ if (preg_match('/\/api\/products$/', $path)) {
     } else {
         http_response_code(405);
     }
+} elseif (preg_match('/\/api\/staff\/me$/', $path)) {
+    require_once __DIR__ . '/../controllers/StaffController.php';
+    $controller = new StaffController();
+    if ($request_method === 'GET') {
+        $controller->me();
+    } else {
+        http_response_code(405);
+    }
 } elseif (preg_match('/\/api\/staff\/create$/', $path)) {
     require_once __DIR__ . '/../controllers/StaffController.php';
     $controller = new StaffController();
