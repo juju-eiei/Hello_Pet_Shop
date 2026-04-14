@@ -266,17 +266,23 @@
         }
 
         function toggleSidebar() {
-            document.querySelector('.sidebar').classList.toggle('active');
-            document.getElementById('sidebarOverlay').classList.toggle('active');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
         }
 
         document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
 
-                function toggleSubmenu(el) {
+        function toggleSubmenu(el) {
             const group = el.closest('.menu-group');
-            group.classList.toggle('open');
-            localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
+            if (group) {
+                group.classList.toggle('open');
+                localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
+            }
         }
 
         // Restore submenu state
