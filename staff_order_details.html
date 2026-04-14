@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Details - Hello Pet Shop</title>
+    <title>Order Details - Staff</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -168,7 +168,6 @@
             .order-items-table {
                 min-width: 400px;
             }
-            /* Ensure the table wrapper scrolls properly without stretching the card */
             .table-responsive-wrapper {
                 width: 100%;
                 overflow-x: auto;
@@ -195,46 +194,61 @@
     <div class="admin-wrapper">
         <!-- Mobile Header -->
         <header class="mobile-header">
-            <a href="admin_orders.html" style="color: white; text-decoration: none;">
+            <a href="staff_orders.html" style="color: white; text-decoration: none;">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <h2>Order Details</h2>
-            <i class="fas fa-bars" id="hamburgerBtn"></i>
+            <i class="fas fa-bars hamburger-btn" onclick="toggleSidebar()"></i>
         </header>
 
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header" style="background-color: #3b5030;">
                 <i class="fas fa-paw"></i>
                 <span>Hello Pet Shop</span>
             </div>
             <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="desktop-only-menu menu-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Staff</div>
+                <a href="staff_profile.html" class="menu-item">
+                    <i class="fas fa-home"></i>
+                    <span>Profile</span>
+                </a>
+                
                 <div class="menu-group">
-                    <a class="menu-item" onclick="toggleSubmenu(this)"><i class="fas fa-box"></i><span>Products</span><i class="fas fa-chevron-down menu-arrow"></i></a>
+                    <a href="#" class="menu-item" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-box"></i>
+                        <span>Products</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
+                    </a>
                     <div class="submenu">
-                        <a href="admin_stock.html">Stock Management</a>
-                        <a href="admin_product_management.html" class="desktop-only-menu">Product Management</a>
-                        <a href="admin_promotions.html">Promotions</a>
+                        <a href="staff_stock.html">Stock Management</a>
+                        <a href="staff_promotions.html">Promotions</a>
                     </div>
                 </div>
-                <a href="admin_staff.html" class="menu-item"><i class="fas fa-users-cog"></i><span>Staff Management</span></a>
-                <a href="admin_orders.html" class="menu-item active"><i class="fas fa-file-invoice"></i><span>Orders</span></a>
-                <a href="admin_customers.html" class="menu-item">
+
+                <a href="staff_orders.html" class="menu-item active">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="staff_customers.html" class="menu-item">
                     <i class="fas fa-users"></i>
-                    <span>Customers</span></a>
-                <a href="#" class="menu-item logout-item" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+                    <span>Customers</span>
+                </a>
+                <a href="#" class="menu-item logout-item" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
             </nav>
         </aside>
 
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto;">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                 <div style="display: flex; align-items: center; gap: 16px;">
-                    <a href="admin_orders.html" style="color: #64748b; font-size: 20px; text-decoration: none; padding: 8px; border-radius: 8px; background: #f1f5f9;"><i class="fas fa-arrow-left"></i></a>
+                    <a href="staff_orders.html" style="color: #64748b; font-size: 20px; text-decoration: none; padding: 8px; border-radius: 8px; background: #f1f5f9;"><i class="fas fa-arrow-left"></i></a>
                     <div>
                         <h1 style="margin: 0; display: flex; align-items: center; gap: 12px;">Order <span id="displayOrderId">#ORD-000</span> <span id="headerStatus" class="status-pill pending">Pending</span></h1>
                         <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;"><i class="far fa-calendar-alt"></i> Date: <span id="displayDate">YYYY-MM-DD HH:MM</span></p>
@@ -334,11 +348,25 @@
             return status.toLowerCase().replace(" ", "");
         }
 
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        function toggleSubmenu(el) {
+            const group = el.closest('.menu-group');
+            group.classList.toggle('open');
+            localStorage.setItem('staffProductsMenuOpen', group.classList.contains('open'));
+        }
+
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || user.role_name.toLowerCase() !== 'admin') {
-                window.location.href = 'login.html';
+            const role = user ? (user.role_name || '').toLowerCase() : '';
+            if (!user || role === 'customer') {
+                window.location.href = '/login.html';
+                return null;
             }
+            return user;
         }
 
         async function loadCompanies() {
@@ -488,45 +516,28 @@
             setTimeout(() => toast.className = 'toast', 3000);
         }
 
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
-        });
-
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar && overlay) {
-                sidebar.classList.toggle('active');
-                overlay.classList.toggle('active');
-            }
-        }
-
-        document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
-        document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
-
-        function toggleSubmenu(el) {
-            const group = el.closest('.menu-group');
-            if (group) {
-                group.classList.toggle('open');
-                localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
-            }
-        }
-
-        // Restore submenu state
         document.addEventListener('DOMContentLoaded', () => {
             const menuGroup = document.querySelector('.menu-group');
             if (menuGroup) {
-                const isOpen = localStorage.getItem('productsMenuOpen');
+                const isOpen = localStorage.getItem('staffProductsMenuOpen');
                 if (isOpen === 'true') menuGroup.classList.add('open');
                 else if (isOpen === 'false') menuGroup.classList.remove('open');
             }
-        });
 
-        // Initialize
-        checkAuth();
-        setTimeout(initData, 100);
+            const user = checkAuth();
+            if (user) {
+                setTimeout(initData, 100);
+            }
+
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('user');
+                    window.location.href = '/login.html';
+                });
+            }
+        });
     </script>
 </body>
 </html>

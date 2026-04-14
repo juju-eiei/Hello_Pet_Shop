@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customers - Hello Pet Shop</title>
+    <title>Customers - Staff</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        <style>
+    <style>
         body { font-family: 'Inter', 'Noto Sans Thai', sans-serif; background-color: #f8fafc; }
         
-        .search-container {
+        .search-container-staff {
             background-color: #ffffff;
             border-radius: 50px;
             border: 1px solid #e2e8f0;
@@ -18,8 +18,9 @@
             align-items: center;
             padding: 12px 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            width: 100%; max-width: 500px;
         }
-        .search-container input {
+        .search-container-staff input {
             background-color: transparent;
             color: #1e293b;
             border: none;
@@ -140,12 +141,9 @@
         /* Mobile specific overrides */
         @media (max-width: 768px) {
             .table-header { display: none !important; }
-            .stock-table { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+            .stock-table { background: transparent !important; box-shadow: none !important; padding: 0 !important; border: none !important; }
             .page-header { margin-bottom: 20px; }
         }
-        
-        /* Bottom Nav Highlight Fix inherited */
-        .bottom-nav { border-top: 1px solid #e2e8f0; }
     </style>
 
     <!-- Mobile User-Agent Check -->
@@ -159,46 +157,41 @@
     <div class="admin-wrapper">
         <!-- Mobile Header -->
         <header class="mobile-header">
-            <i class="fas fa-bars" id="hamburgerBtn"></i>
+            <i class="fas fa-bars hamburger-btn" onclick="toggleSidebar()"></i>
             <h2>Customers</h2>
-            <i class="fas fa-bell"></i>
+            <div style="width: 20px;"></div>
         </header>
 
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header" style="background-color: #3b5030;">
                 <i class="fas fa-paw"></i>
                 <span>Hello Pet Shop</span>
             </div>
             <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="desktop-only-menu menu-item">
+                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Staff</div>
+                <a href="staff_profile.html" class="menu-item">
                     <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
+                    <span>Profile</span>
                 </a>
+                
                 <div class="menu-group">
-                    <a class="menu-item" onclick="toggleSubmenu(this)">
+                    <a href="#" class="menu-item" onclick="toggleSubmenu(this)">
                         <i class="fas fa-box"></i>
                         <span>Products</span>
                         <i class="fas fa-chevron-down menu-arrow"></i>
                     </a>
                     <div class="submenu">
-                        <a href="admin_stock.html">Stock Management</a>
-                        <a href="admin_product_management.html" class="desktop-only-menu">Product Management</a>
-                        <a href="admin_promotions.html">Promotions</a>
+                        <a href="staff_stock.html">Stock Management</a>
+                        <a href="staff_promotions.html">Promotions</a>
                     </div>
                 </div>
-                <a href="admin_staff.html" class="menu-item">
-                    <i class="fas fa-users-cog"></i>
-                    <span>Staff Management</span>
-                </a>
-                <a href="admin_orders.html" class="menu-item">
+
+                <a href="staff_orders.html" class="menu-item">
                     <i class="fas fa-file-invoice"></i>
                     <span>Orders</span>
                 </a>
-                <a href="admin_customers.html" class="menu-item active">
+                <a href="staff_customers.html" class="menu-item active">
                     <i class="fas fa-users"></i>
                     <span>Customers</span>
                 </a>
@@ -209,56 +202,28 @@
             </nav>
         </aside>
 
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto;">
             <div class="page-header">
                 <h1>Customer Management</h1>
             </div>
 
             <!-- Search -->
-            <div class="search-container">
-                <i class="fas fa-search" style="color: #64748b;"></i>
+            <div class="search-container-staff">
+                <i class="fas fa-search" style="color: #60a5fa; font-size: 18px;"></i>
                 <input type="text" id="searchInput" placeholder="Search customers by name, phone, or email...">
             </div>
 
             <!-- Table -->
-            <div class="stock-table">
-                <div class="table-header" style="display: flex; padding: 16px 24px; border-bottom: 1px solid #e2e8f0; background-color: #f8fafc; border-top-left-radius: 12px; border-top-right-radius: 12px;">
-                    <span style="flex: 2;">Customer Name</span>
-                    <span style="flex: 2;">Contact Info</span>
-                    <span style="flex: 1;">Reward Points</span>
-                    <span style="flex: 2;">Pets</span>
-                    <span style="flex: 1; text-align: right;">Action</span>
-                </div>
+            <div class="stock-table border-0" style="border: none; background: transparent; padding: 0;">
                 <div id="customersContainer">
                     <div style="padding: 50px; text-align: center; color: #718096;">Loading customers...</div>
                 </div>
             </div>
         </main>
-
-        <!-- Bottom Navigation for Mobile -->
-        <nav class="bottom-nav">
-            <a href="admin_dashboard.html" class="nav-item">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="admin_orders.html" class="nav-item">
-                <i class="fas fa-file-invoice"></i>
-                <span>Orders</span>
-            </a>
-            <a href="admin_stock.html" class="nav-item">
-                <i class="fas fa-box"></i>
-                <span>Stock</span>
-            </a>
-            <a href="admin_customers.html" class="nav-item active">
-                <i class="fas fa-users"></i>
-                <span>Customers</span>
-            </a>
-            <a href="admin_promotions.html" class="nav-item">
-                <i class="fas fa-bullhorn"></i>
-                <span>Promotions</span>
-            </a>
-        </nav>
     </div>
 
     <!-- Toast Notification -->
@@ -267,34 +232,25 @@
     <script src="/js/utils.js"></script>
     <script>
         function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar && overlay) {
-                sidebar.classList.toggle('active');
-                overlay.classList.toggle('active');
-            }
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
         }
-
-        document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
-        document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
 
         function toggleSubmenu(el) {
             const group = el.closest('.menu-group');
-            if (group) {
-                group.classList.toggle('open');
-                localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
-            }
+            group.classList.toggle('open');
+            localStorage.setItem('staffProductsMenuOpen', group.classList.contains('open'));
         }
 
-        // Restore submenu state
-        document.addEventListener('DOMContentLoaded', () => {
-            const menuGroup = document.querySelector('.menu-group');
-            if (menuGroup) {
-                const isOpen = localStorage.getItem('productsMenuOpen');
-                if (isOpen === 'true') menuGroup.classList.add('open');
-                else if (isOpen === 'false') menuGroup.classList.remove('open');
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const role = user ? (user.role_name || '').toLowerCase() : '';
+            if (!user || role === 'customer') {
+                window.location.href = '/login.html';
+                return null;
             }
-        });
+            return user;
+        }
 
         // Fetch Customers
         let allCustomers = [];
@@ -316,9 +272,6 @@
 
         function renderCustomers(data) {
             const container = document.getElementById('customersContainer');
-            // Remove the hardcoded table-header from DOM on JS render to be safe
-            const oldHeader = document.querySelector('.table-header');
-            if (oldHeader && window.innerWidth <= 768) oldHeader.style.display = 'none';
 
             if (data.length === 0) {
                 container.innerHTML = `<div style="padding: 50px; text-align: center; color: #64748b; font-weight: 500;">No customers found.</div>`;
@@ -371,13 +324,40 @@
         });
 
         function viewCustomer(id) {
-            window.location.href = `admin_customer_details.html?id=${id}`;
+            window.location.href = `staff_customer_details.html?id=${id}`;
         }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            loadCustomers();
+            const menuGroup = document.querySelector('.menu-group');
+            if (menuGroup) {
+                const isOpen = localStorage.getItem('staffProductsMenuOpen');
+                if (isOpen === 'true') menuGroup.classList.add('open');
+                else if (isOpen === 'false') menuGroup.classList.remove('open');
+            }
+
+            const user = checkAuth();
+            if (user) {
+                loadCustomers();
+            }
+
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('user');
+                    window.location.href = '/login.html';
+                });
+            }
         });
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            if(!toast) return;
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
     </script>
 </body>
 </html>

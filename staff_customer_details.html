@@ -275,44 +275,42 @@
     <div class="admin-wrapper">
         <!-- Mobile Header -->
         <header class="mobile-header">
-            <i class="fas fa-arrow-left" style="font-size: 20px; cursor: pointer; color: white;" onclick="window.location.href='admin_customers.html'"></i>
+            <i class="fas fa-arrow-left" style="font-size: 20px; cursor: pointer; color: white;" onclick="window.location.href='staff_customers.html'"></i>
             <h2 style="margin: 0; font-size: 18px; color: white;">Customer Profile</h2>
-            <div style="width: 20px;"></div>
+            <i class="fas fa-bars hamburger-btn" onclick="toggleSidebar()"></i>
         </header>
 
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header" style="background-color: #3b5030;">
                 <i class="fas fa-paw"></i>
                 <span>Hello Pet Shop</span>
             </div>
             <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="desktop-only-menu menu-item">
+                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Staff</div>
+                <a href="staff_profile.html" class="menu-item">
                     <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
+                    <span>Profile</span>
                 </a>
+                
                 <div class="menu-group">
-                    <a class="menu-item" onclick="toggleSubmenu(this)">
+                    <a href="#" class="menu-item" onclick="toggleSubmenu(this)">
                         <i class="fas fa-box"></i>
                         <span>Products</span>
                         <i class="fas fa-chevron-down menu-arrow"></i>
                     </a>
                     <div class="submenu">
-                        <a href="admin_stock.html">Stock Management</a>
-                        <a href="admin_product_management.html" class="desktop-only-menu">Product Management</a>
-                        <a href="admin_promotions.html">Promotions</a>
+                        <a href="staff_stock.html">Stock Management</a>
+                        <a href="staff_promotions.html">Promotions</a>
                     </div>
                 </div>
-                <a href="admin_staff.html" class="menu-item">
-                    <i class="fas fa-users-cog"></i>
-                    <span>Staff Management</span>
-                </a>
-                <a href="admin_orders.html" class="menu-item">
+
+                <a href="staff_orders.html" class="menu-item">
                     <i class="fas fa-file-invoice"></i>
                     <span>Orders</span>
                 </a>
-                <a href="admin_customers.html" class="menu-item active">
+                <a href="staff_customers.html" class="menu-item active">
                     <i class="fas fa-users"></i>
                     <span>Customers</span>
                 </a>
@@ -326,7 +324,7 @@
         <!-- Main Content -->
         <main class="main-content">
             <div class="page-header" style="margin-bottom: 24px;">
-                <button class="btn btn-secondary" onclick="window.location.href='admin_customers.html'" style="margin-right: 16px;">
+                <button class="btn btn-secondary" onclick="window.location.href='staff_customers.html'" style="margin-right: 16px;">
                     <i class="fas fa-arrow-left"></i> Back to List
                 </button>
                 <h1>Customer Profile</h1>
@@ -463,43 +461,38 @@
 
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || user.role_name.toLowerCase() !== 'admin') {
-                window.location.href = 'login.html';
+            const role = user ? (user.role_name || '').toLowerCase() : '';
+            if (!user || role === 'customer') {
+                window.location.href = '/login.html';
+                return null;
             }
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar && overlay) {
-                sidebar.classList.toggle('active');
-                overlay.classList.toggle('active');
-            }
+            return user;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const hamburgerBtn = document.getElementById('hamburgerBtn');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (hamburgerBtn) hamburgerBtn.addEventListener('click', toggleSidebar);
-            if (overlay) overlay.addEventListener('click', toggleSidebar);
-            
-            checkAuth();
-            loadProfile();
-
-            const menuGroup = document.querySelector('.menu-group');
-            if (menuGroup) {
-                const isOpen = localStorage.getItem('productsMenuOpen');
-                if (isOpen === 'true') menuGroup.classList.add('open');
-                else if (isOpen === 'false') menuGroup.classList.remove('open');
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                });
             }
+            checkAuth();
         });
+
+        let currentCustomerId = null;
+        let petsData = [];
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
 
         function toggleSubmenu(element) {
             const group = element.closest('.menu-group');
-            if (group) {
-                group.classList.toggle('open');
-                localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
-            }
+            group.classList.toggle('open');
+            localStorage.setItem('staffProductsMenuOpen', group.classList.contains('open'));
         }
 
         async function loadProfile() {
