@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Profile - Hello Pet Shop</title>
+    <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', 'Noto Sans Thai', sans-serif; background-color: #f8fafc; }
+        
+        .profile-header-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .profile-header-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 32px;
+        }
+        .profile-card-top {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .profile-avatar {
+            width: 72px;
+            height: 72px;
+            background-color: #edf2f7;
+            color: #2f5d3a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .profile-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .profile-info h2 {
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .profile-contact-line {
+            font-size: 13px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .profile-contact-line i { width: 14px; text-align: center; }
+        
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding-top: 20px;
+        }
+        .stat-item {
+            background-color: #f8fafc;
+            padding: 16px 12px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-align: center;
+        }
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .stat-icon.points { background: #fef3c7; color: #d97706; }
+        .stat-icon.orders { background: #e0e7ff; color: #4338ca; }
+        .stat-icon.joined { background: #dcfce7; color: #15803d; }
+        .stat-text strong {
+            display: block;
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+        .stat-text span {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* Pets Section */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 4px;
+        }
+        .section-header h3 {
+            font-size: 18px;
+            color: #1e293b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .pet-card {
+            background-color: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            border: 1px solid #f1f5f9;
+            position: relative;
+            transition: transform 0.2s;
+        }
+        .pet-card:active {
+            transform: scale(0.98);
+        }
+        .pet-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .pet-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background-color: #f1f5f9;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .pet-icon.cat { background-color: #fce7f3; color: #db2777; }
+        .pet-icon.dog { background-color: #dbeafe; color: #2563eb; }
+        .pet-icon.bird { background-color: #dcfce7; color: #16a34a; }
+        .pet-icon.fish { background-color: #e0f2fe; color: #0284c7; }
+
+        .pet-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .pet-info div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pet-actions {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+        }
+        .action-icon {
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 15px;
+            transition: color 0.2s;
+            padding: 4px;
+        }
+        .action-icon:hover { color: #3b82f6; }
+        .action-icon.delete:hover { color: #ef4444; }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background-color: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            padding: 32px;
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            top: 24px; right: 24px;
+            cursor: pointer;
+            font-size: 20px;
+            color: #64748b;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-group.full { grid-column: 1 / -1; }
+
+        /* Premium Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            outline: none;
+            font-family: inherit;
+        }
+        .btn-secondary {
+            background-color: white;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .btn-secondary:hover {
+            background-color: #f8fafc;
+            color: #1e293b;
+            border-color: #94a3b8;
+        }
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+            box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.3);
+            transform: translateY(-1px);
+        }
+    </style>
+
+    <!-- Mobile User-Agent Check -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <i class="fas fa-arrow-left" style="font-size: 20px; cursor: pointer; color: white;" onclick="window.location.href='staff_customers.html'"></i>
+            <h2 style="margin: 0; font-size: 18px; color: white;">Customer Profile</h2>
+            <i class="fas fa-bars hamburger-btn" onclick="toggleSidebar()"></i>
+        </header>
+
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header" style="background-color: #3b5030;">
+                <i class="fas fa-paw"></i>
+                <span>Hello Pet Shop</span>
+            </div>
+            <nav class="sidebar-menu">
+                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Staff</div>
+                <a href="staff_profile.html" class="menu-item">
+                    <i class="fas fa-home"></i>
+                    <span>Profile</span>
+                </a>
+                
+                <div class="menu-group">
+                    <a href="#" class="menu-item" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-box"></i>
+                        <span>Products</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
+                    </a>
+                    <div class="submenu">
+                        <a href="staff_stock.html">Stock Management</a>
+                        <a href="staff_promotions.html">Promotions</a>
+                    </div>
+                </div>
+
+                <a href="staff_orders.html" class="menu-item">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="staff_customers.html" class="menu-item active">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="#" class="menu-item logout-item" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header" style="margin-bottom: 24px;">
+                <button class="btn btn-secondary" onclick="window.location.href='staff_customers.html'" style="margin-right: 16px;">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </button>
+                <h1>Customer Profile</h1>
+            </div>
+
+            <div id="loading" style="text-align: center; padding: 50px; color: #64748b;">Loading profile...</div>
+
+            <div id="contentBlock" style="display: none;">
+                <!-- Profile Header -->
+                <div class="profile-header-card">
+                    <div class="profile-card-top">
+                        <div class="profile-avatar" id="cInitials">
+                            <i class="far fa-user"></i>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="cName">Customer Name</h2>
+                            <div class="profile-contact-line"><i class="far fa-envelope"></i> <span id="cEmail"></span></div>
+                            <div class="profile-contact-line"><i class="fas fa-phone-alt"></i> <span id="cPhone"></span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <div class="stat-icon points"><i class="fas fa-star"></i></div>
+                            <div class="stat-text"><strong id="cPoints">0</strong> <span>Points</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon orders"><i class="fas fa-shopping-bag"></i></div>
+                            <div class="stat-text"><strong id="cOrders">0</strong> <span>Orders</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon joined"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="stat-text"><strong id="cJoined" style="font-size:14px;">-</strong> <span>Joined</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pets Section -->
+                <div class="section-header">
+                    <h3><i class="fas fa-paw" style="color: #2f5d3a;"></i> Registered Pets</h3>
+                    <button class="btn btn-primary" style="background-color: #2f5d3a; color: white; display:flex; align-items:center; gap:6px; border-radius:50px; font-size:13px; font-weight:600; padding:8px 16px;" onclick="openPetModal()"><i class="fas fa-plus"></i> Add Pet</button>
+                </div>
+
+                <div class="pets-grid" id="petsContainer">
+                    <!-- Pets rendered here -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Pet Modal -->
+    <div class="modal" id="petModal">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" onclick="closePetModal()"></i>
+            <h2 id="modalTitle" style="margin-top: 0; margin-bottom: 24px; font-size: 20px;">Add Pet</h2>
+            
+            <form id="petForm">
+                <input type="hidden" id="petId">
+                <input type="hidden" id="customerId">
+                
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label class="form-label">Pet Name <span style="color: red">*</span></label>
+                        <input type="text" class="form-control" id="petName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Pet Type <span style="color: red">*</span></label>
+                        <select class="form-control" id="petType" required>
+                            <option value="Dog">Dog</option>
+                            <option value="Cat">Cat</option>
+                            <option value="Bird">Bird</option>
+                            <option value="Fish">Fish</option>
+                            <option value="Rabbit">Rabbit</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Breed</label>
+                        <input type="text" class="form-control" id="petBreed" placeholder="e.g. Golden Retriever">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Birthdate</label>
+                        <input type="date" class="form-control" id="petBirthdate">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Weight (kg)</label>
+                        <input type="number" step="0.1" class="form-control" id="petWeight" placeholder="0.0">
+                    </div>
+
+                    <div class="form-group full">
+                        <label class="form-label">Allergy Information</label>
+                        <textarea class="form-control" id="petAllergy" rows="2" placeholder="Leave blank if none"></textarea>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn btn-secondary" onclick="closePetModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background-color: #2f5d3a; color: white; display:flex; align-items:center; gap:6px; border-radius:50px; font-size:13px; font-weight:600; padding:8px 16px;">Save Pet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <!-- Cute Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-card" style="text-align: center; padding: 40px 30px; border-radius: 24px; max-width: 320px;">
+            <div style="font-size: 56px; color: #fca5a5; margin-bottom: 20px;">
+                <i class="fas fa-sad-cry"></i>
+            </div>
+            <div class="modal-title" id="confirmModalTitle" style="font-size: 22px; font-weight: 800; color: #1e293b; margin-bottom: 12px;">ยืนยันการลบ</div>
+            <div class="modal-text" id="confirmModalText" style="color: #64748b; margin-bottom: 24px; font-size: 15px; line-height: 1.5;">คุณแน่ใจไหมที่ต้องการลบน้องออกจากระบบ?</div>
+            <div class="modal-btns" style="display: flex; justify-content: center; gap: 12px; flex-direction: column-reverse;">
+                <button class="modal-btn" id="cancelConfirmBtn" style="border-radius: 14px; padding: 14px 24px; background: white; color: #64748b; border: 1px solid #e2e8f0; cursor: pointer; font-weight: 600; width: 100%;">ไม่ลบแล้ว กลับดีกว่า</button>
+                <button class="modal-btn" id="confirmDeleteBtn" style="border-radius: 14px; padding: 14px 24px; background: #ef4444; color: white; border: none; cursor: pointer; font-weight: 600; width: 100%;">ใช่ ลบน้องเลย</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            if(!toast) return;
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const role = user ? (user.role_name || '').toLowerCase() : '';
+            if (!user || role === 'customer') {
+                window.location.href = '/login.html';
+                return null;
+            }
+            return user;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('user');
+                    window.location.href = 'login.html';
+                });
+            }
+            checkAuth();
+        });
+
+        let currentCustomerId = null;
+        let petsData = [];
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        function toggleSubmenu(element) {
+            const group = element.closest('.menu-group');
+            group.classList.toggle('open');
+            localStorage.setItem('staffProductsMenuOpen', group.classList.contains('open'));
+        }
+
+        async function loadProfile() {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentCustomerId = urlParams.get('id');
+
+            if (!currentCustomerId) {
+                document.getElementById('loading').innerHTML = '<span style="color: red;">No Customer ID provided.</span>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/customers/details?id=${currentCustomerId}`);
+                const json = await res.json();
+
+                if (res.ok) {
+                    renderProfile(json.data);
+                } else {
+                    document.getElementById('loading').innerHTML = `<span style="color: red;">Error: ${json.message}</span>`;
+                }
+            } catch (err) {
+                document.getElementById('loading').innerHTML = '<span style="color: red;">Connection error.</span>';
+            }
+        }
+
+        function getIconClass(type) {
+            const t = type.toLowerCase();
+            if (t.includes('cat')) return 'cat fa-cat';
+            if (t.includes('dog')) return 'dog fa-dog';
+            if (t.includes('bird')) return 'bird fa-crow';
+            if (t.includes('fish')) return 'fa-fish';
+            return 'fa-paw';
+        }
+
+        function renderProfile(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('contentBlock').style.display = 'block';
+
+            document.getElementById('cName').textContent = data.name;
+            document.getElementById('cInitials').textContent = data.name ? data.name.charAt(0).toUpperCase() : '?';
+            document.getElementById('cPhone').textContent = data.phone;
+            document.getElementById('cEmail').textContent = data.email;
+            document.getElementById('cPoints').textContent = data.points.toLocaleString();
+            document.getElementById('cOrders').textContent = data.total_orders;
+            document.getElementById('cJoined').textContent = data.joined_date;
+
+            petsData = data.pets;
+            document.getElementById('customerId').value = data.id;
+
+            renderPets();
+        }
+
+        function renderPets() {
+            const container = document.getElementById('petsContainer');
+            
+            if (petsData.length === 0) {
+                container.innerHTML = `<div style="grid-column: 1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 12px; padding: 60px 20px; background: #ffffff; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); text-align:center; border: 1px solid #f1f5f9; margin-top: 8px;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: #f8fafc; display:flex; align-items:center; justify-content:center; color:#cbd5e1; font-size:36px; margin-bottom: 8px;">
+                        <i class="fas fa-paw"></i>
+                    </div>
+                    <h3 style="margin:0; font-size:18px; color:#1e293b; font-weight:700;">No pets yet</h3>
+                    <span style="font-size:14px; color:#64748b; max-width:250px; line-height: 1.5;">Add a pet to start tracking their details and rewards.</span>
+                    <button class="btn btn-primary" style="margin-top: 16px; border-radius:50px; padding:10px 24px; font-weight:600; background-color: #2f5d3a; color: white;" onclick="openPetModal()"><i class="fas fa-plus"></i> Add Pet</button>
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = petsData.map((p, index) => {
+                let ageStr = '-';
+                if (p.birthdate && p.birthdate !== '0000-00-00') {
+                    const diff = new Date() - new Date(p.birthdate);
+                    const ageDt = new Date(diff); 
+                    const years = Math.abs(ageDt.getUTCFullYear() - 1970);
+                    ageStr = years > 0 ? `${years} years` : 'Under 1 yr';
+                }
+
+                return `
+                <div class="pet-card">
+                    <div class="pet-actions">
+                        <i class="fas fa-pen action-icon" onclick="openPetModal(${index})"></i>
+                        <i class="fas fa-trash-alt action-icon delete" onclick="deletePet(${p.pet_id})"></i>
+                    </div>
+                    <div class="pet-header">
+                        <div class="pet-icon ${getIconClass(p.pet_type).split(' ')[0]}">
+                            <i class="fas ${getIconClass(p.pet_type).split(' ')[1] || 'fa-paw'}"></i>
+                        </div>
+                        <div>
+                            <h4 style="margin: 0; font-size: 16px; font-weight:700; color: #1e293b;">${p.pet_name}</h4>
+                            <span style="color: #64748b; font-size: 12px;">${p.pet_type} ${p.breed ? '| ' + p.breed : ''}</span>
+                        </div>
+                    </div>
+                    <div class="pet-info">
+                        <div><i class="fas fa-weight-hanging" style="width:16px; color:#94a3b8;"></i> ${p.weight ? p.weight + ' kg' : 'Unspecified'}</div>
+                        <div><i class="fas fa-birthday-cake" style="width:16px; color:#94a3b8;"></i> ${p.birthdate || 'Unknown'} (${ageStr})</div>
+                        ${p.allergy_info ? 
+                            `<div style="color: #ef4444; margin-top: 8px; padding-top: 12px; border-top: 1px dashed #e2e8f0; font-weight:500;">
+                                <i class="fas fa-exclamation-circle" style="width:16px;"></i> ${p.allergy_info}
+                            </div>` 
+                            : ''
+                        }
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+        function openPetModal(index = null) {
+            const form = document.getElementById('petForm');
+            form.reset();
+            
+            if (index !== null) {
+                const p = petsData[index];
+                document.getElementById('modalTitle').textContent = 'Edit Pet';
+                document.getElementById('petId').value = p.pet_id;
+                document.getElementById('petName').value = p.pet_name;
+                document.getElementById('petType').value = p.pet_type;
+                document.getElementById('petBreed').value = p.breed || '';
+                document.getElementById('petBirthdate').value = p.birthdate || '';
+                document.getElementById('petWeight').value = p.weight || '';
+                document.getElementById('petAllergy').value = p.allergy_info || '';
+            } else {
+                document.getElementById('modalTitle').textContent = 'Add Pet';
+                document.getElementById('petId').value = '0';
+            }
+
+            document.getElementById('petModal').classList.add('active');
+        }
+
+        function closePetModal() {
+            document.getElementById('petModal').classList.remove('active');
+        }
+
+        document.getElementById('petForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const payload = {
+                customer_id: currentCustomerId,
+                pet_id: document.getElementById('petId').value,
+                pet_name: document.getElementById('petName').value,
+                pet_type: document.getElementById('petType').value,
+                breed: document.getElementById('petBreed').value,
+                birthdate: document.getElementById('petBirthdate').value,
+                weight: document.getElementById('petWeight').value,
+                allergy_info: document.getElementById('petAllergy').value,
+            };
+
+            try {
+                const res = await fetch('/api/pets/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                
+                if (res.ok) {
+                    showToast(json.message, "success");
+                    closePetModal();
+                    loadProfile(); // Reload
+                } else {
+                    showToast(json.message || "Failed to save pet", "error");
+                }
+            } catch (err) {
+                showToast("Connection failed", "error");
+            }
+        });
+
+        function showConfirmModal(title, text) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const titleEl = document.getElementById('confirmModalTitle');
+                const textEl = document.getElementById('confirmModalText');
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                const cancelBtn = document.getElementById('cancelConfirmBtn');
+
+                if (title) titleEl.textContent = title;
+                if (text) textEl.textContent = text;
+                
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+
+                const handleConfirm = () => { cleanup(); resolve(true); };
+                const handleCancel = () => { cleanup(); resolve(false); };
+
+                const cleanup = () => {
+                    modal.classList.remove('show');
+                    setTimeout(() => modal.style.display = 'none', 300);
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                };
+
+                confirmBtn.addEventListener('click', handleConfirm);
+                cancelBtn.addEventListener('click', handleCancel);
+            });
+        }
+
+        async function deletePet(petId) {
+            const confirmed = await showConfirmModal("ยืนยันการลบ", "คุณแน่ใจไหมที่ต้องการลบน้องออกจากระบบ?");
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch('/api/pets/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pet_id: petId, customer_id: currentCustomerId })
+                });
+                const json = await res.json();
+                
+                if (res.ok) {
+                    showToast(json.message, "success");
+                    loadProfile(); // Reload
+                } else {
+                    showToast(json.message || "Failed to delete", "error");
+                }
+            } catch (err) {
+                showToast("Connection failed", "error");
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>

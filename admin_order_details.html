@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details - Hello Pet Shop</title>
+    <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .status-pill {
+            padding: 6px 16px; 
+            border-radius: 50px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            width: auto;
+            display: inline-block;
+        }
+        .status-pill.pending { background-color: #fef08a; color: #854d0e; }
+        .status-pill.processing { background-color: #bfdbfe; color: #1e3a8a; }
+        .status-pill.intransit { background-color: #fce7f3; color: #9d174d; }
+        .status-pill.completed { background-color: #dcfce7; color: #166534; }
+        .status-pill.cancelled { background-color: #fecdd3; color: #9f1239; }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        .details-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .info-label {
+            flex: 1;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .info-value {
+            flex: 2;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .order-items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .order-items-table th {
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .order-items-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            font-size: 14px;
+        }
+        .order-product {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .order-product img {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #475569;
+        }
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .status-select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            outline: none;
+            background-color: white;
+            font-size: 14px;
+            color: #1e293b;
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .tracking-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            outline: none;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 1024px) {
+            .details-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+            .left-col, .right-col {
+                min-width: 0;
+            }
+        }
+        @media (max-width: 768px) {
+            .page-header > div {
+                align-items: flex-start !important;
+            }
+            .page-header h1 {
+                flex-wrap: wrap;
+                font-size: 22px !important;
+                line-height: 1.4;
+            }
+            .details-card { 
+                padding: 16px; 
+                max-width: 100%; 
+                overflow: hidden; 
+                box-sizing: border-box; 
+            }
+            .order-items-table {
+                min-width: 400px;
+            }
+            /* Ensure the table wrapper scrolls properly without stretching the card */
+            .table-responsive-wrapper {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .info-row {
+                flex-direction: column;
+                margin-bottom: 16px;
+            }
+            .info-label { margin-bottom: 2px; font-size: 13px; }
+            .info-value { font-size: 15px; word-break: break-all; }
+            .status-pill { padding: 4px 12px; font-size: 12px; }
+        }
+    </style>
+
+    <!-- Mobile User-Agent Check -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <a href="admin_orders.html" style="color: white; text-decoration: none;">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h2>Order Details</h2>
+            <i class="fas fa-bars" id="hamburgerBtn"></i>
+        </header>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-paw"></i>
+                <span>Hello Pet Shop</span>
+            </div>
+            <nav class="sidebar-menu">
+                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
+                <a href="admin_dashboard.html" class="desktop-only-menu menu-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <div class="menu-group">
+                    <a class="menu-item" onclick="toggleSubmenu(this)"><i class="fas fa-box"></i><span>Products</span><i class="fas fa-chevron-down menu-arrow"></i></a>
+                    <div class="submenu">
+                        <a href="admin_stock.html">Stock Management</a>
+                        <a href="admin_product_management.html" class="desktop-only-menu">Product Management</a>
+                        <a href="admin_promotions.html">Promotions</a>
+                    </div>
+                </div>
+                <a href="admin_staff.html" class="menu-item"><i class="fas fa-users-cog"></i><span>Staff Management</span></a>
+                <a href="admin_orders.html" class="menu-item active"><i class="fas fa-file-invoice"></i><span>Orders</span></a>
+                <a href="admin_customers.html" class="menu-item">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span></a>
+                <a href="#" class="menu-item logout-item" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <a href="admin_orders.html" style="color: #64748b; font-size: 20px; text-decoration: none; padding: 8px; border-radius: 8px; background: #f1f5f9;"><i class="fas fa-arrow-left"></i></a>
+                    <div>
+                        <h1 style="margin: 0; display: flex; align-items: center; gap: 12px;">Order <span id="displayOrderId">#ORD-000</span> <span id="headerStatus" class="status-pill pending">Pending</span></h1>
+                        <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;"><i class="far fa-calendar-alt"></i> Date: <span id="displayDate">YYYY-MM-DD HH:MM</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details-grid">
+                <!-- Left Column -->
+                <div class="left-col">
+                    <div class="details-card">
+                        <div class="card-header"><i class="fas fa-user" style="color: #3b82f6;"></i> Customer Information</div>
+                        <div class="info-row">
+                            <div class="info-label">Customer Name</div>
+                            <div class="info-value" id="cName">Somchai PetLover</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Email</div>
+                            <div class="info-value" id="cEmail">somchai@example.com</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Phone</div>
+                            <div class="info-value" id="cPhone">089-123-4567</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Shipping Address</div>
+                            <div class="info-value" id="cAddress" style="line-height: 1.5;">123 Happy Street, Pet City, Bangkok 10110</div>
+                        </div>
+                    </div>
+
+                    <div class="details-card">
+                        <div class="card-header"><i class="fas fa-shopping-basket" style="color: #10b981;"></i> Order Items</div>
+                        <div class="table-responsive-wrapper">
+                            <table class="order-items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th style="text-align: center;">Price</th>
+                                        <th style="text-align: center;">Qty</th>
+                                        <th style="text-align: right;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orderItemsBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="right-col">
+                    <div class="details-card" style="background-color: #f8fafc; border: 1px solid #e2e8f0; box-shadow: none;">
+                        <div class="card-header"><i class="fas fa-receipt" style="color: #8b5cf6;"></i> Payment Summary</div>
+                        <div class="summary-row"><span>Subtotal</span> <span id="sSubtotal">$0.00</span></div>
+                        <div class="summary-row"><span>Shipping Fee</span> <span id="sShipping">$0.00</span></div>
+                        <div class="summary-row" style="color: #10b981;"><span>Discount</span> <span id="sDiscount">-$0.00</span></div>
+                        <div class="summary-total"><span>Grand Total</span> <span id="sTotal" style="color: #3b82f6;">$0.00</span></div>
+                    </div>
+
+                    <div class="details-card">
+                        <div class="card-header"><i class="fas fa-truck-fast" style="color: #f59e0b;"></i> Update Status</div>
+                        
+                        <form id="statusForm">
+                            <label class="form-label">Order Status</label>
+                            <select class="status-select" id="orderStatusSelect">
+                                <option value="Pending">Pending (รอดำเนินการ)</option>
+                                <option value="Processing">Processing (กำลังแพ็คสินค้า)</option>
+                                <option value="In Transit">In Transit (มอบให้ขนส่งแล้ว)</option>
+                                <option value="Completed">Completed (ลูกค้าได้รับสินค้า)</option>
+                                <option value="Cancelled">Cancelled (ยกเลิก)</option>
+                            </select>
+
+                            <div id="trackingContainer" style="display: none;">
+                                <label class="form-label" style="margin-top: 15px;">Delivery Company</label>
+                                <select class="status-select" id="deliveryCompanySelect">
+                                    <option value="">Select Company</option>
+                                </select>
+
+                                <label class="form-label" style="margin-top: 15px;">Tracking Number (optional)</label>
+                                <input type="text" id="trackingInput" class="tracking-input" placeholder="e.g. TH123456789">
+                            </div>
+
+                            <button type="submit" class="save-btn" style="width: 100%; padding: 12px; font-size: 15px; background: #3b82f6;">Update Order Status</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Fetch True data from API
+        function getStatusClass(status) {
+            return status.toLowerCase().replace(" ", "");
+        }
+
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role_name.toLowerCase() !== 'admin') {
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function loadCompanies() {
+            try {
+                const res = await fetch('/api/deliveries/companies');
+                const json = await res.json();
+                if (res.ok && json.data) {
+                    const select = document.getElementById('deliveryCompanySelect');
+                    json.data.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.company_id;
+                        opt.textContent = `${c.company_name} (เริ่มต้น ฿${parseFloat(c.base_rate)} + ฿${parseFloat(c.rate_per_kg)}/kg)`;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to load delivery companies", error);
+            }
+        }
+
+        async function initData() {
+            await loadCompanies();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('id');
+
+            if (!orderId) {
+                showToast("ไม่พบ Order ID", "error");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/orders/details?id=' + orderId);
+                const json = await res.json();
+                
+                if (!res.ok) throw new Error(json.message || 'Error fetching order');
+                
+                const data = json.data;
+
+            // Header Elements
+            document.getElementById('displayOrderId').textContent = data.number;
+            document.getElementById('displayDate').textContent = data.date;
+            
+            const headerStatus = document.getElementById('headerStatus');
+            headerStatus.textContent = data.status;
+            headerStatus.className = 'status-pill ' + getStatusClass(data.status);
+            
+            // Customer Info Phase
+            document.getElementById('cName').textContent = data.customer.name;
+            document.getElementById('cEmail').textContent = data.customer.email;
+            document.getElementById('cPhone').textContent = data.customer.phone;
+            document.getElementById('cAddress').textContent = data.customer.address;
+
+            // Items
+            const tbody = document.getElementById('orderItemsBody');
+            tbody.innerHTML = data.items.map(item => `
+                <tr>
+                    <td>
+                        <div class="order-product">
+                            <img src="${item.image}" alt="">
+                            <div style="font-weight: 600; color: #334155;">${item.name}</div>
+                        </div>
+                    </td>
+                    <td style="text-align: center; color: #64748b;">$${Number(item.price).toFixed(2)}</td>
+                    <td style="text-align: center; font-weight: 500;">x${item.qty}</td>
+                    <td style="text-align: right; font-weight: 600; color: #0f172a;">$${(Number(item.price) * Number(item.qty)).toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            // Summary
+            document.getElementById('sSubtotal').textContent = '$' + data.summary.subtotal.toFixed(2);
+            document.getElementById('sShipping').textContent = '$' + data.summary.shipping.toFixed(2);
+            document.getElementById('sDiscount').textContent = '-$' + data.summary.discount.toFixed(2);
+            document.getElementById('sTotal').textContent = '$' + data.summary.total.toFixed(2);
+
+            // Set Form Data
+            const select = document.getElementById('orderStatusSelect');
+            select.value = data.status;
+            
+            if (data.tracking_number) {
+                document.getElementById('trackingInput').value = data.tracking_number;
+            }
+            if (data.company_id) {
+                document.getElementById('deliveryCompanySelect').value = data.company_id;
+            }
+            
+            toggleTrackingContainer(data.status);
+            } catch (error) {
+                console.error(error);
+                showToast("เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
+            }
+        }
+
+        function toggleTrackingContainer(status) {
+            const tContainer = document.getElementById('trackingContainer');
+            if (status === 'In Transit' || status === 'Completed') {
+                tContainer.style.display = 'block';
+            } else {
+                tContainer.style.display = 'none';
+            }
+        }
+
+        document.getElementById('orderStatusSelect').addEventListener('change', (e) => {
+            toggleTrackingContainer(e.target.value);
+        });
+
+        document.getElementById('statusForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newStatus = document.getElementById('orderStatusSelect').value;
+            const trackingNo = document.getElementById('trackingInput').value;
+            const companyId = document.getElementById('deliveryCompanySelect').value;
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('id');
+
+            try {
+                const res = await fetch('/api/orders/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        order_id: Number(orderId),
+                        status: newStatus,
+                        tracking_number: trackingNo || null,
+                        company_id: companyId || null
+                    })
+                });
+                
+                if (res.ok) {
+                    const headerStatus = document.getElementById('headerStatus');
+                    headerStatus.textContent = newStatus;
+                    headerStatus.className = 'status-pill ' + getStatusClass(newStatus);
+                    showToast("อัปเดตสถานะสำเร็จ!", "success");
+                } else {
+                    const error = await res.json();
+                    showToast(error.message || "ล้มเหลวในการอัปเดต", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("ระบบขัดข้อง", "error");
+            }
+        });
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        }
+
+        document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
+        document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+
+        function toggleSubmenu(el) {
+            const group = el.closest('.menu-group');
+            if (group) {
+                group.classList.toggle('open');
+                localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
+            }
+        }
+
+        // Restore submenu state
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuGroup = document.querySelector('.menu-group');
+            if (menuGroup) {
+                const isOpen = localStorage.getItem('productsMenuOpen');
+                if (isOpen === 'true') menuGroup.classList.add('open');
+                else if (isOpen === 'false') menuGroup.classList.remove('open');
+            }
+        });
+
+        // Initialize
+        checkAuth();
+        setTimeout(initData, 100);
+    </script>
+</body>
+</html>

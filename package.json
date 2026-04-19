@@ -1,0 +1,30 @@
+{
+  "name": "hello_pet_shop",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juju-eiei/Hello_Pet_Shop.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/juju-eiei/Hello_Pet_Shop/issues"
+  },
+  "homepage": "https://github.com/juju-eiei/Hello_Pet_Shop#readme",
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2",
+    "vite": "^8.0.3",
+    "vite-plugin-full-reload": "^1.2.0"
+  }
+}

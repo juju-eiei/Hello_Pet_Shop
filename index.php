@@ -13,9 +13,6 @@ $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 if (strpos($request_uri, '/api/') !== false) {
     require_once __DIR__ . '/routes/api.php';
 } else {
-<<<<<<< Updated upstream
-    echo json_encode(["message" => "Hello Pet Shop API is running."]);
-=======
     // Map clean URLs to HTML files
     $routes = [
         '/' => 'products.html',
@@ -32,7 +29,8 @@ if (strpos($request_uri, '/api/') !== false) {
         '/admin/stock' => 'admin_stock.html',
         '/admin/products' => 'admin_product_management.html',
         '/admin/products/edit' => 'admin_product_edit.html',
-        '/admin/promotions' => 'admin_promotions.html'
+        '/admin/promotions' => 'admin_promotions.html',
+        '/staff/profile' => 'staff_profile.html'
     ];
 
     $path = rtrim($request_uri, '/');
@@ -63,6 +61,5 @@ if (strpos($request_uri, '/api/') !== false) {
             echo json_encode(["message" => "Route not found: " . $request_uri]);
         }
     }
->>>>>>> Stashed changes
 }
 ?>

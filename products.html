@@ -23,7 +23,7 @@
     <script>
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user || user.role_name.toLowerCase() !== 'customer') {
-            // window.location.href = '/login';
+            window.location.href = '/login';
         }
     </script>
 
@@ -229,8 +229,6 @@
             </div>
         </div>
     </footer>
-
-
     <!-- Toast -->
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl transition-all duration-500 opacity-0 translate-y-4 pointer-events-none z-50"></div>
 </body>

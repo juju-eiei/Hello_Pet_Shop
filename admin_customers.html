@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers - Hello Pet Shop</title>
+    <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <style>
+        body { font-family: 'Inter', 'Noto Sans Thai', sans-serif; background-color: #f8fafc; }
+        
+        .search-container {
+            background-color: #ffffff;
+            border-radius: 50px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .search-container input {
+            background-color: transparent;
+            color: #1e293b;
+            border: none;
+            outline: none;
+            width: 100%;
+            margin-left: 12px;
+            font-size: 15px;
+        }
+
+        /* Customer Cards Layout */
+        .customers-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .customer-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .customer-card:active {
+            transform: scale(0.98);
+            background-color: #f8fafc;
+        }
+        
+        .customer-card-top {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .customer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #edf2f7;
+            color: #2f5d3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        .customer-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
+            min-width: 0;
+        }
+        .customer-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .customer-id {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .customer-email {
+            font-size: 12px;
+            color: #64748b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .customer-action {
+            flex-shrink: 0;
+        }
+        .btn-view-profile {
+            background-color: #2f5d3a;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none;
+        }
+
+        .customer-card-bottom {
+            display: flex;
+            flex-direction: row;
+            gap: 16px;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 12px;
+        }
+        .customer-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            background: #f8fafc;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        /* Mobile specific overrides */
+        @media (max-width: 768px) {
+            .table-header { display: none !important; }
+            .stock-table { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
+            .page-header { margin-bottom: 20px; }
+        }
+        
+        /* Bottom Nav Highlight Fix inherited */
+        .bottom-nav { border-top: 1px solid #e2e8f0; }
+    </style>
+
+    <!-- Mobile User-Agent Check -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <i class="fas fa-bars" id="hamburgerBtn"></i>
+            <h2>Customers</h2>
+            <i class="fas fa-bell"></i>
+        </header>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-paw"></i>
+                <span>Hello Pet Shop</span>
+            </div>
+            <nav class="sidebar-menu">
+                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
+                <a href="admin_dashboard.html" class="desktop-only-menu menu-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="menu-group">
+                    <a class="menu-item" onclick="toggleSubmenu(this)">
+                        <i class="fas fa-box"></i>
+                        <span>Products</span>
+                        <i class="fas fa-chevron-down menu-arrow"></i>
+                    </a>
+                    <div class="submenu">
+                        <a href="admin_stock.html">Stock Management</a>
+                        <a href="admin_product_management.html" class="desktop-only-menu">Product Management</a>
+                        <a href="admin_promotions.html">Promotions</a>
+                    </div>
+                </div>
+                <a href="admin_staff.html" class="menu-item">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Staff Management</span>
+                </a>
+                <a href="admin_orders.html" class="menu-item">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="admin_customers.html" class="menu-item active">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+                <a href="#" class="menu-item logout-item" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Customer Management</h1>
+            </div>
+
+            <!-- Search -->
+            <div class="search-container">
+                <i class="fas fa-search" style="color: #64748b;"></i>
+                <input type="text" id="searchInput" placeholder="Search customers by name, phone, or email...">
+            </div>
+
+            <!-- Table -->
+            <div class="stock-table">
+                <div class="table-header" style="display: flex; padding: 16px 24px; border-bottom: 1px solid #e2e8f0; background-color: #f8fafc; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                    <span style="flex: 2;">Customer Name</span>
+                    <span style="flex: 2;">Contact Info</span>
+                    <span style="flex: 1;">Reward Points</span>
+                    <span style="flex: 2;">Pets</span>
+                    <span style="flex: 1; text-align: right;">Action</span>
+                </div>
+                <div id="customersContainer">
+                    <div style="padding: 50px; text-align: center; color: #718096;">Loading customers...</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation for Mobile -->
+        <nav class="bottom-nav">
+            <a href="admin_dashboard.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="admin_orders.html" class="nav-item">
+                <i class="fas fa-file-invoice"></i>
+                <span>Orders</span>
+            </a>
+            <a href="admin_stock.html" class="nav-item">
+                <i class="fas fa-box"></i>
+                <span>Stock</span>
+            </a>
+            <a href="admin_customers.html" class="nav-item active">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </a>
+            <a href="admin_promotions.html" class="nav-item">
+                <i class="fas fa-bullhorn"></i>
+                <span>Promotions</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/js/utils.js"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        }
+
+        document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
+        document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+
+        function toggleSubmenu(el) {
+            const group = el.closest('.menu-group');
+            if (group) {
+                group.classList.toggle('open');
+                localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
+            }
+        }
+
+        // Restore submenu state
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuGroup = document.querySelector('.menu-group');
+            if (menuGroup) {
+                const isOpen = localStorage.getItem('productsMenuOpen');
+                if (isOpen === 'true') menuGroup.classList.add('open');
+                else if (isOpen === 'false') menuGroup.classList.remove('open');
+            }
+        });
+
+        // Fetch Customers
+        let allCustomers = [];
+
+        async function loadCustomers() {
+            try {
+                const res = await fetch('/api/customers');
+                const json = await res.json();
+                if (res.ok) {
+                    allCustomers = json.data;
+                    renderCustomers(allCustomers);
+                } else {
+                    document.getElementById('customersContainer').innerHTML = `<div style="padding: 50px; text-align: center; color: #ef4444;">Error: ${json.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('customersContainer').innerHTML = `<div style="padding: 50px; text-align: center; color: #ef4444;">Connection failed</div>`;
+            }
+        }
+
+        function renderCustomers(data) {
+            const container = document.getElementById('customersContainer');
+            // Remove the hardcoded table-header from DOM on JS render to be safe
+            const oldHeader = document.querySelector('.table-header');
+            if (oldHeader && window.innerWidth <= 768) oldHeader.style.display = 'none';
+
+            if (data.length === 0) {
+                container.innerHTML = `<div style="padding: 50px; text-align: center; color: #64748b; font-weight: 500;">No customers found.</div>`;
+                return;
+            }
+
+            container.innerHTML = '<div class="customers-container">' + data.map(c => {
+                const initial = c.name ? c.name.charAt(0).toUpperCase() : '?';
+                const idStr = 'CUS-' + String(c.customer_id).padStart(4, '0');
+                const petsLabel = c.pet_count > 0 ? `${c.pet_count} Pets <span style="font-weight:400; color:#64748b; font-size:11px;">(${c.pet_types || ''})</span>` : '0 Pets';
+                
+                return `
+                    <div class="customer-card" onclick="viewCustomer(${c.customer_id})">
+                        <div class="customer-card-top">
+                            <div class="customer-avatar">${initial}</div>
+                            <div class="customer-info">
+                                <div class="customer-name">${c.name}</div>
+                                <div class="customer-id">${idStr}</div>
+                                <div class="customer-email">
+                                    <i class="far fa-envelope" style="margin-right:2px; font-size:10px;"></i> ${c.email || '-'}
+                                    &nbsp;|&nbsp; 
+                                    <i class="fas fa-phone-alt" style="margin-right:2px; font-size:10px;"></i> ${c.phone || '-'}
+                                </div>
+                            </div>
+                            <div class="customer-action">
+                                <button class="btn-view-profile">View</button>
+                            </div>
+                        </div>
+                        <div class="customer-card-bottom">
+                            <div class="customer-stat">
+                                <i class="fas fa-star" style="color: #f59e0b;"></i> ${c.points} Pts
+                            </div>
+                            <div class="customer-stat">
+                                <i class="fas fa-paw" style="color: #2f5d3a;"></i> ${petsLabel}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('') + '</div>';
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = allCustomers.filter(c => 
+                c.name.toLowerCase().includes(val) || 
+                (c.phone && c.phone.includes(val)) ||
+                (c.email && c.email.toLowerCase().includes(val))
+            );
+            renderCustomers(filtered);
+        });
+
+        function viewCustomer(id) {
+            window.location.href = `admin_customer_details.html?id=${id}`;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCustomers();
+        });
+    </script>
+</body>
+</html>
