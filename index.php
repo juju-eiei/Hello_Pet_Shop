@@ -13,6 +13,56 @@ $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 if (strpos($request_uri, '/api/') !== false) {
     require_once __DIR__ . '/routes/api.php';
 } else {
+<<<<<<< Updated upstream
     echo json_encode(["message" => "Hello Pet Shop API is running."]);
+=======
+    // Map clean URLs to HTML files
+    $routes = [
+        '/' => 'products.html',
+        '/home' => 'products.html',
+        '/login' => 'login.html',
+        '/register' => 'register.html',
+        '/products' => 'products.html',
+        '/profile' => 'profile.html',
+        '/cart' => 'cart.html',
+        '/checkout' => 'checkout.html',
+        '/order-history' => 'order-history.html',
+        '/my-pets' => 'my-pets.html',
+        '/contact' => 'contact.html',
+        '/admin/stock' => 'admin_stock.html',
+        '/admin/products' => 'admin_product_management.html',
+        '/admin/products/edit' => 'admin_product_edit.html',
+        '/admin/promotions' => 'admin_promotions.html'
+    ];
+
+    $path = rtrim($request_uri, '/');
+    if ($path === '') $path = '/';
+
+    if (isset($routes[$path])) {
+        readfile(__DIR__ . '/' . $routes[$path]);
+    } else {
+        // Fallback for real static files (images, build assets)
+        $file_path = __DIR__ . $request_uri;
+        if (file_exists($file_path) && is_file($file_path)) {
+            // Setting correct content type for common files
+            $ext = pathinfo($file_path, PATHINFO_EXTENSION);
+            $mime_types = [
+                'css' => 'text/css',
+                'js' => 'application/javascript',
+                'png' => 'image/png',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'svg' => 'image/svg+xml'
+            ];
+            if (isset($mime_types[$ext])) {
+                header("Content-Type: " . $mime_types[$ext]);
+            }
+            readfile($file_path);
+        } else {
+            http_response_code(404);
+            echo json_encode(["message" => "Route not found: " . $request_uri]);
+        }
+    }
+>>>>>>> Stashed changes
 }
 ?>

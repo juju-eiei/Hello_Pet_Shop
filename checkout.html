@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Hello Pet Shop</title>
+    <!-- Use Vite to load styles -->
+    <script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="/src/js/checkout.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', 'Kanit', sans-serif; }
+        .nav-green { background-color: #2d5a27; }
+        .btn-green { background-color: #8bb35c; }
+        .btn-green:hover { background-color: #7a9e4f; }
+        
+        /* Custom radio buttons */
+        .option-card input:checked + div {
+            border-color: #8bb35c;
+            background-color: #f7fafe;
+        }
+        .option-card input:checked + div .radio-circle {
+            border-color: #8bb35c;
+        }
+        .option-card input:checked + div .radio-circle::after {
+            transform: scale(1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Role Check script -->
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.role_name.toLowerCase() !== 'customer') {
+            // window.location.href = '/login'; 
+        }
+    </script>
+
+    <!-- Header / Navbar -->
+    <header class="nav-green text-white shadow-md">
+        <nav class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-6">
+                <!-- Logo -->
+                <a href="/home" class="flex items-center space-x-2 hover:opacity-90 transition-opacity">
+                    <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#2d5a27]">
+                        <i class="fas fa-paw text-lg"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">Hello Pet Shop</span>
+                </a>
+
+                <!-- Nav Links -->
+                <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
+                    <a href="/home" class="hover:text-gray-200 transition-colors">Home</a>
+                    <a href="/my-pets" class="hover:text-gray-200 transition-colors">My Pets</a>
+                    <a href="/order-history" class="hover:text-gray-200 transition-colors">Order History</a>
+                    <a href="/contact" class="hover:text-gray-200 transition-colors">Contact Us</a>
+                </div>
+            </div>
+
+            <!-- Right side icons -->
+            <div class="flex items-center space-x-8">
+                <a href="/cart" class="relative hover:text-gray-200 transition-colors block">
+                    <i class="fas fa-shopping-basket text-xl"></i>
+                    <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full hidden">0</span>
+                </a>
+                <div class="relative">
+                    <button id="navProfileMenuBtn" class="block w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-transparent shadow-sm hover:border-white transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#2d5a27]">
+                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center bg-gray-50">
+                            <i class="fas fa-user text-gray-400 text-[15px]"></i>
+                        </div>
+                        <img id="navProfileImage" src="" alt="Profile" class="w-full h-full object-cover hidden">
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="navProfileDropdown" class="absolute right-0 mt-3 w-44 bg-white rounded-xl shadow-xl py-2 border border-gray-100 hidden z-50 transform origin-top-right transition-all">
+                        <a href="/profile" class="block px-4 py-2.5 text-[15px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa-regular fa-user mr-2 text-gray-500"></i> ข้อมูลโปรไฟล์
+                        </a>
+                        <div class="border-t border-gray-100 my-1"></div>
+                        <button id="logoutBtn" class="w-full text-left px-4 py-2.5 text-[15px] font-medium text-red-600 hover:bg-red-50 transition-colors">
+                            <i class="fas fa-sign-out-alt mr-2 text-red-500"></i> ออกจากระบบ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow w-full max-w-6xl mx-auto px-4 py-10 pb-24">
+        
+        <!-- Page Title & Back -->
+        <div class="flex items-center space-x-4 mb-8">
+            <a href="/cart" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-500 hover:text-gray-800 transition-colors">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-3xl font-bold text-gray-800">Checkout</h1>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Left Column: Forms -->
+            <div class="lg:col-span-7 xl:col-span-8 space-y-6">
+                
+                <!-- 1. Shipping Address -->
+                <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mr-3 text-sm">1</div>
+                        ที่อยู่จัดส่ง (Shipping Address)
+                    </h2>
+                    
+                    <form id="addressForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล (Full Name)</label>
+                            <input type="text" id="fullName" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ (Phone)</label>
+                            <input type="tel" id="phone" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่ (Address Details)</label>
+                            <textarea id="address" rows="3" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all resize-none"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด (Province)</label>
+                                <input type="text" id="province" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">รหัสไปรษณีย์ (Zip Code)</label>
+                                <input type="text" id="zipcode" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 2. Delivery Options -->
+                <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mr-3 text-sm">2</div>
+                        วิธีการจัดส่ง (Delivery Options)
+                    </h2>
+                    
+                    <div class="space-y-3">
+                        <label class="option-card block cursor-pointer">
+                            <input type="radio" name="deliveryMethod" value="standard" class="hidden" checked>
+                            <div class="border-2 border-gray-100 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center space-x-4">
+                                    <div class="radio-circle w-5 h-5 rounded-full border-2 border-gray-300 relative flex items-center justify-center">
+                                        <div class="w-2.5 h-2.5 rounded-full bg-[#8bb35c] scale-0 transition-transform duration-200 absolute"></div>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-gray-800">ส่งธรรมดา (Standard Delivery)</div>
+                                        <div class="text-sm text-gray-500">ภายใน 3-5 วันทำการ</div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-gray-800" data-fee="2">+$2.00</div>
+                            </div>
+                        </label>
+                        
+                        <label class="option-card block cursor-pointer">
+                            <input type="radio" name="deliveryMethod" value="express" class="hidden">
+                            <div class="border-2 border-gray-100 rounded-xl p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center space-x-4">
+                                    <div class="radio-circle w-5 h-5 rounded-full border-2 border-gray-300 relative flex items-center justify-center">
+                                        <div class="w-2.5 h-2.5 rounded-full bg-[#8bb35c] scale-0 transition-transform duration-200 absolute"></div>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-gray-800">ส่งด่วนพิเศษ (Express Delivery)</div>
+                                        <div class="text-sm text-gray-500">ภายใน 1-2 วันทำการ</div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-gray-800" data-fee="5">+$5.00</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. Payment Methods -->
+                <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mr-3 text-sm">3</div>
+                        วิธีชำระเงิน (Payment Methods)
+                    </h2>
+                    
+                    <div class="space-y-3">
+                        <label class="option-card block cursor-pointer">
+                            <input type="radio" name="paymentMethod" value="transfer" class="hidden" checked>
+                            <div class="border-2 border-gray-100 rounded-xl p-4 flex items-center hover:bg-gray-50 transition-colors">
+                                <div class="radio-circle w-5 h-5 rounded-full border-2 border-gray-300 relative flex items-center justify-center shrink-0">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-[#8bb35c] scale-0 transition-transform duration-200 absolute"></div>
+                                </div>
+                                <div class="ml-4 flex items-center">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/PromptPay-logo.png" alt="PromptPay" class="h-6 mr-3">
+                                    <div>
+                                        <div class="font-bold text-gray-800">โอนผ่านธนาคาร (Bank Transfer / PromptPay)</div>
+                                        <div class="text-sm text-gray-500">สแกน QR Code หรือโอนผ่านเลขบัญชี</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                        
+                        <label class="option-card block cursor-pointer">
+                            <input type="radio" name="paymentMethod" value="cod" class="hidden">
+                            <div class="border-2 border-gray-100 rounded-xl p-4 flex items-center hover:bg-gray-50 transition-colors">
+                                <div class="radio-circle w-5 h-5 rounded-full border-2 border-gray-300 relative flex items-center justify-center shrink-0">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-[#8bb35c] scale-0 transition-transform duration-200 absolute"></div>
+                                </div>
+                                <div class="ml-4 flex items-center text-gray-800">
+                                    <i class="fas fa-money-bill-wave text-xl text-green-600 mr-3"></i>
+                                    <div>
+                                        <div class="font-bold text-gray-800">เก็บเงินปลายทาง (Cash on Delivery)</div>
+                                        <div class="text-sm text-gray-500">ชำระเงินเมื่อได้รับสินค้า</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Order Summary -->
+            <div class="lg:col-span-5 xl:col-span-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 sticky top-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">สรุปคำสั่งซื้อ (Order Summary)</h2>
+                    
+                    <!-- Items List -->
+                    <div id="summaryItemsContainer" class="space-y-4 mb-6 pb-6 border-b border-gray-100 max-h-60 overflow-y-auto pr-2">
+                        <!-- Populated by checkout.js -->
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between text-gray-600">
+                            <span>ยอดรวมสินค้า (Subtotal)</span>
+                            <span id="summarySubtotal" class="font-medium"></span>
+                        </div>
+                        <div class="flex justify-between text-gray-600">
+                            <span>ค่าจัดส่ง (Shipping)</span>
+                            <span id="summaryShipping" class="font-medium"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-4 mb-8">
+                        <div class="flex justify-between items-center">
+                            <span class="text-lg font-bold text-gray-800">ยอดสุทธิ (Total)</span>
+                            <span id="summaryTotal" class="text-2xl font-bold text-[#8bb35c]"></span>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <button id="confirmOrderBtn" class="w-full btn-green text-white py-4 rounded-xl font-bold text-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center space-x-2">
+                        <i class="fas fa-lock text-sm opacity-80"></i>
+                        <span>ยืนยันการสั่งซื้อ</span>
+                    </button>
+                    <p class="text-center text-xs text-gray-400 mt-4"><i class="fas fa-shield-alt mr-1"></i>Secure Checkout</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Component -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl transition-all duration-500 opacity-0 translate-y-4 pointer-events-none z-50"></div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-8 text-center max-w-sm w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check text-4xl text-green-500"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">สั่งซื้อสำเร็จ!</h3>
+            <p class="text-gray-500 mb-8">เราได้รับคำสั่งซื้อของคุณแล้ว จะทำการจัดส่งให้เร็วที่สุด รหัสคำสั่งซื้อ: #<span id="mockOrderId" class="font-semibold text-gray-700"></span></p>
+            <a href="/products" class="w-full block bg-gray-100 text-gray-800 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-colors">กลับหน้าแรก</a>
+            <button id="viewOrderBtn" class="w-full block bg-transparent text-blue-600 font-medium py-3 rounded-xl hover:bg-blue-50 transition-colors mt-2">ดูประวัติการสั่งซื้อ</button>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - Hello Pet Shop</title>
+    <!-- Use Vite to load styles -->
+    <script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="/src/js/cart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', 'Kanit', sans-serif;
+        }
+
+        .nav-green {
+            background-color: #2d5a27;
+        }
+
+        .btn-green {
+            background-color: #8bb35c;
+        }
+
+        .btn-green:hover {
+            background-color: #7a9e4f;
+        }
+    </style>
+</head>
+
+<body class="bg-white min-h-screen flex flex-col">
+    <!-- Role Check script -->
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.role_name.toLowerCase() !== 'customer') {
+            // window.location.href = '/login'; 
+        }
+    </script>
+
+    <!-- Header / Navbar -->
+    <header class="nav-green text-white shadow-md">
+        <nav class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-6">
+                <!-- Logo -->
+                <a href="/home" class="flex items-center space-x-2 hover:opacity-90 transition-opacity">
+                    <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#2d5a27]">
+                        <i class="fas fa-paw text-lg"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">Hello Pet Shop</span>
+                </a>
+
+                <!-- Nav Links -->
+                <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
+                    <a href="/home" class="hover:text-gray-200 transition-colors">Home</a>
+                    <a href="/my-pets" class="hover:text-gray-200 transition-colors">My Pets</a>
+                    <a href="/order-history" class="hover:text-gray-200 transition-colors">Order History</a>
+                    <a href="/contact" class="hover:text-gray-200 transition-colors">Contact Us</a>
+                </div>
+            </div>
+
+            <!-- Right side icons -->
+            <div class="flex items-center space-x-8">
+                <a href="/cart" class="relative hover:text-gray-200 transition-colors block">
+                    <i class="fas fa-shopping-basket text-xl"></i>
+                    <span id="cartCount"
+                        class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full hidden">0</span>
+                </a>
+                <div class="relative">
+                    <button id="navProfileMenuBtn"
+                        class="block w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-transparent shadow-sm hover:border-white transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#2d5a27]">
+                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center bg-gray-50">
+                            <i class="fas fa-user text-gray-400 text-[15px]"></i>
+                        </div>
+                        <img id="navProfileImage" src="" alt="Profile" class="w-full h-full object-cover hidden">
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="navProfileDropdown"
+                        class="absolute right-0 mt-3 w-44 bg-white rounded-xl shadow-xl py-2 border border-gray-100 hidden z-50 transform origin-top-right transition-all">
+                        <a href="/profile"
+                            class="block px-4 py-2.5 text-[15px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <i class="fa-regular fa-user mr-2 text-gray-500"></i> ข้อมูลโปรไฟล์
+                        </a>
+                        <div class="border-t border-gray-100 my-1"></div>
+                        <button id="logoutBtn"
+                            class="w-full text-left px-4 py-2.5 text-[15px] font-medium text-red-600 hover:bg-red-50 transition-colors">
+                            <i class="fas fa-sign-out-alt mr-2 text-red-500"></i> ออกจากระบบ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow w-full max-w-5xl mx-auto px-4 py-10">
+        <h1 class="text-[28px] font-bold text-[#1f2937] mb-8">Shopping Cart</h1>
+
+        <!-- Cart Items Container -->
+        <!-- Background matches the faint light cyan-gray in the image -->
+        <div id="cartItemsContainer" class="bg-[#f7fafe] rounded-2xl md:px-12 md:py-10 px-6 py-8 mb-10 min-h-[200px]">
+            <!-- Populated dynamically via cart.js -->
+        </div>
+
+        <!-- Subtotal Section -->
+        <div class="flex flex-col mb-12 ml-2">
+            <h2 class="text-[19px] font-bold text-[#1f2937]">ยอดรวม</h2>
+            <p id="cartSubtotal" class="text-[#5e8b7e] text-[15px] mt-1.5">$0</p>
+        </div>
+
+        <!-- Proceed Button -->
+        <div class="flex justify-end">
+            <button id="checkoutBtn"
+                class="btn-green text-white px-7 py-3 rounded-xl font-medium transition-colors tracking-wide text-[15px]">
+                สั่งซื้อ
+            </button>
+        </div>
+    </main>
+
+    <!-- Toast Component -->
+    <div id="toast"
+        class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl transition-all duration-500 opacity-0 translate-y-4 pointer-events-none z-50">
+    </div>
+</body>
+
+</html>

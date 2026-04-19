@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Pet Shop</title>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center space-y-4">
+        <h1 class="text-2xl font-bold text-gray-800">Redirecting to Hello Pet Shop...</h1>
+        <div class="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+    </div>
+
+    <script type="module">
+        import './src/js/main.js';
+        
+        // Initial routing logic
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) {
+            window.location.href = '/login';
+        } else {
+            const role = user.role_name?.toLowerCase();
+            if (role === 'admin') {
+                window.location.href = '/admin/stock';
+            } else {
+                window.location.href = '/products';
+            }
+        }
+    </script>
+</body>
+</html>
