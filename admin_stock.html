@@ -282,8 +282,13 @@
                     showToast("อัปเดตสต็อกเรียบร้อย", "success");
                     fetchProducts();
                 } else {
+                    if (response.status === 401 || response.status === 403) {
+                        localStorage.removeItem('user');
+                        window.location.href = 'login.html';
+                        return;
+                    }
                     const result = await response.json();
-                    showToast(result.message, "error");
+                    showToast(result.message || "เกิดข้อผิดพลาด", "error");
                 }
             } catch (error) {
                 showToast("เกิดข้อผิดพลาดในการอัปเดต", "error");

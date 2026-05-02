@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Management - Staff</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="/css/staff_mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -64,8 +65,8 @@
         <!-- Mobile Header -->
         <header class="mobile-header">
             <i class="fas fa-bars hamburger-btn" onclick="toggleSidebar()"></i>
-            <h2>Stock Management</h2>
-            <div style="width: 20px;"></div>
+            <h2>Stock Overview</h2>
+            <i class="fas fa-bell" style="font-size: 20px; cursor: pointer;"></i>
         </header>
 
         <!-- Sidebar -->
@@ -112,36 +113,46 @@
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
         <!-- Main Content -->
-        <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto;">
-            <div class="page-header">
-                <h1>Stock Management</h1>
-            </div>
+        <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto; padding-bottom: 80px;">
 
             <!-- Search -->
-            <div class="search-container-staff">
+            <div class="staff-stock-search-bar">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search products">
+                <input type="text" id="searchInput" placeholder="Search">
             </div>
 
             <!-- Filters -->
-            <div class="filter-tabs">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="low_stock">Low Stock</button>
-                <button class="filter-btn" data-filter="out_of_stock">Out of Stock</button>
+            <div class="staff-filter-chips">
+                <div class="staff-filter-chip" onclick="setFilter('all', this)" style="background-color: #93c5fd; color: #1e3a8a;">All <i class="fas fa-chevron-down" style="font-size: 10px;"></i></div>
+                <div class="staff-filter-chip" onclick="setFilter('low_stock', this)">Low Stock <i class="fas fa-chevron-down" style="font-size: 10px;"></i></div>
+                <div class="staff-filter-chip" onclick="setFilter('out_of_stock', this)">Out of Stock <i class="fas fa-chevron-down" style="font-size: 10px;"></i></div>
             </div>
 
             <!-- Table -->
-            <div class="staff-stock-table">
-                <div class="staff-stock-header">
-                    <span style="flex: 1;">Product</span>
-                    <span style="flex: 1; text-align: center;">Status</span>
-                    <span style="flex: 1; text-align: center;">Stock Quantity</span>
-                </div>
-                <div id="productContainer">
-                    <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
-                </div>
+            <div id="productContainer">
+                <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
             </div>
         </main>
+        
+        <!-- Bottom Navigation for Mobile -->
+        <nav class="bottom-nav">
+            <a href="staff_stock.html" class="nav-item active">
+                <i class="fas fa-box"></i>
+                <span>Stock</span>
+            </a>
+            <a href="staff_customers.html" class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </a>
+            <a href="staff_orders.html" class="nav-item">
+                <i class="fas fa-file-invoice"></i>
+                <span>Orders</span>
+            </a>
+            <a href="staff_profile.html" class="nav-item">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+        </nav>
     </div>
 
     <!-- Scripts -->
@@ -193,35 +204,44 @@
             }
 
             container.innerHTML = products.map(p => {
-                let statusClass = 'status-in-stock';
-                let statusText = 'In Stock';
                 const qty = parseInt(p.stock_qty) || 0;
+                let statusColor = '#94ad5e'; // Green for in stock
+                let statusText = `${qty} in stock`;
 
                 if (qty === 0) {
-                    statusClass = 'status-out-of-stock';
+                    statusColor = '#ef4444'; // Red
                     statusText = 'Out of Stock';
                 } else if (qty < 5) {
-                    statusClass = 'status-low-stock';
-                    statusText = 'Low Stock';
+                    statusColor = '#eab308'; // Yellow
+                    statusText = `${qty} Low Stock`;
                 }
 
-                const imgUrl = p.image_url || 'https://via.placeholder.com/60/cbd5e0/4a5568?text=PET';
+                const imgUrl = p.image_url || 'https://via.placeholder.com/80/cbd5e0/4a5568?text=PET';
 
                 return `
-                <div class="staff-stock-row">
-                    <div class="staff-product-info">
-                        <img src="${imgUrl}" class="staff-product-img" onerror="this.src='https://via.placeholder.com/60/cbd5e0/4a5568?text=PET'">
-                        <div class="staff-product-name">${p.product_name}</div>
+                <div class="product-row staff-mobile-row">
+                    <img src="${imgUrl}" class="product-img" onerror="this.src='https://via.placeholder.com/80/cbd5e0/4a5568?text=PET'">
+                    <div class="product-details">
+                        <h3 class="product-name">${p.product_name}</h3>
                     </div>
-                    <div class="staff-status">
-                        <span class="${statusClass}">${statusText}</span>
-                    </div>
-                    <div class="staff-stock-qty">
-                        ${qty}
+                    <div class="stock-status" style="color: ${statusColor}; font-weight: 500;">
+                        ${statusText}
                     </div>
                 </div>
                 `;
             }).join('');
+        }
+
+        function setFilter(filterType, element) {
+            document.querySelectorAll('.staff-filter-chip').forEach(el => {
+                el.style.backgroundColor = '#dbeafe';
+                el.style.color = '#64748b';
+            });
+            element.style.backgroundColor = '#93c5fd';
+            element.style.color = '#1e3a8a';
+            
+            currentFilter = filterType;
+            fetchProducts();
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
@@ -229,14 +249,7 @@
             fetchProducts();
         });
 
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
-                fetchProducts();
-            });
-        });
+        // Note: Filter buttons logic has been replaced with onclick attributes.
 
         document.addEventListener('DOMContentLoaded', () => {
             const menuGroup = document.querySelector('.menu-group');

@@ -209,6 +209,11 @@
                     showToast("ลบสินค้าเรียบร้อย", "success");
                     fetchProducts();
                 } else {
+                    if (response.status === 401 || response.status === 403) {
+                        localStorage.removeItem('user');
+                        window.location.href = 'login.html';
+                        return;
+                    }
                     const res = await response.json();
                     showToast(res.message || "ลบไม่สำเร็จ", "error");
                 }
