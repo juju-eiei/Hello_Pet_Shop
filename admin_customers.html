@@ -29,112 +29,85 @@
             font-size: 15px;
         }
 
-        /* Customer Cards Layout */
+        /* Customer List Layout */
         .customers-container {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-        }
-        .customer-card {
             background: #ffffff;
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border: 1px solid #f1f5f9;
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            border-radius: 0 0 12px 12px;
         }
-        .customer-card:active {
-            transform: scale(0.98);
+        
+        .customer-row {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        
+        .customer-row:hover {
             background-color: #f8fafc;
         }
         
-        .customer-card-top {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 12px;
+        .customer-row:last-child {
+            border-bottom: none;
         }
-        
+
+        .col-name { flex: 2; display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .col-contact { flex: 2; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #64748b; }
+        .col-points { flex: 1; font-weight: 600; color: #f59e0b; display: flex; align-items: center; gap: 6px; }
+        .col-pets { flex: 2; font-size: 13px; color: #334155; display: flex; align-items: center; gap: 6px; }
+        .col-action { flex: 1; text-align: right; display: flex; justify-content: flex-end; }
+
         .customer-avatar {
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             background-color: #edf2f7;
             color: #2f5d3a;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             flex-shrink: 0;
         }
         
-        .customer-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 2px;
-            min-width: 0;
-        }
         .customer-name {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             color: #1e293b;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        
         .customer-id {
             font-size: 12px;
-            color: #64748b;
-        }
-        .customer-email {
-            font-size: 12px;
-            color: #64748b;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            color: #94a3b8;
         }
 
-        .customer-action {
-            flex-shrink: 0;
-        }
         .btn-view-profile {
-            background-color: #2f5d3a;
-            color: white;
-            border: none;
-            padding: 8px 14px;
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            padding: 6px 16px;
             border-radius: 50px;
             font-size: 13px;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            pointer-events: none;
+            transition: all 0.2s;
+            pointer-events: none; /* Just for display */
         }
-
-        .customer-card-bottom {
-            display: flex;
-            flex-direction: row;
-            gap: 16px;
-            border-top: 1px dashed #e2e8f0;
-            padding-top: 12px;
+        
+        .customer-row:hover .btn-view-profile {
+            background-color: #2f5d3a;
+            color: white;
+            border-color: #2f5d3a;
         }
-        .customer-stat {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #334155;
-            background: #f8fafc;
-            padding: 6px 12px;
-            border-radius: 20px;
+        
+        .mobile-stats-row {
+            display: contents;
         }
 
         /* Mobile specific overrides */
@@ -142,6 +115,33 @@
             .table-header { display: none !important; }
             .stock-table { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
             .page-header { margin-bottom: 20px; }
+            
+            .customers-container {
+                gap: 12px;
+                background: transparent;
+            }
+            .customer-row {
+                background: #ffffff;
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 16px;
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+                gap: 12px;
+            }
+            .col-name { width: 100%; }
+            .col-contact { width: 100%; flex-direction: row; flex-wrap: wrap; gap: 12px; padding-left: 56px; }
+            .col-points, .col-pets { display: inline-flex; width: auto; padding-left: 0; }
+            .col-action { display: none; }
+            
+            .mobile-stats-row {
+                display: flex;
+                gap: 16px;
+                padding-left: 56px;
+                width: 100%;
+                margin-top: 4px;
+            }
         }
         
         /* Bottom Nav Highlight Fix inherited */
@@ -331,29 +331,28 @@
                 const petsLabel = c.pet_count > 0 ? `${c.pet_count} Pets <span style="font-weight:400; color:#64748b; font-size:11px;">(${c.pet_types || ''})</span>` : '0 Pets';
                 
                 return `
-                    <div class="customer-card" onclick="viewCustomer(${c.customer_id})">
-                        <div class="customer-card-top">
+                    <div class="customer-row" onclick="viewCustomer(${c.customer_id})">
+                        <div class="col-name">
                             <div class="customer-avatar">${initial}</div>
-                            <div class="customer-info">
+                            <div style="min-width: 0;">
                                 <div class="customer-name">${c.name}</div>
                                 <div class="customer-id">${idStr}</div>
-                                <div class="customer-email">
-                                    <i class="far fa-envelope" style="margin-right:2px; font-size:10px;"></i> ${c.email || '-'}
-                                    &nbsp;|&nbsp; 
-                                    <i class="fas fa-phone-alt" style="margin-right:2px; font-size:10px;"></i> ${c.phone || '-'}
-                                </div>
-                            </div>
-                            <div class="customer-action">
-                                <button class="btn-view-profile">View</button>
                             </div>
                         </div>
-                        <div class="customer-card-bottom">
-                            <div class="customer-stat">
-                                <i class="fas fa-star" style="color: #f59e0b;"></i> ${c.points} Pts
+                        <div class="col-contact">
+                            <div style="display: flex; align-items: center; gap: 6px;"><i class="far fa-envelope" style="width: 14px; text-align: center;"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.email || '-'}</span></div>
+                            <div style="display: flex; align-items: center; gap: 6px;"><i class="fas fa-phone-alt" style="width: 14px; text-align: center;"></i> <span>${c.phone || '-'}</span></div>
+                        </div>
+                        <div class="mobile-stats-row">
+                            <div class="col-points">
+                                <i class="fas fa-star"></i> ${c.points} Pts
                             </div>
-                            <div class="customer-stat">
+                            <div class="col-pets">
                                 <i class="fas fa-paw" style="color: #2f5d3a;"></i> ${petsLabel}
                             </div>
+                        </div>
+                        <div class="col-action">
+                            <button class="btn-view-profile">View</button>
                         </div>
                     </div>
                 `;

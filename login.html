@@ -76,18 +76,9 @@
     <script type="module">
         import { showToast } from '/src/js/utils.js';
 
-        // Check if already logged in
-        const existingUser = JSON.parse(localStorage.getItem('user'));
-        if (existingUser) {
-            const role = existingUser.role_name ? existingUser.role_name.toLowerCase() : 'customer';
-            if (role === 'admin') {
-                window.location.href = 'admin_stock.html';
-            } else if (role === 'customer') {
-                window.location.href = 'products.html';
-            } else {
-                window.location.href = 'staff_profile.html';
-            }
-        }
+        // Remove auto-login to force users to login manually
+        // If they want to logout or login as someone else, they can do so safely.
+        localStorage.removeItem('user');
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();

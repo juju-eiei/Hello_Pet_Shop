@@ -57,6 +57,14 @@ if (strpos($request_uri, '/api/') !== false) {
             }
             readfile($file_path);
         } else {
+            // Fallback for nested relative HTML links from deep URLs
+            $basename = basename($request_uri);
+            $root_file_path = __DIR__ . '/' . $basename;
+            if (preg_match('/\.html$/', $basename) && file_exists($root_file_path)) {
+                readfile($root_file_path);
+                exit;
+            }
+
             http_response_code(404);
             echo json_encode(["message" => "Route not found: " . $request_uri]);
         }
