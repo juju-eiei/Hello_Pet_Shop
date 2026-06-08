@@ -88,7 +88,6 @@
             <div class="stock-table">
                 <div class="table-header">
                     <span style="flex: 2;">Product Name</span>
-                    <span style="flex: 1; text-align: center;">Image</span>
                     <span style="flex: 1; text-align: center;">Price</span>
                     <span style="flex: 1; text-align: center;">Stock Quantity</span>
                     <span style="flex: 1; text-align: right;">Actions</span>
@@ -175,11 +174,6 @@
                 <div class="product-row" style="display: flex; align-items: center; width: 100%;">
                     <div class="product-details" style="flex: 2; margin-right: 20px;">
                         <div class="product-name">${p.product_name}</div>
-                    </div>
-                    <div style="flex: 1; display: flex; justify-content: center;">
-                        <img src="${p.image_url || 'https://via.placeholder.com/60/cbd5e0/4a5568?text=PET'}" 
-                             class="product-img" style="margin-right: 0;"
-                             onerror="this.src='https://via.placeholder.com/60/cbd5e0/4a5568?text=PET'">
                     </div>
                     <div class="stock-status" style="flex: 1; text-align: center; color: #475569; font-weight: 500;">
                         $${parseFloat(p.selling_price).toFixed(2)}

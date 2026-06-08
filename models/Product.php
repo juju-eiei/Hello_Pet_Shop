@@ -21,7 +21,7 @@ class Product {
         }
 
         if ($filter === "low_stock") {
-            $conditions[] = "p.stock_qty > 0 AND p.stock_qty < 5";
+            $conditions[] = "p.stock_qty > 0 AND p.stock_qty <= 5";
         } elseif ($filter === "out_of_stock") {
             $conditions[] = "p.stock_qty = 0";
         }
