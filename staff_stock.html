@@ -211,16 +211,13 @@
                 if (qty === 0) {
                     statusColor = '#ef4444'; // Red
                     statusText = 'Out of Stock';
-                } else if (qty < 5) {
+                } else if (qty <= 5) {
                     statusColor = '#eab308'; // Yellow
                     statusText = `${qty} Low Stock`;
                 }
 
-                const imgUrl = p.image_url || 'https://via.placeholder.com/80/cbd5e0/4a5568?text=PET';
-
                 return `
                 <div class="product-row staff-mobile-row">
-                    <img src="${imgUrl}" class="product-img" onerror="this.src='https://via.placeholder.com/80/cbd5e0/4a5568?text=PET'">
                     <div class="product-details">
                         <h3 class="product-name">${p.product_name}</h3>
                     </div>
