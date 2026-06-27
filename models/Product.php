@@ -129,5 +129,13 @@ class Product {
         }
         return false;
     }
+
+    public function updateBarcode($id, $barcode) {
+        $query = "UPDATE " . $this->table . " SET barcode = :barcode WHERE product_id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':barcode', $barcode !== '' ? $barcode : null);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
 }
 ?>

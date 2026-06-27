@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Orders - Staff</title>
@@ -24,6 +26,68 @@
         .status-pill.completed { background-color: #dcfce7; color: #166534; }
         .status-pill.cancelled { background-color: #fecdd3; color: #9f1239; }
         
+        .channel-pill {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .channel-pill.online {
+            background-color: #e0f2fe;
+            color: #0284c7;
+            border: 1px solid #bae6fd;
+        }
+        .channel-pill.pos {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .order-tabs-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .order-tab-btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .order-tab-btn:hover {
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        .order-tab-btn.active {
+            background: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+        .order-tab-badge {
+            background: rgba(255,255,255,0.25);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        .order-tab-btn:not(.active) .order-tab-badge {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
         .order-row {
             display: flex;
             align-items: center;
@@ -35,6 +99,7 @@
         .order-row:hover { background: #f8fafc; }
         .order-date { flex: 1.5; color: #64748b; font-size: 14px; }
         .order-number { flex: 2; color: #334155; font-weight: 500; font-size: 14px; }
+        .order-channel { flex: 1.5; display: flex; align-items: center; }
         .order-amount { flex: 1.5; text-align: left; font-size: 14px; color: #334155; }
         .order-status { flex: 1; display: flex; justify-content: center; }
         .order-actions { flex: 1; display: flex; justify-content: flex-end; }
@@ -52,11 +117,15 @@
                 box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             }
             .order-date { grid-column: 1 / -1; color: #94a3b8; font-size: 13px; }
-            .order-number { font-weight: 700; color: #1e293b; font-size: 15px; }
-            .order-amount { font-weight: 600; color: #3b82f6; text-align: right; }
-            .order-status { grid-column: 1 / -1; display: flex; justify-content: flex-start; }
+            .order-number { font-weight: 700; color: #1e293b; font-size: 15px; display: flex; align-items: center; justify-content: space-between; grid-column: 1 / -1; }
+            .order-amount { font-weight: 600; color: #3b82f6; text-align: left; }
+            .order-status { display: flex; justify-content: flex-end; }
             .order-actions { display: none !important; }
             .staff-stock-header { display: none !important; }
+            .desktop-only-cell { display: none !important; }
+        }
+        @media (min-width: 769px) {
+            .mobile-only-pill { display: none !important; }
         }
     </style>
     
@@ -66,58 +135,17 @@
             document.documentElement.classList.add('mobile-device');
         }
     </script>
+<script type="module" src="/src/js/main.js"></script>
 </head>
-<body>
+<body class="preload">
     <div class="admin-wrapper">
         <!-- Mobile Header -->
-        <header class="mobile-header">
-            <i class="fas fa-bars hamburger-btn" onclick="toggleSidebar()"></i>
-            <h2>Orders</h2>
-            <i class="fas fa-bell" style="font-size: 20px; cursor: pointer;"></i>
-        </header>
+        <header class="mobile-header"></header>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header" style="background-color: #3b5030;">
-                <i class="fas fa-paw"></i>
-                <span>Hello Pet Shop</span>
-            </div>
-            <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Staff</div>
-                <a href="staff_profile.html" class="menu-item">
-                    <i class="fas fa-home"></i>
-                    <span>Profile</span>
-                </a>
-                
-                <div class="menu-group">
-                    <a href="#" class="menu-item" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-box"></i>
-                        <span>Products</span>
-                        <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="submenu">
-                        <a href="staff_stock.html">Stock Management</a>
-                        <a href="staff_promotions.html">Promotions</a>
-                    </div>
-                </div>
-
-                <a href="staff_orders.html" class="menu-item active">
-                    <i class="fas fa-file-invoice"></i>
-                    <span>Orders</span>
-                </a>
-                <a href="staff_customers.html" class="menu-item">
-                    <i class="fas fa-users"></i>
-                    <span>Customers</span>
-                </a>
-                <a href="#" class="menu-item logout-item" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-        </aside>
-
-        <!-- Sidebar Overlay (Mobile) -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        <aside class="sidebar"></aside>
 
         <!-- Main Content -->
         <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto; padding-bottom: 80px;">
@@ -125,10 +153,23 @@
                 <h1>Orders</h1>
             </div>
 
+            <!-- Tabs Filter -->
+            <div class="order-tabs-container" style="padding: 0 4px;">
+                <button type="button" class="order-tab-btn active" id="tabBtnAll" onclick="window.setOrderTypeFilter('all')">
+                    <i class="fas fa-list"></i> ทั้งหมด <span class="order-tab-badge" id="badgeAll">0</span>
+                </button>
+                <button type="button" class="order-tab-btn" id="tabBtnOnline" onclick="window.setOrderTypeFilter('online')">
+                    <i class="fas fa-globe"></i> คำสั่งซื้อออนไลน์ <span class="order-tab-badge" id="badgeOnline">0</span>
+                </button>
+                <button type="button" class="order-tab-btn" id="tabBtnPos" onclick="window.setOrderTypeFilter('pos')">
+                    <i class="fas fa-store"></i> ขายหน้าร้าน (POS) <span class="order-tab-badge" id="badgePos">0</span>
+                </button>
+            </div>
+
             <!-- Search -->
             <div class="staff-stock-search-bar">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search orders by ID or status...">
+                <input type="text" id="searchInput" placeholder="Search orders by ID, status or channel...">
             </div>
 
             <!-- Table -->
@@ -136,6 +177,7 @@
                 <div class="staff-stock-header" style="display: flex; padding: 16px 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #475569; align-items: center;">
                     <span style="flex: 1.5;">Order Date</span>
                     <span style="flex: 2;">Order Number</span>
+                    <span style="flex: 1.5;">Channel</span>
                     <span style="flex: 1.5; text-align: left;">Total Amount</span>
                     <span style="flex: 1; text-align: center;">Status</span>
                     <span style="flex: 1; text-align: right;">Actions</span>
@@ -150,19 +192,19 @@
         <nav class="bottom-nav">
             <a href="staff_stock.html" class="nav-item">
                 <i class="fas fa-box"></i>
-                <span>Stock</span>
+                <span data-i18n="nav.stock">จัดการคลังสินค้า</span>
             </a>
             <a href="staff_customers.html" class="nav-item">
                 <i class="fas fa-users"></i>
-                <span>Customers</span>
+                <span data-i18n="nav.customers">ลูกค้า</span>
             </a>
             <a href="staff_orders.html" class="nav-item active">
                 <i class="fas fa-file-invoice"></i>
-                <span>Orders</span>
+                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
             </a>
             <a href="staff_profile.html" class="nav-item">
                 <i class="fas fa-user"></i>
-                <span>Profile</span>
+                <span data-i18n="nav.profile">โปรไฟล์</span>
             </a>
         </nav>
     </div>
@@ -171,11 +213,44 @@
 
     <script>
         let allOrders = [];
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentTypeFilter = urlParams.get('type') || 'all';
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('sidebarOverlay').classList.toggle('active');
+        window.setOrderTypeFilter = function(type) {
+            currentTypeFilter = type;
+            updateTabUI();
+            renderOrders();
+        };
+
+        function updateTabUI() {
+            const tabs = {
+                all: document.getElementById('tabBtnAll'),
+                online: document.getElementById('tabBtnOnline'),
+                pos: document.getElementById('tabBtnPos')
+            };
+            Object.keys(tabs).forEach(k => {
+                if (tabs[k]) {
+                    if (k === currentTypeFilter) tabs[k].classList.add('active');
+                    else tabs[k].classList.remove('active');
+                }
+            });
         }
+
+        function updateBadges() {
+            const countAll = allOrders.length;
+            const countOnline = allOrders.filter(o => (o.order_type || 1) === 1).length;
+            const countPos = allOrders.filter(o => o.order_type === 2).length;
+
+            const bAll = document.getElementById('badgeAll');
+            const bOnline = document.getElementById('badgeOnline');
+            const bPos = document.getElementById('badgePos');
+
+            if (bAll) bAll.textContent = countAll;
+            if (bOnline) bOnline.textContent = countOnline;
+            if (bPos) bPos.textContent = countPos;
+        }
+
+        function toggleSidebar() { const sidebar = document.querySelector('.sidebar'); const overlay = document.getElementById('sidebarOverlay'); if (sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } }
 
         function toggleSubmenu(el) {
             const group = el.closest('.menu-group');
@@ -199,6 +274,8 @@
                 if (!res.ok) throw new Error('Network error');
                 const json = await res.json();
                 allOrders = json.data || [];
+                updateBadges();
+                updateTabUI();
                 renderOrders();
             } catch (e) {
                 console.error(e);
@@ -214,11 +291,18 @@
             const container = document.getElementById('ordersContainer');
             const keyword = document.getElementById('searchInput').value.toLowerCase();
             
-            const filteredOrders = allOrders.filter(o => 
-                o.number.toLowerCase().includes(keyword) || 
-                o.status.toLowerCase().includes(keyword) ||
-                o.date.includes(keyword)
-            );
+            const filteredOrders = allOrders.filter(o => {
+                const matchesKeyword = o.number.toLowerCase().includes(keyword) || 
+                                       o.status.toLowerCase().includes(keyword) ||
+                                       (o.order_type_label && o.order_type_label.toLowerCase().includes(keyword)) ||
+                                       o.date.includes(keyword);
+                
+                if (!matchesKeyword) return false;
+
+                if (currentTypeFilter === 'online') return (o.order_type || 1) === 1;
+                if (currentTypeFilter === 'pos') return o.order_type === 2;
+                return true;
+            });
 
             if (filteredOrders.length === 0) {
                 container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบคำสั่งซื้อ</div>';
@@ -226,10 +310,20 @@
             }
 
             container.innerHTML = filteredOrders.map(o => `
-                <div class="order-row" onclick="window.location.href='staff_order_details.html?id=${o.id}'" style="cursor: pointer;">
+                <div class="order-row" onclick="(window.navigateTo ? window.navigateTo('staff_order_details.html?id=${o.id}') : window.location.href='staff_order_details.html?id=${o.id}')" style="cursor: pointer;">
                     <div class="order-date">${o.date}</div>
-                    <div class="order-number">${o.number}</div>
-                    <div class="order-amount">${o.amount.toFixed(2)}</div>
+                    <div class="order-number">
+                        <span>${o.number}</span>
+                        <span class="channel-pill ${o.order_type === 2 ? 'pos' : 'online'} mobile-only-pill">
+                            <i class="fas ${o.order_type === 2 ? 'fa-store' : 'fa-globe'}"></i> ${o.order_type_label}
+                        </span>
+                    </div>
+                    <div class="order-channel desktop-only-cell">
+                        <span class="channel-pill ${o.order_type === 2 ? 'pos' : 'online'}">
+                            <i class="fas ${o.order_type === 2 ? 'fa-store' : 'fa-globe'}"></i> ${o.order_type_label}
+                        </span>
+                    </div>
+                    <div class="order-amount">฿${o.amount.toFixed(2)}</div>
                     <div class="order-status">
                         <span class="status-pill ${getStatusClass(o.status)}">${o.status}</span>
                     </div>
@@ -244,6 +338,8 @@
 
         document.getElementById('searchInput').addEventListener('input', renderOrders);
 
+        const user = checkAuth();
+
         document.addEventListener('DOMContentLoaded', () => {
             const menuGroup = document.querySelector('.menu-group');
             if (menuGroup) {
@@ -252,7 +348,6 @@
                 else if (isOpen === 'false') menuGroup.classList.remove('open');
             }
 
-            const user = checkAuth();
             if (user) {
                 fetchOrders();
             }

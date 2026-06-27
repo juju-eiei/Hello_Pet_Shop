@@ -20,6 +20,61 @@ class ProductController {
         return (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
     }
 
+    private function getEmployeeId() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (!isset($_SESSION['user_id'])) {
+            return null;
+        }
+        $query = "SELECT employee_id FROM employees WHERE user_id = :user_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([':user_id' => $_SESSION['user_id']]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? (int)$row['employee_id'] : null;
+    }
+
+    public function stockHistory() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (!isset($_SESSION['role']) || !in_array(strtolower($_SESSION['role']), ['admin', 'employee'])) {
+            Response::json(403, "Access Forbidden");
+            return;
+        }
+
+        $keyword = $_GET['keyword'] ?? '';
+
+        $query = "SELECT 
+                    l.log_id,
+                    l.product_id,
+                    p.product_name,
+                    l.employee_id,
+                    CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+                    l.reference_id,
+                    l.movement_type,
+                    l.quantity,
+                    l.unit_cost,
+                    l.created_at
+                  FROM inventory_logs l
+                  LEFT JOIN products p ON l.product_id = p.product_id
+                  LEFT JOIN employees e ON l.employee_id = e.employee_id";
+        
+        $params = [];
+        if (!empty($keyword)) {
+            $query .= " WHERE p.product_name LIKE :keyword OR CONCAT(e.first_name, ' ', e.last_name) LIKE :keyword";
+            $params[':keyword'] = "%{$keyword}%";
+        }
+
+        $query .= " ORDER BY l.log_id DESC";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($params);
+        $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        Response::json(200, "Success", $logs);
+    }
+
     public function index() {
         $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : "";
         $filter = isset($_GET['filter']) ? $_GET['filter'] : "all";
@@ -43,9 +98,26 @@ class ProductController {
             return;
         }
 
+        // Get old product quantity first
+        $old_product = $this->product->getById($data['product_id']);
+        if (!$old_product) {
+            Response::json(404, "Product not found");
+            return;
+        }
+        $old_qty = (int)$old_product['stock_qty'];
+        $new_qty = (int)$data['new_quantity'];
+        $qty_change = $new_qty - $old_qty;
+
         $status = $this->product->updateStock($data['product_id'], $data['new_quantity']);
         
         if ($status) {
+            if ($qty_change !== 0) {
+                $employee_id = $this->getEmployeeId();
+                if ($employee_id) {
+                    $stmtLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, employee_id, quantity, movement_type, unit_cost) VALUES (?, ?, ?, 3, 0)");
+                    $stmtLog->execute([$data['product_id'], $employee_id, $qty_change]);
+                }
+            }
             Response::json(200, "Stock updated successfully");
         } else {
             Response::json(500, "Failed to update stock");
@@ -182,9 +254,38 @@ class ProductController {
 
         $id = $this->product->create($data);
         if($id) {
+            $employee_id = $this->getEmployeeId();
+            if ($employee_id) {
+                $initial_qty = (int)($data['stock_quantity'] ?? 0);
+                $cost_price = (float)($data['cost_price'] ?? 0);
+                $stmtLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, employee_id, quantity, movement_type, unit_cost) VALUES (?, ?, ?, 4, ?)");
+                $stmtLog->execute([$id, $employee_id, $initial_qty, $cost_price]);
+            }
             Response::json(201, "Product created successfully", ["product_id" => $id]);
         } else {
             Response::json(500, "Failed to create product");
+        }
+    }
+
+    public function updateBarcode() {
+        if (!$this->isAdmin()) {
+            Response::json(403, "Access Forbidden: Admins only");
+            return;
+        }
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        if (empty($data['product_id']) || !isset($data['barcode'])) {
+            Response::json(400, "Bad Request: Missing product_id or barcode");
+            return;
+        }
+
+        $status = $this->product->updateBarcode($data['product_id'], $data['barcode']);
+        
+        if ($status) {
+            Response::json(200, "Barcode updated successfully");
+        } else {
+            Response::json(500, "Failed to update barcode");
         }
     }
 }

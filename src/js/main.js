@@ -1,5 +1,8 @@
-// Import main styles
+// Import main styles & core services
 import '../css/style.css';
+import './i18n.js';
+import { initLayout } from './components/layout.js';
+import { initRouter } from './router.js';
 
 export function updateNavProfile() {
     const navProfileImage = document.getElementById('navProfileImage');
@@ -25,50 +28,6 @@ export function updateNavProfile() {
     }
 }
 
-// Common Initialization
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Hello Pet Shop - Premium UI Loaded');
-    
-    // Global User state check (if needed)
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-        console.log(`Logged in as: ${user.username} (${user.role_name})`);
-    }
-
-    // Dropdown Logic
-    const navMenuBtn = document.getElementById('navProfileMenuBtn');
-    const navDropdown = document.getElementById('navProfileDropdown');
-    const logoutBtn = document.getElementById('logoutBtn');
-    
-    if (navMenuBtn && navDropdown) {
-        navMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            navDropdown.classList.toggle('hidden');
-        });
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!navMenuBtn.contains(e.target) && !navDropdown.contains(e.target)) {
-                navDropdown.classList.add('hidden');
-            }
-        });
-    }
-    
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('user');
-            localStorage.removeItem('userProfileData');
-            window.location.href = '/login';
-        });
-    }
-
-    // Refresh navbar avatar
-    updateNavProfile();
-
-    // Refresh cart badge
-    updateGlobalCartCount();
-});
-
 export function updateGlobalCartCount() {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     const count = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -82,3 +41,22 @@ export function updateGlobalCartCount() {
         }
     }
 }
+
+// Common Initialization
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Hello Pet Shop - Centralized Layout & SPA Router Initialized');
+    
+    // Initialize Centralized Layout & Router
+    initLayout();
+    initRouter();
+
+    // Global User state check
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+        console.log(`Logged in as: ${user.username} (${user.role_name})`);
+    }
+
+    // Refresh navbar avatar & cart
+    updateNavProfile();
+    updateGlobalCartCount();
+});

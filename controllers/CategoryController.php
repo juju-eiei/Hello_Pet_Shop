@@ -48,5 +48,24 @@ class CategoryController
             Response::json(500, "Failed to create category");
         }
     }
+
+    public function delete()
+    {
+        if (!$this->isAdmin()) {
+            Response::json(403, "Admins only");
+            return;
+        }
+        $data = json_decode(file_get_contents("php://input"), true);
+        if (empty($data['id'])) {
+            Response::json(400, "Missing id");
+            return;
+        }
+        
+        if ($this->category->delete($data['id'])) {
+            Response::json(200, "Category deleted successfully");
+        } else {
+            Response::json(500, "Failed to delete category (it may be in use)");
+        }
+    }
 }
 ?>
