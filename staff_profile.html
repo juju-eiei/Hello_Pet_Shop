@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Profile - Hello Pet Shop</title>
@@ -124,99 +126,62 @@
             document.documentElement.classList.add('mobile-device');
         }
     </script>
+<script type="module" src="/src/js/main.js"></script>
 </head>
-<body>
+<body class="preload">
     <div class="admin-wrapper">
         <!-- Mobile Header -->
-        <header class="mobile-header">
-            <i class="fas fa-bars hamburger-btn" onclick="toggleSidebar()"></i>
-            <h2>Profile</h2>
-            <i class="fas fa-bell" style="font-size: 20px; cursor: pointer;"></i>
-        </header>
+        <header class="mobile-header"></header>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header" style="background-color: #3b5030;">
-                <i class="fas fa-paw"></i>
-                <span>Hello Pet Shop</span>
-            </div>
-            <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Staff</div>
-                <a href="staff_profile.html" class="menu-item active">
-                    <i class="fas fa-home"></i>
-                    <span>Profile</span>
-                </a>
-                <div class="menu-group open">
-                    <a href="#" class="menu-item" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-box"></i>
-                        <span>Products</span>
-                        <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="submenu">
-                        <a href="staff_stock.html">Stock Management</a>
-                        <a href="staff_promotions.html">Promotions</a>
-                    </div>
-                </div>
-                <a href="staff_orders.html" class="menu-item">
-                    <i class="fas fa-file-invoice"></i>
-                    <span>Orders</span>
-                </a>
-                <a href="staff_customers.html" class="menu-item">
-                    <i class="fas fa-users"></i>
-                    <span>Customers</span>
-                </a>
-                <a href="#" class="menu-item logout-item" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-        </aside>
-        
-        <!-- Sidebar Overlay (Mobile) -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        <aside class="sidebar"></aside>
 
         <!-- Main Content -->
-        <main class="main-content staff-mobile-form">
+        <main class="main-content">
             <div id="loading" style="text-align: center; padding: 50px; color: #64748b;">กำลังโหลดข้อมูลบุคลากร...</div>
 
             <div id="contentBlock" style="display: none;">
-                <div class="staff-mobile-avatar-container">
-                    <div class="staff-mobile-avatar" id="avatarContainer" onclick="document.getElementById('avatarUpload').click();" style="cursor: pointer;">
-                        <!-- Mockup shows empty gray circle, but we can put an icon if no image -->
-                        <i class="far fa-user" style="font-size: 40px; color: #9ca3af;"></i>
+                <div class="profile-container">
+                    <div class="profile-avatar-section">
+                        <div class="avatar-circle" id="avatarContainer" onclick="document.getElementById('avatarUpload').click();" style="cursor: pointer;">
+                            <i class="far fa-user"></i>
+                        </div>
+                        <input type="file" id="avatarUpload" accept="image/*" style="display: none;" onchange="handleAvatarChange(event)">
+                        <div class="profile-name" id="sName">Sophia Bennett</div>
                     </div>
-                    <input type="file" id="avatarUpload" accept="image/*" style="display: none;" onchange="handleAvatarChange(event)">
-                    <div class="staff-mobile-name" id="sName">Sophia Bennett</div>
+
+                    <div class="section-title">Personal Information</div>
+                    
+                    <form id="staffProfileForm">
+                        <div class="info-field">
+                            <label class="info-label">Name</label>
+                            <input type="text" class="info-value" id="edit_first_name" name="first_name" required>
+                        </div>
+                        <div class="info-field">
+                            <label class="info-label">Address</label>
+                            <input type="text" class="info-value" id="edit_address" name="address">
+                        </div>
+
+                        <div class="info-field">
+                            <label class="info-label">Phone Number</label>
+                            <input type="text" class="info-value" id="edit_phone" name="phone">
+                        </div>
+
+                        <div class="info-field">
+                            <label class="info-label">Email</label>
+                            <input type="email" class="info-value" id="edit_email" name="email" required>
+                        </div>
+
+                        <!-- Hidden fields to keep other data intact like last_name -->
+                        <input type="hidden" id="edit_last_name" name="last_name">
+
+                        <div style="margin-top: 30px; display: flex; justify-content: flex-end;">
+                            <button type="button" class="btn-save" id="saveProfileBtn">Save Changes</button>
+                        </div>
+                    </form>
                 </div>
-
-                <div class="staff-mobile-section-title">Personal Information</div>
-                
-                <form id="staffProfileForm">
-                    <div class="staff-input-group">
-                        <label>Name</label>
-                        <input type="text" class="staff-input" id="edit_first_name" name="first_name" required>
-                    </div>
-                    <!-- Using Address as single line to match mockup (or we can keep it as input) -->
-                    <div class="staff-input-group">
-                        <label>Address</label>
-                        <input type="text" class="staff-input" id="edit_address" name="address">
-                    </div>
-
-                    <div class="staff-input-group">
-                        <label>Phone Number</label>
-                        <input type="text" class="staff-input" id="edit_phone" name="phone">
-                    </div>
-
-                    <div class="staff-input-group">
-                        <label>Email</label>
-                        <input type="email" class="staff-input" id="edit_email" name="email" required>
-                    </div>
-
-                    <!-- Hidden fields to keep other data intact like last_name -->
-                    <input type="hidden" id="edit_last_name" name="last_name">
-
-                    <button type="button" class="staff-btn-save" id="saveProfileBtn">Save Changes</button>
-                </form>
             </div>
         </main>
 
@@ -224,19 +189,19 @@
         <nav class="bottom-nav">
             <a href="staff_stock.html" class="nav-item">
                 <i class="fas fa-box"></i>
-                <span>Stock</span>
+                <span data-i18n="nav.stock">จัดการคลังสินค้า</span>
             </a>
             <a href="staff_customers.html" class="nav-item">
                 <i class="fas fa-users"></i>
-                <span>Customers</span>
+                <span data-i18n="nav.customers">ลูกค้า</span>
             </a>
             <a href="staff_orders.html" class="nav-item">
                 <i class="fas fa-file-invoice"></i>
-                <span>Orders</span>
+                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
             </a>
             <a href="staff_profile.html" class="nav-item active">
                 <i class="fas fa-user"></i>
-                <span>Profile</span>
+                <span data-i18n="nav.profile">โปรไฟล์</span>
             </a>
         </nav>
 

@@ -23,5 +23,12 @@ class Category {
         }
         return false;
     }
+
+    public function delete($id) {
+        $query = "DELETE FROM " . $this->table . " WHERE category_id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
 }
 ?>
