@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customers - Hello Pet Shop</title>
@@ -29,112 +31,85 @@
             font-size: 15px;
         }
 
-        /* Customer Cards Layout */
+        /* Customer List Layout */
         .customers-container {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-        }
-        .customer-card {
             background: #ffffff;
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border: 1px solid #f1f5f9;
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            border-radius: 0 0 12px 12px;
         }
-        .customer-card:active {
-            transform: scale(0.98);
+        
+        .customer-row {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        
+        .customer-row:hover {
             background-color: #f8fafc;
         }
         
-        .customer-card-top {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 12px;
+        .customer-row:last-child {
+            border-bottom: none;
         }
-        
+
+        .col-name { flex: 2; display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .col-contact { flex: 2; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #64748b; }
+        .col-points { flex: 1; font-weight: 600; color: #f59e0b; display: flex; align-items: center; gap: 6px; }
+        .col-pets { flex: 2; font-size: 13px; color: #334155; display: flex; align-items: center; gap: 6px; }
+        .col-action { flex: 1; text-align: right; display: flex; justify-content: flex-end; }
+
         .customer-avatar {
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             background-color: #edf2f7;
             color: #2f5d3a;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             flex-shrink: 0;
         }
         
-        .customer-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 2px;
-            min-width: 0;
-        }
         .customer-name {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             color: #1e293b;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        
         .customer-id {
             font-size: 12px;
-            color: #64748b;
-        }
-        .customer-email {
-            font-size: 12px;
-            color: #64748b;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            color: #94a3b8;
         }
 
-        .customer-action {
-            flex-shrink: 0;
-        }
         .btn-view-profile {
-            background-color: #2f5d3a;
-            color: white;
-            border: none;
-            padding: 8px 14px;
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            padding: 6px 16px;
             border-radius: 50px;
             font-size: 13px;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            pointer-events: none;
+            transition: all 0.2s;
+            pointer-events: none; /* Just for display */
         }
-
-        .customer-card-bottom {
-            display: flex;
-            flex-direction: row;
-            gap: 16px;
-            border-top: 1px dashed #e2e8f0;
-            padding-top: 12px;
+        
+        .customer-row:hover .btn-view-profile {
+            background-color: #2f5d3a;
+            color: white;
+            border-color: #2f5d3a;
         }
-        .customer-stat {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #334155;
-            background: #f8fafc;
-            padding: 6px 12px;
-            border-radius: 20px;
+        
+        .mobile-stats-row {
+            display: contents;
         }
 
         /* Mobile specific overrides */
@@ -142,6 +117,33 @@
             .table-header { display: none !important; }
             .stock-table { background: transparent !important; box-shadow: none !important; padding: 0 !important; }
             .page-header { margin-bottom: 20px; }
+            
+            .customers-container {
+                gap: 12px;
+                background: transparent;
+            }
+            .customer-row {
+                background: #ffffff;
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 16px;
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+                gap: 12px;
+            }
+            .col-name { width: 100%; }
+            .col-contact { width: 100%; flex-direction: row; flex-wrap: wrap; gap: 12px; padding-left: 56px; }
+            .col-points, .col-pets { display: inline-flex; width: auto; padding-left: 0; }
+            .col-action { display: none; }
+            
+            .mobile-stats-row {
+                display: flex;
+                gap: 16px;
+                padding-left: 56px;
+                width: 100%;
+                margin-top: 4px;
+            }
         }
         
         /* Bottom Nav Highlight Fix inherited */
@@ -154,60 +156,15 @@
             document.documentElement.classList.add('mobile-device');
         }
     </script>
+<script type="module" src="/src/js/main.js"></script>
 </head>
-<body>
+<body class="preload">
     <div class="admin-wrapper">
-        <!-- Mobile Header -->
-        <header class="mobile-header">
-            <i class="fas fa-bars" id="hamburgerBtn"></i>
-            <h2>Customers</h2>
-            <i class="fas fa-bell"></i>
-        </header>
+        <header class="mobile-header"></header>
 
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <i class="fas fa-paw"></i>
-                <span>Hello Pet Shop</span>
-            </div>
-            <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="desktop-only-menu menu-item">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-                <div class="menu-group">
-                    <a class="menu-item" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-box"></i>
-                        <span>Products</span>
-                        <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="submenu">
-                        <a href="admin_stock.html">Stock Management</a>
-                        <a href="admin_product_management.html" class="desktop-only-menu">Product Management</a>
-                        <a href="admin_promotions.html">Promotions</a>
-                    </div>
-                </div>
-                <a href="admin_staff.html" class="menu-item">
-                    <i class="fas fa-users-cog"></i>
-                    <span>Staff Management</span>
-                </a>
-                <a href="admin_orders.html" class="menu-item">
-                    <i class="fas fa-file-invoice"></i>
-                    <span>Orders</span>
-                </a>
-                <a href="admin_customers.html" class="menu-item active">
-                    <i class="fas fa-users"></i>
-                    <span>Customers</span>
-                </a>
-                <a href="#" class="menu-item logout-item" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-        </aside>
+        <aside class="sidebar"></aside>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -240,23 +197,23 @@
         <nav class="bottom-nav">
             <a href="admin_dashboard.html" class="nav-item">
                 <i class="fas fa-home"></i>
-                <span>Dashboard</span>
+                <span data-i18n="nav.dashboard">แดชบอร์ด</span>
             </a>
             <a href="admin_orders.html" class="nav-item">
                 <i class="fas fa-file-invoice"></i>
-                <span>Orders</span>
+                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
             </a>
             <a href="admin_stock.html" class="nav-item">
                 <i class="fas fa-box"></i>
-                <span>Stock</span>
+                <span data-i18n="nav.stock">จัดการคลังสินค้า</span>
             </a>
             <a href="admin_customers.html" class="nav-item active">
                 <i class="fas fa-users"></i>
-                <span>Customers</span>
+                <span data-i18n="nav.customers">ลูกค้า</span>
             </a>
             <a href="admin_promotions.html" class="nav-item">
                 <i class="fas fa-bullhorn"></i>
-                <span>Promotions</span>
+                <span data-i18n="nav.promotions">โปรโมชั่น</span>
             </a>
         </nav>
     </div>
@@ -264,19 +221,11 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 
-    <script src="/js/utils.js"></script>
     <script>
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar && overlay) {
-                sidebar.classList.toggle('active');
-                overlay.classList.toggle('active');
-            }
-        }
+        function toggleSidebar() { const sidebar = document.querySelector('.sidebar'); const overlay = document.getElementById('sidebarOverlay'); if (sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } }
 
-        document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
-        document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+        const hBtn = document.getElementById('hamburgerBtn'); if (hBtn) hBtn.addEventListener('click', toggleSidebar);
+        const sOverlay = document.getElementById('sidebarOverlay'); if (sOverlay) sOverlay.addEventListener('click', toggleSidebar);
 
         function toggleSubmenu(el) {
             const group = el.closest('.menu-group');
@@ -331,29 +280,28 @@
                 const petsLabel = c.pet_count > 0 ? `${c.pet_count} Pets <span style="font-weight:400; color:#64748b; font-size:11px;">(${c.pet_types || ''})</span>` : '0 Pets';
                 
                 return `
-                    <div class="customer-card" onclick="viewCustomer(${c.customer_id})">
-                        <div class="customer-card-top">
+                    <div class="customer-row" onclick="viewCustomer(${c.customer_id})">
+                        <div class="col-name">
                             <div class="customer-avatar">${initial}</div>
-                            <div class="customer-info">
+                            <div style="min-width: 0;">
                                 <div class="customer-name">${c.name}</div>
                                 <div class="customer-id">${idStr}</div>
-                                <div class="customer-email">
-                                    <i class="far fa-envelope" style="margin-right:2px; font-size:10px;"></i> ${c.email || '-'}
-                                    &nbsp;|&nbsp; 
-                                    <i class="fas fa-phone-alt" style="margin-right:2px; font-size:10px;"></i> ${c.phone || '-'}
-                                </div>
-                            </div>
-                            <div class="customer-action">
-                                <button class="btn-view-profile">View</button>
                             </div>
                         </div>
-                        <div class="customer-card-bottom">
-                            <div class="customer-stat">
-                                <i class="fas fa-star" style="color: #f59e0b;"></i> ${c.points} Pts
+                        <div class="col-contact">
+                            <div style="display: flex; align-items: center; gap: 6px;"><i class="far fa-envelope" style="width: 14px; text-align: center;"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.email || '-'}</span></div>
+                            <div style="display: flex; align-items: center; gap: 6px;"><i class="fas fa-phone-alt" style="width: 14px; text-align: center;"></i> <span>${c.phone || '-'}</span></div>
+                        </div>
+                        <div class="mobile-stats-row">
+                            <div class="col-points">
+                                <i class="fas fa-star"></i> ${c.points} Pts
                             </div>
-                            <div class="customer-stat">
+                            <div class="col-pets">
                                 <i class="fas fa-paw" style="color: #2f5d3a;"></i> ${petsLabel}
                             </div>
+                        </div>
+                        <div class="col-action">
+                            <button class="btn-view-profile">View</button>
                         </div>
                     </div>
                 `;
@@ -370,14 +318,24 @@
             renderCustomers(filtered);
         });
 
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role_name.toLowerCase() !== 'admin') {
+                window.location.href = 'login.html';
+            }
+        }
+
         function viewCustomer(id) {
-            window.location.href = `admin_customer_details.html?id=${id}`;
+            if (window.navigateTo) {
+                window.navigateTo(`admin_customer_details.html?id=${id}`);
+            } else {
+                window.location.href = `admin_customer_details.html?id=${id}`;
+            }
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCustomers();
-        });
+        checkAuth();
+        loadCustomers();
     </script>
 </body>
 </html>

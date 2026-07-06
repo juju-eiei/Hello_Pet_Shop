@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Product - Hello Pet Shop</title>
@@ -13,64 +15,16 @@
             document.documentElement.classList.add('mobile-device');
         }
     </script>
+<script type="module" src="/src/js/main.js"></script>
 </head>
-<body>
+<body class="preload">
     <div class="admin-wrapper">
         <!-- Mobile Header -->
-        <header class="mobile-header">
-            <a href="admin_product_management.html" style="color: white; text-decoration: none;">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-            <h2 id="mobileTitle">Edit Product</h2>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <i class="fas fa-save" onclick="document.getElementById('productForm').requestSubmit()"></i>
-                <i class="fas fa-bars" id="hamburgerBtn"></i>
-            </div>
-        </header>
+        <header class="mobile-header"></header>
 
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <i class="fas fa-paw"></i>
-                <span>Hello Pet Shop</span>
-            </div>
-            <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="desktop-only-menu menu-item">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-                <div class="menu-group open">
-                    <a class="menu-item active" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-box"></i>
-                        <span>Products</span>
-                        <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="submenu">
-                        <a href="admin_stock.html">Stock Management</a>
-                        <a href="admin_product_management.html" class="desktop-only-menu active">Product Management</a>
-                        <a href="admin_promotions.html">Promotions</a>
-                    </div>
-                </div>
-                <a href="admin_staff.html" class="menu-item">
-                    <i class="fas fa-users-cog"></i>
-                    <span>Staff Management</span>
-                </a>
-                <a href="admin_orders.html" class="menu-item">
-                    <i class="fas fa-file-invoice"></i>
-                    <span>Orders</span>
-                </a>
-                <a href="admin_customers.html" class="menu-item">
-                    <i class="fas fa-users"></i>
-                    <span>Customers</span>
-                </a>
-                <a href="#" class="menu-item logout-item" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-        </aside>
+        <aside class="sidebar"></aside>
 
         <main class="main-content">
             <div class="page-header">
@@ -107,7 +61,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Price ($)</label>
+                                <label>Price (฿)</label>
                                 <input type="number" step="0.01" name="price" id="pPrice" required>
                             </div>
 
@@ -179,18 +133,20 @@
 
         async function init() {
             await loadCategories();
+            const pTitle = document.getElementById('pageTitle');
+            const mTitle = document.getElementById('mobileTitle');
             if (productId) {
-                document.getElementById('pageTitle').textContent = "Edit Product";
-                document.getElementById('mobileTitle').textContent = "Edit Product";
+                if (pTitle) pTitle.textContent = "Edit Product";
+                if (mTitle) mTitle.textContent = "Edit Product";
                 await loadProductData(productId);
             } else {
-                document.getElementById('pageTitle').textContent = "Add New Product";
-                document.getElementById('mobileTitle').textContent = "Add New Product";
+                if (pTitle) pTitle.textContent = "Add New Product";
+                if (mTitle) mTitle.textContent = "Add New Product";
             }
         }
 
         async function loadCategories() {
-            const res = await fetch('api/categories');
+            const res = await fetch('/api/categories');
             const result = await res.json();
             const select = document.getElementById('pCategory');
             select.innerHTML = '<option value="">-- Select Category --</option>' + 
@@ -198,7 +154,7 @@
         }
 
         async function loadProductData(id) {
-            const res = await fetch(`api/products?id=${id}`);
+            const res = await fetch(`/api/products?id=${id}`);
             const result = await res.json();
             const p = result.data;
             
@@ -250,7 +206,7 @@
         async function addNewCategory() {
             const name = await showPromptModal("เพิ่มหมวดหมู่ใหม่", "ระบุชื่อหมวดหมู่...");
             if (!name) return;
-            const res = await fetch('api/categories', {
+            const res = await fetch('/api/categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
@@ -326,7 +282,7 @@
             // If in URL mode, make sure file is removed or clarified
             if (uploadMode === 'url') formData.set('image', '');
 
-            const endpoint = productId ? 'api/products/update' : 'api/products';
+            const endpoint = productId ? '/api/products/update' : '/api/products';
             const res = await fetch(endpoint, {
                 method: 'POST', // We use POST for both create and update to handle Multipart (files)
                 body: formData
@@ -348,17 +304,10 @@
             setTimeout(() => toast.className = 'toast', 3000);
         }
 
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar && overlay) {
-                sidebar.classList.toggle('active');
-                overlay.classList.toggle('active');
-            }
-        }
+        function toggleSidebar() { const sidebar = document.querySelector('.sidebar'); const overlay = document.getElementById('sidebarOverlay'); if (sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } }
 
-        document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
-        document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+        const hBtn = document.getElementById('hamburgerBtn'); if (hBtn) hBtn.addEventListener('click', toggleSidebar);
+        const sOverlay = document.getElementById('sidebarOverlay'); if (sOverlay) sOverlay.addEventListener('click', toggleSidebar);
 
         function toggleSubmenu(el) {
             const group = el.closest('.menu-group');
@@ -378,11 +327,7 @@
             }
         });
 
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
-        });
+        const lBtn = document.getElementById('logoutBtn'); if (lBtn) lBtn.addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('user'); window.location.href = 'login.html'; });
 
         init();
     </script>
