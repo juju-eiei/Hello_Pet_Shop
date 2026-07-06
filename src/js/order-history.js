@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="border-t border-gray-50 pt-4 flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-gray-400">Total:</span>
-                        <span class="text-lg font-bold text-gray-800">$${order.total.toFixed(2)}</span>
+                        <span class="text-lg font-bold text-gray-800">฿${order.total.toFixed(2)}</span>
                     </div>
                     <button class="view-details-btn px-4 py-2 bg-gray-50 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-100 transition-colors" data-id="${order.id}">
                         View Details
@@ -110,17 +110,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-bold text-gray-800 truncate">${item.name}</div>
-                    <div class="text-xs text-gray-500">Qty: ${item.quantity} × $${parseFloat(item.price).toFixed(2)}</div>
+                    <div class="text-xs text-gray-500">Qty: ${item.quantity} × ฿${parseFloat(item.price).toFixed(2)}</div>
                 </div>
                 <div class="text-sm font-bold text-gray-800">
-                    $${(parseFloat(item.price) * item.quantity).toFixed(2)}
+                    ฿${(parseFloat(item.price) * item.quantity).toFixed(2)}
                 </div>
             </div>
         `).join('');
 
-        modalSubtotal.textContent = `$${order.subtotal.toFixed(2)}`;
-        modalShippingFee.textContent = `$${order.shipping.toFixed(2)}`;
-        modalTotal.textContent = `$${order.total.toFixed(2)}`;
+        modalSubtotal.textContent = `฿${order.subtotal.toFixed(2)}`;
+        modalShippingFee.textContent = `฿${order.shipping.toFixed(2)}`;
+        modalTotal.textContent = `฿${order.total.toFixed(2)}`;
 
         // Open modal
         orderDetailModal.classList.remove('opacity-0', 'pointer-events-none');

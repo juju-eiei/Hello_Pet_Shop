@@ -84,16 +84,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="text-xs text-gray-500">Qty: ${item.quantity}</div>
                     </div>
                     <div class="text-sm border-gray-800 font-medium whitespace-nowrap">
-                        $${itemTotal.toFixed(2)}
+                        ฿${itemTotal.toFixed(2)}
                     </div>
                 </div>
             `;
         });
 
         // Update Totals
-        summarySubtotal.textContent = `$${subtotal.toFixed(2)}`;
-        summaryShipping.textContent = `$${shippingFee.toFixed(2)}`;
-        summaryTotal.textContent = `$${(subtotal + shippingFee).toFixed(2)}`;
+        summarySubtotal.textContent = `฿${subtotal.toFixed(2)}`;
+        summaryShipping.textContent = `฿${shippingFee.toFixed(2)}`;
+        summaryTotal.textContent = `฿${(subtotal + shippingFee).toFixed(2)}`;
     }
 
     function attachEvents() {

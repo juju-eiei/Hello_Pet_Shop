@@ -1,81 +1,42 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Promotions - Staff</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="/css/staff_mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <!-- Mobile User-Agent Check -->
     <script>
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
             document.documentElement.classList.add('mobile-device');
         }
     </script>
+<script type="module" src="/src/js/main.js"></script>
 </head>
-<body>
+<body class="preload">
     <div class="admin-wrapper">
         <!-- Mobile Header -->
-        <header class="mobile-header">
-            <i class="fas fa-bars hamburger-btn" onclick="toggleSidebar()"></i>
-            <h2>Promotions</h2>
-            <div style="width: 20px;"></div>
-        </header>
+        <header class="mobile-header"></header>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header" style="background-color: #3b5030;">
-                <i class="fas fa-paw"></i>
-                <span>Hello Pet Shop</span>
-            </div>
-            <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Staff</div>
-                <a href="staff_profile.html" class="menu-item">
-                    <i class="fas fa-home"></i>
-                    <span>Profile</span>
-                </a>
-                
-                <div class="menu-group open">
-                    <a href="#" class="menu-item active" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-box"></i>
-                        <span>Products</span>
-                        <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="submenu">
-                        <a href="staff_stock.html">Stock Management</a>
-                        <a href="staff_promotions.html" class="active">Promotions</a>
-                    </div>
-                </div>
-
-                <a href="staff_orders.html" class="menu-item">
-                    <i class="fas fa-file-invoice"></i>
-                    <span>Orders</span>
-                </a>
-                <a href="staff_customers.html" class="menu-item">
-                    <i class="fas fa-users"></i>
-                    <span>Customers</span>
-                </a>
-                <a href="#" class="menu-item logout-item" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-        </aside>
-
-        <!-- Sidebar Overlay (Mobile) -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        <aside class="sidebar"></aside>
 
         <!-- Main Content -->
-        <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto;">
+        <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto; padding-bottom: 80px;">
             <div class="page-header">
                 <h1>Promotions</h1>
             </div>
 
             <!-- Search -->
-            <div class="search-container-staff" style="background: #dbeafe; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; width: 100%; max-width: 500px;">
-                <i class="fas fa-search" style="color: #60a5fa; font-size: 18px;"></i>
-                <input type="text" id="searchInput" placeholder="Search promotions..." style="background: transparent; border: none; outline: none; margin-left: 10px; width: 100%; color: #1e3a8a; font-size: 15px;">
+            <div class="staff-stock-search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search promotions...">
             </div>
 
             <!-- Table -->
@@ -90,6 +51,26 @@
                 </div>
             </div>
         </main>
+        
+        <!-- Bottom Navigation for Mobile -->
+        <nav class="bottom-nav">
+            <a href="staff_stock.html" class="nav-item active">
+                <i class="fas fa-box"></i>
+                <span data-i18n="nav.stock">จัดการคลังสินค้า</span>
+            </a>
+            <a href="staff_customers.html" class="nav-item">
+                <i class="fas fa-users"></i>
+                <span data-i18n="nav.customers">ลูกค้า</span>
+            </a>
+            <a href="staff_orders.html" class="nav-item">
+                <i class="fas fa-file-invoice"></i>
+                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
+            </a>
+            <a href="staff_profile.html" class="nav-item">
+                <i class="fas fa-user"></i>
+                <span data-i18n="nav.profile">โปรไฟล์</span>
+            </a>
+        </nav>
     </div>
 
     <div id="toast" class="toast"></div>
@@ -97,10 +78,7 @@
     <script>
         let currentKeyword = '';
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('sidebarOverlay').classList.toggle('active');
-        }
+        function toggleSidebar() { const sidebar = document.querySelector('.sidebar'); const overlay = document.getElementById('sidebarOverlay'); if (sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } }
 
         function toggleSubmenu(el) {
             const group = el.closest('.menu-group');
@@ -120,12 +98,20 @@
 
         async function fetchPromotions() {
             try {
-                const response = await fetch(`api/promotions?keyword=${encodeURIComponent(currentKeyword)}`);
+                const response = await fetch(`/api/promotions?keyword=${encodeURIComponent(currentKeyword)}`);
                 const result = await response.json();
                 if (response.ok) {
-                    renderPromotions(result.data);
+                    renderPromotions(result.data || []);
+                } else {
+                    if (response.status === 401 || response.status === 403) {
+                        localStorage.removeItem('user');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    showToast(result.message || "เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
                 }
             } catch (error) {
+                console.error("fetchPromotions error:", error);
                 showToast("เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
             }
         }

@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <a href="/products" class="inline-block mt-6 px-6 py-2 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 transition-colors">Start Shopping</a>
                 </div>
             `;
-            cartSubtotal.textContent = '$0.00';
+            cartSubtotal.textContent = '฿0.00';
             updateGlobalCartCount();
             return;
         }
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 <div class="flex items-center justify-between sm:w-auto w-full mt-6 sm:mt-0 px-2 sm:px-0 sm:ml-0 ml-10 sm:space-x-24">
                     <!-- Price -->
-                    <span class="text-[#1f2937] font-medium text-[17px]">$${itemTotal.toFixed(2)}</span>
+                    <span class="text-[#1f2937] font-medium text-[17px]">฿${itemTotal.toFixed(2)}</span>
                     
                     <!-- Internal Quantity Adjuster -->
                     <div class="flex items-center space-x-6">
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         cartItemsContainer.innerHTML = htmlSnippet;
         
-        cartSubtotal.textContent = `$${total.toFixed(2)}`;
+        cartSubtotal.textContent = `฿${total.toFixed(2)}`;
         
         // Attach events
         document.querySelectorAll('.cart-minus').forEach(btn => {

@@ -54,7 +54,7 @@ class OrderController {
             
             $discount = 0;
             if (!empty($data['promo_id'])) {
-                $stmtPromo = $this->db->prepare("SELECT discount_type, discount_value FROM promotions WHERE id = ? AND is_active = 1 AND start_date <= CURDATE() AND end_date >= CURDATE()");
+                $stmtPromo = $this->db->prepare("SELECT discount_type, discount_value FROM promotions WHERE promo_id = ? AND is_active = 1 AND start_date <= CURDATE() AND end_date >= CURDATE()");
                 $stmtPromo->execute([$data['promo_id']]);
                 $promo = $stmtPromo->fetch(PDO::FETCH_ASSOC);
                 
@@ -78,14 +78,14 @@ class OrderController {
             
             // 3. insert into orders
             $payment_method = $data['payment_method'] ?? 'transfer';
-            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, address_id, promo_id, subtotal, discount, shipping_fee, net_total, status, payment_method, order_type) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 'online')");
+            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, payment_method, order_type) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 1)");
             $promo_id = !empty($data['promo_id']) ? $data['promo_id'] : null;
             $stmtOrder->execute([$data['customer_id'], $data['address_id'], $promo_id, $subtotal, $discount, $shipping_fee, $net_total, $payment_method]);
             $order_id = $this->db->lastInsertId();
             
             $stmtDetail = $this->db->prepare("INSERT INTO order_details (order_id, product_id, quantity, unit_cost, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtUpdateStock = $this->db->prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?");
-            $stmtLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, reference_id, quantity_change, type, reason) VALUES (?, ?, ?, 'sale', ?)");
+            $stmtUpdateStock = $this->db->prepare("UPDATE products SET stock_qty = stock_qty - ? WHERE product_id = ? AND stock_qty >= ?");
+            $stmtLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, employee_id, reference_id, quantity, movement_type, unit_cost) VALUES (?, 1, ?, ?, 2, ?)");
             
             foreach ($order_details as $detail) {
                 // 4. order_details
@@ -98,8 +98,7 @@ class OrderController {
                 }
                 
                 // 6. log
-                $reason = "Sale from Order #" . $order_id;
-                $stmtLog->execute([$detail['product_id'], $order_id, -$detail['quantity'], $reason]); 
+                $stmtLog->execute([$detail['product_id'], $order_id, -$detail['quantity'], $detail['unit_cost']]); 
             }
             
             $this->db->commit();
@@ -112,13 +111,201 @@ class OrderController {
         }
     }
 
+    public function createPOSOrder() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        if (empty($data['items'])) {
+            Response::json(400, "Bad Request: Missing items");
+            return;
+        }
+
+        $this->db->beginTransaction();
+
+        try {
+            // 1. Resolve customer_id
+            $customerId = !empty($data['customer_id']) ? (int)$data['customer_id'] : null;
+            if (!$customerId) {
+                // Default to the first customer in the DB
+                $stmtCust = $this->db->query("SELECT customer_id FROM customers ORDER BY customer_id ASC LIMIT 1");
+                $cust = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                $customerId = $cust ? (int)$cust['customer_id'] : 1;
+            }
+
+            // 2. Resolve employee_id from session or payload, fallback to 1
+            $employeeId = 1;
+            $userId = $_SESSION['user_id'] ?? null;
+            if ($userId) {
+                $stmtEmp = $this->db->prepare("SELECT employee_id FROM employees WHERE user_id = ?");
+                $stmtEmp->execute([$userId]);
+                $emp = $stmtEmp->fetch(PDO::FETCH_ASSOC);
+                if ($emp) {
+                    $employeeId = (int)$emp['employee_id'];
+                }
+            } else if (!empty($data['employee_id'])) {
+                $employeeId = (int)$data['employee_id'];
+            }
+
+            // 3. Resolve address_id (since it is required by DB relations)
+            $addressId = null;
+            try {
+                $stmtAddr = $this->db->prepare("SELECT address_id FROM addresses WHERE customer_id = ? LIMIT 1");
+                $stmtAddr->execute([$customerId]);
+                $addr = $stmtAddr->fetch(PDO::FETCH_ASSOC);
+                
+                if ($addr && isset($addr['address_id'])) {
+                    $addressId = (int)$addr['address_id'];
+                } else {
+                    $stmtCustInfo = $this->db->prepare("SELECT first_name, last_name, phone FROM customers WHERE customer_id = ?");
+                    $stmtCustInfo->execute([$customerId]);
+                    $cInfo = $stmtCustInfo->fetch(PDO::FETCH_ASSOC);
+                    $rName = $cInfo ? trim($cInfo['first_name'] . ' ' . $cInfo['last_name']) : 'Walk-in Customer';
+                    $rPhone = ($cInfo && !empty($cInfo['phone'])) ? $cInfo['phone'] : '0000000000';
+
+                    $stmtInsertAddr = $this->db->prepare("INSERT INTO addresses (customer_id, recipient_name, phone, address_detail, province, zip_code, is_default) VALUES (?, ?, ?, 'POS Store', 'Bangkok', '10400', 1)");
+                    $stmtInsertAddr->execute([$customerId, $rName, $rPhone]);
+                    $addressId = (int)$this->db->lastInsertId();
+                }
+            } catch (Exception $eAddrGeneral) {
+                $stmtAnyAddr = $this->db->query("SELECT address_id FROM addresses LIMIT 1");
+                $anyAddr = $stmtAnyAddr->fetch(PDO::FETCH_ASSOC);
+                $addressId = $anyAddr ? (int)$anyAddr['address_id'] : 1;
+            }
+
+            $subtotal = 0;
+            $order_details = [];
+
+            foreach ($data['items'] as $item) {
+                // Check stock
+                $stmt = $this->db->prepare("SELECT selling_price as price, cost_price, stock_qty FROM products WHERE product_id = ? FOR UPDATE");
+                $stmt->execute([$item['product_id']]);
+                $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$product) {
+                    throw new Exception("Product ID {$item['product_id']} not found");
+                }
+                
+                if ($product['stock_qty'] < $item['quantity']) {
+                    throw new Exception("Product ID {$item['product_id']} is out of stock or insufficient quantity");
+                }
+
+                $total_price = $product['price'] * $item['quantity'];
+                $subtotal += $total_price;
+
+                $order_details[] = [
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_cost' => $product['cost_price'],
+                    'unit_price' => $product['price'],
+                    'total_price' => $total_price
+                ];
+            }
+
+            // 4. Calculate discount
+            $discount = 0;
+            $promoId = !empty($data['promo_id']) ? (int)$data['promo_id'] : null;
+            if ($promoId) {
+                $stmtPromo = $this->db->prepare("SELECT discount_type, discount_value FROM promotions WHERE promo_id = ? AND is_active = 1 AND start_date <= CURDATE() AND end_date >= CURDATE()");
+                $stmtPromo->execute([$promoId]);
+                $promo = $stmtPromo->fetch(PDO::FETCH_ASSOC);
+
+                if ($promo) {
+                    if ($promo['discount_type'] === 'percent') {
+                        $discount = ($subtotal * $promo['discount_value']) / 100;
+                    } else {
+                        $discount = $promo['discount_value'];
+                    }
+                }
+            }
+
+            if ($discount > $subtotal) {
+                $discount = $subtotal;
+            }
+
+            $net_total = $subtotal - $discount;
+            if ($net_total < 0) $net_total = 0;
+
+            $paymentMethod = $data['payment_method'] ?? 'cash';
+
+            // 5. Insert into orders (status = 4 for Completed, order_type = 2 for POS)
+            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, employee_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, order_type) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 4, 2)");
+            $stmtOrder->execute([$customerId, $employeeId, $addressId, $promoId ? $promoId : null, $subtotal, $discount, $net_total]);
+            $orderId = (int)$this->db->lastInsertId();
+
+            // Insert into payments table
+            try {
+                $stmtPayment = $this->db->prepare("INSERT INTO payments (order_id, payment_method, amount, status) VALUES (?, ?, ?, 'verified')");
+                $stmtPayment->execute([$orderId, $paymentMethod, $net_total]);
+            } catch (Exception $exPay) {
+                // Ignore payment insert failure if any constraint
+            }
+
+            // 6. Insert order details, deduct stock, log inventory
+            $stmtDetail = $this->db->prepare("INSERT INTO order_details (order_id, product_id, quantity, unit_price, unit_cost) VALUES (?, ?, ?, ?, ?)");
+            $stmtUpdateStock = $this->db->prepare("UPDATE products SET stock_qty = stock_qty - ? WHERE product_id = ? AND stock_qty >= ?");
+            $stmtLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, employee_id, reference_id, quantity, movement_type, unit_cost) VALUES (?, ?, ?, ?, 2, ?)");
+
+            foreach ($order_details as $detail) {
+                $stmtDetail->execute([$orderId, $detail['product_id'], $detail['quantity'], $detail['unit_price'], $detail['unit_cost']]);
+
+                $stmtUpdateStock->execute([$detail['quantity'], $detail['product_id'], $detail['quantity']]);
+                if ($stmtUpdateStock->rowCount() === 0) {
+                    throw new Exception("Safety Error: Cannot deduct stock for Product ID {$detail['product_id']}");
+                }
+
+                $stmtLog->execute([$detail['product_id'], $employeeId, $orderId, -$detail['quantity'], $detail['unit_cost']]);
+            }
+
+            // 7. Record cash received and change if cash payment
+            $cashReceived = isset($data['cash_received']) ? (float)$data['cash_received'] : $net_total;
+            $changeAmount = max(0, $cashReceived - $net_total);
+
+            $this->db->commit();
+
+            // Retrieve employee name for cashier on receipt
+            $stmtEmpName = $this->db->prepare("SELECT first_name, last_name FROM employees WHERE employee_id = ?");
+            $stmtEmpName->execute([$employeeId]);
+            $empName = $stmtEmpName->fetch(PDO::FETCH_ASSOC);
+            $cashierName = $empName ? trim($empName['first_name'] . ' ' . $empName['last_name']) : 'System';
+
+            // Retrieve customer name for receipt
+            $stmtCustName = $this->db->prepare("SELECT first_name, last_name FROM customers WHERE customer_id = ?");
+            $stmtCustName->execute([$customerId]);
+            $custName = $stmtCustName->fetch(PDO::FETCH_ASSOC);
+            $customerName = $custName ? trim($custName['first_name'] . ' ' . $custName['last_name']) : 'Walk-in Customer';
+
+            Response::json(201, "POS Order completed successfully", [
+                "order_id" => $orderId,
+                "order_number" => "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT),
+                "date" => date('Y-m-d H:i:s'),
+                "subtotal" => $subtotal,
+                "discount" => $discount,
+                "net_total" => $net_total,
+                "cash_received" => $cashReceived,
+                "change" => $changeAmount,
+                "payment_method" => $paymentMethod,
+                "cashier_name" => $cashierName,
+                "customer_name" => $customerName
+            ]);
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            Response::json(400, "Failed to complete POS order", ["error" => $e->getMessage()]);
+        }
+    }
+
     public function index() {
         try {
             $query = "SELECT order_id as id, 
                              order_date as date, 
-                             CONCAT('ORD-', DATE_FORMAT(order_date, '%Y'), '-', LPAD(order_id, 3, '0')) as number, 
+                             CASE WHEN order_type = 2 THEN CONCAT('ORD-POS-', DATE_FORMAT(order_date, '%Y'), '-', LPAD(order_id, 3, '0'))
+                                  ELSE CONCAT('ORD-', DATE_FORMAT(order_date, '%Y'), '-', LPAD(order_id, 3, '0')) END as number, 
                              net_total as amount, 
-                             status 
+                             status,
+                             order_type
                       FROM orders 
                       ORDER BY order_date DESC";
             $stmt = $this->db->query($query);
@@ -137,6 +324,8 @@ class OrderController {
                 $sId = (int)$order['status'];
                 $order['status'] = isset($statusMap[$sId]) ? $statusMap[$sId] : 'Pending';
                 $order['date'] = date('Y-m-d', strtotime($order['date']));
+                $order['order_type'] = (int)($order['order_type'] ?? 1);
+                $order['order_type_label'] = ($order['order_type'] == 2) ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์';
             }
 
             Response::json(200, "Orders retrieved successfully", $orders);
@@ -153,7 +342,10 @@ class OrderController {
             }
             $orderId = (int)$_GET['id'];
 
-            $qOrder = "SELECT o.order_id, o.order_date, CONCAT('ORD-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0')) as number, o.status, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, 
+            $qOrder = "SELECT o.order_id, o.order_date, 
+                              CASE WHEN o.order_type = 2 THEN CONCAT('ORD-POS-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0'))
+                                   ELSE CONCAT('ORD-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0')) END as number, 
+                              o.status, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, o.order_type,
                               c.first_name, c.last_name, c.phone, u.email,
                               a.address_detail, a.province, a.zip_code
                        FROM orders o
@@ -201,6 +393,8 @@ class OrderController {
                 'date' => date('Y-m-d H:i', strtotime($order['order_date'])),
                 'number' => $order['number'],
                 'status' => $statusStr,
+                'order_type' => (int)($order['order_type'] ?? 1),
+                'order_type_label' => ((int)($order['order_type'] ?? 1) == 2) ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์',
                 'tracking_number' => $tracking_number,
                 'company_id' => $company_id,
                 'customer' => [

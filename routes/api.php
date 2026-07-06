@@ -4,6 +4,7 @@ require_once __DIR__ . '/../controllers/OrderController.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/CategoryController.php';
 require_once __DIR__ . '/../controllers/PromotionController.php';
+require_once __DIR__ . '/../controllers/RestockController.php';
 
 $request_method = $_SERVER["REQUEST_METHOD"];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -48,10 +49,31 @@ if (preg_match('/\/api\/products$/', $path)) {
     } else {
         http_response_code(405);
     }
+} elseif (preg_match('/\/api\/categories\/delete$/', $path)) {
+    $controller = new CategoryController();
+    if ($request_method === 'DELETE') {
+        $controller->delete();
+    } else {
+        http_response_code(405);
+    }
 } elseif (preg_match('/\/api\/products\/update-stock$/', $path)) {
     $controller = new ProductController();
     if ($request_method === 'POST') {
         $controller->updateStock();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/products\/update-barcode$/', $path)) {
+    $controller = new ProductController();
+    if ($request_method === 'POST') {
+        $controller->updateBarcode();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/stock\/history$/', $path)) {
+    $controller = new ProductController();
+    if ($request_method === 'GET') {
+        $controller->stockHistory();
     } else {
         http_response_code(405);
     }
@@ -61,6 +83,13 @@ if (preg_match('/\/api\/products$/', $path)) {
         $controller->createOnlineOrder();
     } elseif ($request_method === 'GET') {
         $controller->index();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/orders\/pos$/', $path)) {
+    $controller = new OrderController();
+    if ($request_method === 'POST') {
+        $controller->createPOSOrder();
     } else {
         http_response_code(405);
     }
@@ -204,6 +233,22 @@ if (preg_match('/\/api\/products$/', $path)) {
     $controller = new StaffController();
     if ($request_method === 'GET') {
         $controller->roles();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/restock$/', $path)) {
+    $controller = new RestockController();
+    if ($request_method === 'GET') {
+        $controller->index();
+    } elseif ($request_method === 'POST') {
+        $controller->create();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/restock\/details$/', $path)) {
+    $controller = new RestockController();
+    if ($request_method === 'GET') {
+        $controller->show();
     } else {
         http_response_code(405);
     }

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Profile - Hello Pet Shop</title>
@@ -270,61 +272,22 @@
             document.documentElement.classList.add('mobile-device');
         }
     </script>
+<script type="module" src="/src/js/main.js"></script>
 </head>
-<body>
+<body class="preload">
     <div class="admin-wrapper">
         <!-- Mobile Header -->
-        <header class="mobile-header">
-            <i class="fas fa-arrow-left" style="font-size: 20px; cursor: pointer; color: white;" onclick="window.location.href='staff_customers.html'"></i>
-            <h2 style="margin: 0; font-size: 18px; color: white;">Customer Profile</h2>
-            <i class="fas fa-bars hamburger-btn" onclick="toggleSidebar()"></i>
-        </header>
+        <header class="mobile-header"></header>
 
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header" style="background-color: #3b5030;">
-                <i class="fas fa-paw"></i>
-                <span>Hello Pet Shop</span>
-            </div>
-            <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Staff</div>
-                <a href="staff_profile.html" class="menu-item">
-                    <i class="fas fa-home"></i>
-                    <span>Profile</span>
-                </a>
-                
-                <div class="menu-group">
-                    <a href="#" class="menu-item" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-box"></i>
-                        <span>Products</span>
-                        <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="submenu">
-                        <a href="staff_stock.html">Stock Management</a>
-                        <a href="staff_promotions.html">Promotions</a>
-                    </div>
-                </div>
-
-                <a href="staff_orders.html" class="menu-item">
-                    <i class="fas fa-file-invoice"></i>
-                    <span>Orders</span>
-                </a>
-                <a href="staff_customers.html" class="menu-item active">
-                    <i class="fas fa-users"></i>
-                    <span>Customers</span>
-                </a>
-                <a href="#" class="menu-item logout-item" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-        </aside>
+        <aside class="sidebar"></aside>
 
         <!-- Main Content -->
         <main class="main-content">
             <div class="page-header" style="margin-bottom: 24px;">
-                <button class="btn btn-secondary" onclick="window.location.href='staff_customers.html'" style="margin-right: 16px;">
+                <button class="btn btn-secondary" onclick="(window.navigateTo ? window.navigateTo('staff_customers.html') : window.location.href='staff_customers.html')" style="margin-right: 16px;">
                     <i class="fas fa-arrow-left"></i> Back to List
                 </button>
                 <h1>Customer Profile</h1>
@@ -353,7 +316,7 @@
                         </div>
                         <div class="stat-item">
                             <div class="stat-icon orders"><i class="fas fa-shopping-bag"></i></div>
-                            <div class="stat-text"><strong id="cOrders">0</strong> <span>Orders</span></div>
+                            <div class="stat-text"><strong id="cOrders">0</strong> <span data-i18n="nav.orders">คำสั่งซื้อ</span></div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-icon joined"><i class="fas fa-calendar-alt"></i></div>
@@ -484,10 +447,7 @@
         let currentCustomerId = null;
         let petsData = [];
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('sidebarOverlay').classList.toggle('active');
-        }
+        function toggleSidebar() { const sidebar = document.querySelector('.sidebar'); const overlay = document.getElementById('sidebarOverlay'); if (sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } }
 
         function toggleSubmenu(element) {
             const group = element.closest('.menu-group');
@@ -711,7 +671,7 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', loadProfile);
+        loadProfile();
     </script>
 </body>
 </html>

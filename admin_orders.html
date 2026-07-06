@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Orders - Hello Pet Shop</title>
@@ -23,6 +25,68 @@
         .status-pill.completed { background-color: #dcfce7; color: #166534; }
         .status-pill.cancelled { background-color: #fecdd3; color: #9f1239; }
         
+        .channel-pill {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .channel-pill.online {
+            background-color: #e0f2fe;
+            color: #0284c7;
+            border: 1px solid #bae6fd;
+        }
+        .channel-pill.pos {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .order-tabs-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .order-tab-btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .order-tab-btn:hover {
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        .order-tab-btn.active {
+            background: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+        .order-tab-badge {
+            background: rgba(255,255,255,0.25);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        .order-tab-btn:not(.active) .order-tab-badge {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
         .table-cell-text {
             color: #64748b;
             font-size: 14px;
@@ -55,12 +119,13 @@
                 box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             }
             .order-date { grid-column: 1 / -1; color: #94a3b8; font-size: 13px; }
-            .order-number { font-weight: 700; color: #1e293b; font-size: 15px; }
-            .order-amount { font-weight: 600; color: #3b82f6; text-align: right; }
-            .order-status { grid-column: 1 / -1; display: flex; justify-content: flex-start; }
+            .order-number { font-weight: 700; color: #1e293b; font-size: 15px; display: flex; align-items: center; justify-content: space-between; grid-column: 1 / -1; }
+            .order-amount { font-weight: 600; color: #3b82f6; text-align: left; }
+            .order-status { display: flex; justify-content: flex-end; }
             .order-actions { display: none !important; }
             .stock-table { border: none; box-shadow: none; overflow: visible; background: transparent; }
             .table-header { display: none !important; }
+            .desktop-only-cell { display: none !important; }
         }
 
         @media (min-width: 769px) {
@@ -72,12 +137,14 @@
                 border-bottom: 1px solid #f1f5f9;
                 transition: 0.2s;
             }
-            .order-row:hover { background: #fcfdfe; }
+            .order-row:hover { background: #f8fafc; }
             .order-date { flex: 1.5; }
             .order-number { flex: 2; color: #334155; font-weight: 500; }
+            .order-channel { flex: 1.5; display: flex; align-items: center; }
             .order-amount { flex: 1.5; text-align: left; }
             .order-status { flex: 1; display: flex; justify-content: center; }
             .order-actions { flex: 1; display: flex; justify-content: flex-end; }
+            .mobile-only-pill { display: none !important; }
         }
     </style>
 
@@ -87,60 +154,17 @@
             document.documentElement.classList.add('mobile-device');
         }
     </script>
+    <script type="module" src="/src/js/main.js"></script>
 </head>
-<body>
+<body class="preload">
     <div class="admin-wrapper">
         <!-- Mobile Header -->
-        <header class="mobile-header">
-            <i class="fas fa-bars" id="hamburgerBtn"></i>
-            <h2>Orders</h2>
-            <i class="fas fa-bell"></i>
-        </header>
+        <header class="mobile-header"></header>
 
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <i class="fas fa-paw"></i>
-                <span>Hello Pet Shop</span>
-            </div>
-            <nav class="sidebar-menu">
-                <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                <a href="admin_dashboard.html" class="desktop-only-menu menu-item">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-                <div class="menu-group">
-                    <a class="menu-item" onclick="toggleSubmenu(this)">
-                        <i class="fas fa-box"></i>
-                        <span>Products</span>
-                        <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="submenu">
-                        <a href="admin_stock.html">Stock Management</a>
-                        <a href="admin_product_management.html" class="desktop-only-menu">Product Management</a>
-                        <a href="admin_promotions.html">Promotions</a>
-                    </div>
-                </div>
-                <a href="admin_staff.html" class="menu-item">
-                    <i class="fas fa-users-cog"></i>
-                    <span>Staff Management</span>
-                </a>
-                <a href="admin_orders.html" class="menu-item active">
-                    <i class="fas fa-file-invoice"></i>
-                    <span>Orders</span>
-                </a>
-                <a href="admin_customers.html" class="menu-item">
-                    <i class="fas fa-users"></i>
-                    <span>Customers</span>
-                </a>
-                <a href="#" class="menu-item logout-item" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-        </aside>
+        <aside class="sidebar"></aside>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -148,10 +172,23 @@
                 <h1>Orders</h1>
             </div>
 
+            <!-- Tabs Filter -->
+            <div class="order-tabs-container">
+                <button type="button" class="order-tab-btn active" id="tabBtnAll" onclick="window.setOrderTypeFilter('all')">
+                    <i class="fas fa-list"></i> ทั้งหมด <span class="order-tab-badge" id="badgeAll">0</span>
+                </button>
+                <button type="button" class="order-tab-btn" id="tabBtnOnline" onclick="window.setOrderTypeFilter('online')">
+                    <i class="fas fa-globe"></i> คำสั่งซื้อออนไลน์ <span class="order-tab-badge" id="badgeOnline">0</span>
+                </button>
+                <button type="button" class="order-tab-btn" id="tabBtnPos" onclick="window.setOrderTypeFilter('pos')">
+                    <i class="fas fa-store"></i> ขายหน้าร้าน (POS) <span class="order-tab-badge" id="badgePos">0</span>
+                </button>
+            </div>
+
             <!-- Search -->
             <div class="search-container">
                 <i class="fas fa-search" style="color: #64748b;"></i>
-                <input type="text" id="searchInput" placeholder="Search orders by ID or status...">
+                <input type="text" id="searchInput" placeholder="Search orders by ID, status or channel...">
             </div>
 
             <!-- Table -->
@@ -159,6 +196,7 @@
                 <div class="table-header">
                     <span style="flex: 1.5;">Order Date</span>
                     <span style="flex: 2;">Order Number</span>
+                    <span style="flex: 1.5;">Channel</span>
                     <span style="flex: 1.5; text-align: left;">Total Amount</span>
                     <span style="flex: 1; text-align: center;">Status</span>
                     <span style="flex: 1; text-align: right;">Actions</span>
@@ -170,139 +208,137 @@
         </main>
 
         <!-- Bottom Navigation for Mobile -->
-        <nav class="bottom-nav">
-            <a href="admin_dashboard.html" class="nav-item">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="admin_orders.html" class="nav-item active">
-                <i class="fas fa-file-invoice"></i>
-                <span>Orders</span>
-            </a>
-            <a href="admin_stock.html" class="nav-item">
-                <i class="fas fa-box"></i>
-                <span>Stock</span>
-            </a>
-            <a href="admin_customers.html" class="nav-item">
-                <i class="fas fa-users"></i>
-                <span>Customers</span>
-            </a>
-            <a href="admin_promotions.html" class="nav-item">
-                <i class="fas fa-bullhorn"></i>
-                <span>Promotions</span>
-            </a>
-        </nav>
+        <nav class="bottom-nav"></nav>
     </div>
 
     <div id="toast" class="toast"></div>
 
     <script>
-        let allOrders = [];
+        (function() {
+            let allOrders = [];
+            const urlParams = new URLSearchParams(window.location.search);
+            let currentTypeFilter = urlParams.get('type') || 'all';
 
-        async function fetchOrders() {
-            try {
-                const res = await fetch('/api/orders');
-                if (!res.ok) throw new Error('Network error');
-                const json = await res.json();
-                allOrders = json.data || [];
+            window.setOrderTypeFilter = function(type) {
+                currentTypeFilter = type;
+                updateTabUI();
                 renderOrders();
-            } catch (e) {
-                console.error(e);
-                document.getElementById('ordersContainer').innerHTML = '<div style="padding: 50px; text-align: center; color: #ef4444;">เกิดข้อผิดพลาดในการดึงข้อมูล</div>';
-            }
-        }
+            };
 
-        function checkAuth() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || user.role_name.toLowerCase() !== 'admin') {
-                window.location.href = 'login.html';
-            }
-        }
-
-        function getStatusClass(status) {
-            return status.toLowerCase().replace(" ", "");
-        }
-
-        function renderOrders() {
-            const container = document.getElementById('ordersContainer');
-            const keyword = document.getElementById('searchInput').value.toLowerCase();
-            
-            const filteredOrders = allOrders.filter(o => 
-                o.number.toLowerCase().includes(keyword) || 
-                o.status.toLowerCase().includes(keyword) ||
-                o.date.includes(keyword)
-            );
-
-            if (filteredOrders.length === 0) {
-                container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบคำสั่งซื้อ</div>';
-                return;
+            function updateTabUI() {
+                const tabs = {
+                    all: document.getElementById('tabBtnAll'),
+                    online: document.getElementById('tabBtnOnline'),
+                    pos: document.getElementById('tabBtnPos')
+                };
+                Object.keys(tabs).forEach(k => {
+                    if (tabs[k]) {
+                        if (k === currentTypeFilter) tabs[k].classList.add('active');
+                        else tabs[k].classList.remove('active');
+                    }
+                });
             }
 
-            container.innerHTML = filteredOrders.map(o => `
-                <div class="order-row" onclick="window.location.href='admin_order_details.html?id=${o.id}'" style="cursor: pointer;">
-                    <div class="order-date">${o.date}</div>
-                    <div class="order-number">${o.number}</div>
-                    <div class="order-amount">${o.amount.toFixed(2)}</div>
-                    <div class="order-status">
-                        <span class="status-pill ${getStatusClass(o.status)}">${o.status}</span>
+            function updateBadges() {
+                const countAll = allOrders.length;
+                const countOnline = allOrders.filter(o => (o.order_type || 1) === 1).length;
+                const countPos = allOrders.filter(o => o.order_type === 2).length;
+
+                const bAll = document.getElementById('badgeAll');
+                const bOnline = document.getElementById('badgeOnline');
+                const bPos = document.getElementById('badgePos');
+
+                if (bAll) bAll.textContent = countAll;
+                if (bOnline) bOnline.textContent = countOnline;
+                if (bPos) bPos.textContent = countPos;
+            }
+
+            async function fetchOrders() {
+                try {
+                    const res = await fetch('/api/orders');
+                    if (!res.ok) throw new Error('Network error');
+                    const json = await res.json();
+                    allOrders = json.data || [];
+                    updateBadges();
+                    updateTabUI();
+                    renderOrders();
+                } catch (e) {
+                    console.error(e);
+                    const container = document.getElementById('ordersContainer');
+                    if (container) container.innerHTML = '<div style="padding: 50px; text-align: center; color: #ef4444;">เกิดข้อผิดพลาดในการดึงข้อมูล</div>';
+                }
+            }
+
+            function checkAuth() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user || user.role_name.toLowerCase() !== 'admin') {
+                    window.location.href = 'login.html';
+                }
+            }
+
+            function getStatusClass(status) {
+                return status.toLowerCase().replace(" ", "");
+            }
+
+            function renderOrders() {
+                const container = document.getElementById('ordersContainer');
+                const searchInput = document.getElementById('searchInput');
+                if (!container || !searchInput) return;
+                
+                const keyword = searchInput.value.toLowerCase();
+                
+                const filteredOrders = allOrders.filter(o => {
+                    const matchesKeyword = o.number.toLowerCase().includes(keyword) || 
+                                           o.status.toLowerCase().includes(keyword) ||
+                                           (o.order_type_label && o.order_type_label.toLowerCase().includes(keyword)) ||
+                                           o.date.includes(keyword);
+                    
+                    if (!matchesKeyword) return false;
+
+                    if (currentTypeFilter === 'online') return (o.order_type || 1) === 1;
+                    if (currentTypeFilter === 'pos') return o.order_type === 2;
+                    return true;
+                });
+
+                if (filteredOrders.length === 0) {
+                    container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบคำสั่งซื้อ</div>';
+                    return;
+                }
+
+                container.innerHTML = filteredOrders.map(o => `
+                    <div class="order-row" onclick="(window.navigateTo ? window.navigateTo('admin_order_details.html?id=${o.id}') : window.location.href='admin_order_details.html?id=${o.id}')" style="cursor: pointer;">
+                        <div class="order-date">${o.date}</div>
+                        <div class="order-number">
+                            <span>${o.number}</span>
+                            <span class="channel-pill ${o.order_type === 2 ? 'pos' : 'online'} mobile-only-pill">
+                                <i class="fas ${o.order_type === 2 ? 'fa-store' : 'fa-globe'}"></i> ${o.order_type_label}
+                            </span>
+                        </div>
+                        <div class="order-channel desktop-only-cell">
+                            <span class="channel-pill ${o.order_type === 2 ? 'pos' : 'online'}">
+                                <i class="fas ${o.order_type === 2 ? 'fa-store' : 'fa-globe'}"></i> ${o.order_type_label}
+                            </span>
+                        </div>
+                        <div class="order-amount">฿${o.amount.toFixed(2)}</div>
+                        <div class="order-status">
+                            <span class="status-pill ${getStatusClass(o.status)}">${o.status}</span>
+                        </div>
+                        <div class="order-actions desktop-action">
+                            <a href="admin_order_details.html?id=${o.id}" class="action-link" style="width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; background-color: #eff6ff; color: #3b82f6; font-size: 16px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="View Order Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
                     </div>
-                    <div class="order-actions desktop-action">
-                        <a href="admin_order_details.html?id=${o.id}" class="action-link" style="width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; background-color: #eff6ff; color: #3b82f6; font-size: 16px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="View Order Details">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function showToast(message, type) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            setTimeout(() => toast.className = 'toast', 3000);
-        }
-
-        document.getElementById('searchInput').addEventListener('input', renderOrders);
-
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
-        });
-
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (sidebar && overlay) {
-                sidebar.classList.toggle('active');
-                overlay.classList.toggle('active');
+                `).join('');
             }
-        }
 
-        document.getElementById('hamburgerBtn').addEventListener('click', toggleSidebar);
-        document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.addEventListener('input', renderOrders);
 
-        function toggleSubmenu(el) {
-            const group = el.closest('.menu-group');
-            if (group) {
-                group.classList.toggle('open');
-                localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
-            }
-        }
-
-        // Restore submenu state
-        document.addEventListener('DOMContentLoaded', () => {
-            const menuGroup = document.querySelector('.menu-group');
-            if (menuGroup) {
-                const isOpen = localStorage.getItem('productsMenuOpen');
-                if (isOpen === 'true') menuGroup.classList.add('open');
-                else if (isOpen === 'false') menuGroup.classList.remove('open');
-            }
-        });
-
-        // Initialize
-        checkAuth();
-        fetchOrders();
+            // Initialize page logic
+            checkAuth();
+            fetchOrders();
+        })();
     </script>
 </body>
 </html>
