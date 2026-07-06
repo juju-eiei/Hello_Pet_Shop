@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="text-center px-1">
                     <h3 class="text-sm font-semibold text-gray-800 mb-1 leading-tight h-10 line-clamp-2">${p.product_name}</h3>
-                    <p class="text-blue-500 font-bold text-sm mb-3">$${parseFloat(p.selling_price).toFixed(2)}</p>
+                    <p class="text-blue-500 font-bold text-sm mb-3">฿${parseFloat(p.selling_price).toFixed(2)}</p>
                     <button class="add-to-cart-btn w-full py-2 btn-green text-white rounded-lg text-xs font-semibold shadow-sm active:scale-95 transition-all"
                         data-id="${p.product_id}" data-name="${p.product_name}" data-price="${p.selling_price}" data-image="${p.image_url || 'https://placehold.co/400x400?text=' + encodeURIComponent(p.product_name)}">
                         Add to Cart
