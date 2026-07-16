@@ -10,7 +10,9 @@ class Staff {
     }
 
     public function getAll($keyword = '') {
-        $sql = "SELECT e.*, u.email, u.username, u.role_id, u.permissions, r.role_name 
+        $thisMonth = date('Y-m');
+        $sql = "SELECT e.*, u.email, u.username, u.role_id, u.permissions, r.role_name,
+                (SELECT COUNT(*) FROM attendance_logs al WHERE al.employee_id = e.employee_id AND DATE_FORMAT(al.work_date, '%Y-%m') = '{$thisMonth}') as days_worked
                 FROM employees e 
                 JOIN users u ON e.user_id = u.user_id 
                 LEFT JOIN roles r ON u.role_id = r.role_id ";

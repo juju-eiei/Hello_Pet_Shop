@@ -19,6 +19,8 @@ if (strpos($request_uri, '/api/') !== false) {
         '/home' => 'products.html',
         '/login' => 'login.html',
         '/register' => 'register.html',
+        '/forgot-password' => 'forgot_password.html',
+        '/reset-password' => 'reset_password.html',
         '/products' => 'products.html',
         '/profile' => 'profile.html',
         '/cart' => 'cart.html',
@@ -30,6 +32,7 @@ if (strpos($request_uri, '/api/') !== false) {
         '/admin/products' => 'admin_product_management.html',
         '/admin/products/edit' => 'admin_product_edit.html',
         '/admin/promotions' => 'admin_promotions.html',
+        '/admin/delivery' => 'admin_delivery.html',
         '/staff/profile' => 'staff_profile.html'
     ];
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout - Hello Pet Shop</title>
+    <title>ชำระเงิน - Hello Pet Shop</title>
     <!-- Use Vite to load styles -->
     <script type="module" src="/src/js/main.js"></script>
     <script type="module" src="/src/js/checkout.js"></script>
@@ -54,10 +54,10 @@
 
                 <!-- Nav Links -->
                 <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
-                    <a href="/home" class="hover:text-gray-200 transition-colors">Home</a>
-                    <a href="/my-pets" class="hover:text-gray-200 transition-colors">My Pets</a>
-                    <a href="/order-history" class="hover:text-gray-200 transition-colors">Order History</a>
-                    <a href="/contact" class="hover:text-gray-200 transition-colors">Contact Us</a>
+                    <a href="/home" class="hover:text-gray-200 transition-colors">หน้าแรก</a>
+                    <a href="/my-pets" class="hover:text-gray-200 transition-colors">สัตว์เลี้ยงของฉัน</a>
+                    <a href="/order-history" class="hover:text-gray-200 transition-colors">ประวัติคำสั่งซื้อ</a>
+                    <a href="/contact" class="hover:text-gray-200 transition-colors">ติดต่อเรา</a>
                 </div>
             </div>
 
@@ -98,7 +98,7 @@
             <a href="/cart" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-500 hover:text-gray-800 transition-colors">
                 <i class="fas fa-arrow-left"></i>
             </a>
-            <h1 class="text-3xl font-bold text-gray-800">Checkout</h1>
+            <h1 class="text-3xl font-bold text-gray-800">ชำระเงิน</h1>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -109,32 +109,32 @@
                 <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
                     <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
                         <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mr-3 text-sm">1</div>
-                        ที่อยู่จัดส่ง (Shipping Address)
+                        ที่อยู่จัดส่ง
                     </h2>
                     
                     <form id="addressForm" class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล (Full Name)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
                             <input type="text" id="fullName" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ (Phone)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์</label>
                             <input type="tel" id="phone" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่ (Address Details)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่โดยละเอียด</label>
                             <textarea id="address" rows="3" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all resize-none"></textarea>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด (Province)</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด</label>
                                 <input type="text" id="province" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">รหัสไปรษณีย์ (Zip Code)</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">รหัสไปรษณีย์</label>
                                 <input type="text" id="zipcode" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all">
                             </div>
                         </div>
@@ -145,7 +145,7 @@
                 <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
                     <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
                         <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mr-3 text-sm">2</div>
-                        วิธีการจัดส่ง (Delivery Options)
+                        วิธีการจัดส่ง
                     </h2>
                     
                     <div class="space-y-3">
@@ -157,7 +157,7 @@
                                         <div class="w-2.5 h-2.5 rounded-full bg-[#8bb35c] scale-0 transition-transform duration-200 absolute"></div>
                                     </div>
                                     <div>
-                                        <div class="font-bold text-gray-800">ส่งธรรมดา (Standard Delivery)</div>
+                                        <div class="font-bold text-gray-800">ส่งธรรมดา</div>
                                         <div class="text-sm text-gray-500">ภายใน 3-5 วันทำการ</div>
                                     </div>
                                 </div>
@@ -173,7 +173,7 @@
                                         <div class="w-2.5 h-2.5 rounded-full bg-[#8bb35c] scale-0 transition-transform duration-200 absolute"></div>
                                     </div>
                                     <div>
-                                        <div class="font-bold text-gray-800">ส่งด่วนพิเศษ (Express Delivery)</div>
+                                        <div class="font-bold text-gray-800">ส่งด่วนพิเศษ</div>
                                         <div class="text-sm text-gray-500">ภายใน 1-2 วันทำการ</div>
                                     </div>
                                 </div>
@@ -187,7 +187,7 @@
                 <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
                     <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
                         <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mr-3 text-sm">3</div>
-                        วิธีชำระเงิน (Payment Methods)
+                        วิธีชำระเงิน
                     </h2>
                     
                     <div class="space-y-3">
@@ -200,7 +200,7 @@
                                 <div class="ml-4 flex items-center">
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/PromptPay-logo.png" alt="PromptPay" class="h-6 mr-3">
                                     <div>
-                                        <div class="font-bold text-gray-800">โอนผ่านธนาคาร (Bank Transfer / PromptPay)</div>
+                                        <div class="font-bold text-gray-800">โอนผ่านธนาคาร / PromptPay</div>
                                         <div class="text-sm text-gray-500">สแกน QR Code หรือโอนผ่านเลขบัญชี</div>
                                     </div>
                                 </div>
@@ -216,7 +216,7 @@
                                 <div class="ml-4 flex items-center text-gray-800">
                                     <i class="fas fa-money-bill-wave text-xl text-green-600 mr-3"></i>
                                     <div>
-                                        <div class="font-bold text-gray-800">เก็บเงินปลายทาง (Cash on Delivery)</div>
+                                        <div class="font-bold text-gray-800">เก็บเงินปลายทาง</div>
                                         <div class="text-sm text-gray-500">ชำระเงินเมื่อได้รับสินค้า</div>
                                     </div>
                                 </div>
@@ -230,7 +230,7 @@
             <!-- Right Column: Order Summary -->
             <div class="lg:col-span-5 xl:col-span-4">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 sticky top-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-6">สรุปคำสั่งซื้อ (Order Summary)</h2>
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">สรุปคำสั่งซื้อ</h2>
                     
                     <!-- Items List -->
                     <div id="summaryItemsContainer" class="space-y-4 mb-6 pb-6 border-b border-gray-100 max-h-60 overflow-y-auto pr-2">
@@ -240,11 +240,11 @@
                     <!-- Totals -->
                     <div class="space-y-3 mb-6">
                         <div class="flex justify-between text-gray-600">
-                            <span>ยอดรวมสินค้า (Subtotal)</span>
+                            <span>ยอดรวมสินค้า</span>
                             <span id="summarySubtotal" class="font-medium"></span>
                         </div>
                         <div class="flex justify-between text-gray-600">
-                            <span>ค่าจัดส่ง (Shipping)</span>
+                            <span>ค่าจัดส่ง</span>
                             <span id="summaryShipping" class="font-medium"></span>
                         </div>
                     </div>
@@ -261,7 +261,7 @@
                         <i class="fas fa-lock text-sm opacity-80"></i>
                         <span>ยืนยันการสั่งซื้อ</span>
                     </button>
-                    <p class="text-center text-xs text-gray-400 mt-4"><i class="fas fa-shield-alt mr-1"></i>Secure Checkout</p>
+                    <p class="text-center text-xs text-gray-400 mt-4"><i class="fas fa-shield-alt mr-1"></i>ชำระเงินอย่างปลอดภัย</p>
                 </div>
             </div>
         </div>

@@ -5,7 +5,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Management - Staff</title>
+    <title>จัดการคลังสินค้า (พนักงาน) - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="/css/staff_mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -131,41 +131,62 @@
             .no-print { display: none !important; }
         }
 
-        .page-header h1 { font-size: 28px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 24px; }
+        body { background-color: #f4f7fb; font-family: 'Outfit', 'Kanit', sans-serif; color: #334155; }
+        
+        .page-header h1 { font-size: 28px; font-weight: 800; color: #1e293b; letter-spacing: -0.5px; background: linear-gradient(90deg, #1e293b, #334155); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
-        /* Search Bar */
-        .search-container-staff {
-            background: #dbeafe; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; width: 100%; max-width: 500px;
+        /* Search Bar Setup */
+        .search-container {
+            background: #ffffff !important;
+            border-radius: 100px !important;
+            padding: 12px 24px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03) !important;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 24px !important;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
         }
-        .search-container-staff input {
-            background: transparent; border: none; outline: none; margin-left: 10px; width: 100%; color: #1e3a8a; font-size: 15px;
+        .search-container:focus-within { box-shadow: 0 8px 30px rgba(47, 93, 58, 0.1) !important; border-color: #94ad5e; }
+        .search-container input { background: transparent !important; font-size: 15px !important; font-weight: 500; border: none; outline: none; width: 100%; color: #1e293b; }
+        .search-container i { color: #94a3b8 !important; font-size: 18px; margin-right: 14px; }
+
+        /* Filter Tabs Premium */
+        .filter-tabs {
+            display: inline-flex;
+            background: white;
+            padding: 6px;
+            border-radius: 16px;
+            gap: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            border: 1px solid #e2e8f0 !important;
         }
-        .search-container-staff input::placeholder { color: #93c5fd; }
-        .search-container-staff i { color: #60a5fa; font-size: 18px; }
+        .filter-btn {
+            padding: 10px 20px !important;
+            border-radius: 12px !important;
+            background: transparent !important;
+            border: none !important;
+            color: #64748b !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            transition: all 0.3s ease;
+            box-shadow: none !important;
+            cursor: pointer;
+        }
+        .filter-btn:hover { color: #1e293b !important; background: #f8fafc !important; }
+        .filter-btn.active {
+            background: linear-gradient(135deg, #314d2a, #3e6135) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(49, 77, 42, 0.25) !important;
+            transform: translateY(-1px);
+        }
 
-        /* Filter Tabs */
-        .filter-tabs { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-        .filter-btn { padding: 8px 16px; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 14px; transition: all 0.2s; }
-        .filter-btn:hover { background: #e2e8f0; }
-        .filter-btn.active { background: #e2e8f0; color: #0f172a; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-
-        /* Table */
-        .staff-stock-table { border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .staff-stock-header { display: flex; padding: 16px 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #475569; }
-        .staff-stock-row { display: flex; padding: 16px 24px; border-bottom: 1px solid #e2e8f0; align-items: center; transition: background 0.2s; }
-        .staff-stock-row:hover { background: #f8fafc; }
-        .staff-stock-row:last-child { border-bottom: none; }
-        
-        .staff-product-info { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
-        .staff-product-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0; background: #ffffff; padding: 2px; }
-        .staff-product-name { font-size: 14px; color: #334155; font-weight: 500; }
-        
-        .staff-status { flex: 1; text-align: center; font-size: 14px; font-weight: 600; }
-        .status-in-stock { color: #22c55e; }
-        .status-low-stock { color: #eab308; }
-        .status-out-of-stock { color: #ef4444; }
-        
-        .staff-stock-qty { flex: 1; text-align: center; font-size: 14px; color: #334155; }
+        /* Mobile Filter Adjustment */
+        @media (max-width: 768px) {
+            .filter-tabs { width: 100%; display: flex; box-sizing: border-box; }
+            .filter-btn { flex: 1; text-align: center; }
+        }
 
         .menu-item.active-pill { background: #f1f5f9; border-radius: 8px; color: #0f172a; font-weight: 600; }
         .submenu-item { display: block; padding: 10px 16px 10px 48px; font-size: 14px; text-decoration: none; color: #64748b; font-weight: 500; transition: color 0.2s; }
@@ -192,34 +213,43 @@
         <aside class="sidebar"></aside>
 
         <!-- Main Content -->
-        <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto; padding: 20px 20px 80px 20px;">
+        <main class="main-content">
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;" class="no-print">
-                <h1 style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 0; background: linear-gradient(90deg, #1e293b, #334155); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Stock Management</h1>
-                <div style="display: flex; gap: 8px;">
-                    <button class="btn-po btn-po-secondary" id="stockHistoryBtn" onclick="openModal('stockHistoryModal')"><i class="fas fa-history"></i> Stock History</button>
-                    <button class="btn-po btn-po-secondary" id="poHistoryBtn" onclick="openModal('poHistoryModal')"><i class="fas fa-history"></i> PO History</button>
-                    <button class="btn-po btn-po-primary" id="createPoBtn" onclick="openModal('createPoModal')"><i class="fas fa-file-invoice"></i> Create PO</button>
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+                <h1 style="margin: 0;">จัดการคลังสินค้า</h1>
+                <div style="display: flex; gap: 12px;" class="no-print">
+                    <button class="btn-po btn-po-secondary" id="stockHistoryBtn" onclick="openModal('stockHistoryModal')"><i class="fas fa-history"></i> ประวัติสต็อกสินค้า</button>
+                    <button class="btn-po btn-po-secondary" id="poHistoryBtn" onclick="openModal('poHistoryModal')"><i class="fas fa-history"></i> ประวัติการสั่งซื้อ (PO)</button>
+                    <button class="btn-po btn-po-primary" id="createPoBtn" onclick="openModal('createPoModal')"><i class="fas fa-file-invoice"></i> สร้างใบสั่งซื้อ (PO)</button>
                 </div>
             </div>
 
             <!-- Search -->
-            <div class="staff-stock-search-bar">
+            <div class="search-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search">
+                <input type="text" id="searchInput" placeholder="ค้นหาสินค้า...">
             </div>
 
             <!-- Filters -->
-            <div class="staff-filter-chips">
-                <div class="staff-filter-chip" onclick="setFilter('all', this)" style="background-color: #93c5fd; color: #1e3a8a;">All <i class="fas fa-chevron-down" style="font-size: 10px;"></i></div>
-                <div class="staff-filter-chip" onclick="setFilter('low_stock', this)">Low Stock <i class="fas fa-chevron-down" style="font-size: 10px;"></i></div>
-                <div class="staff-filter-chip" onclick="setFilter('out_of_stock', this)">Out of Stock <i class="fas fa-chevron-down" style="font-size: 10px;"></i></div>
+            <div class="filter-tabs">
+                <button class="filter-btn active" onclick="setFilter('all', this)">ทั้งหมด</button>
+                <button class="filter-btn" onclick="setFilter('low_stock', this)">สต็อกต่ำ</button>
+                <button class="filter-btn" onclick="setFilter('out_of_stock', this)">สินค้าหมด</button>
             </div>
 
             <!-- Table -->
-            <div id="productContainer">
-                <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
+            <div class="stock-table">
+                <div class="table-header">
+                    <span style="flex: 2;">ชื่อสินค้า</span>
+                    <span style="flex: 1; text-align: center;">สถานะ</span>
+                    <span style="flex: 1; text-align: center;">จำนวนสินค้าคงเหลือ</span>
+                </div>
+                <div id="productContainer">
+                    <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
+                </div>
             </div>
+            <!-- Pagination -->
+            <div id="paginationContainer" class="pagination-container"></div>
         </main>
         
         <!-- Bottom Navigation for Mobile -->
@@ -294,7 +324,7 @@
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn-po btn-po-secondary" onclick="closeModal('createPoModal')">ยกเลิก</button>
-                    <button class="btn-po btn-po-primary" onclick="submitPo()"><i class="fas fa-save"></i> บันทึกและเพิ่มสต็อก</button>
+                    <button class="btn-po btn-po-primary" onclick="submitPo()"><i class="fas fa-save"></i> บันทึกใบสั่งซื้อ (PO)</button>
                 </div>
             </div>
         </div>
@@ -317,10 +347,11 @@
                     <thead>
                         <tr>
                             <th style="width: 15%;">รหัสใบสั่งซื้อ</th>
-                            <th style="width: 25%;">วันที่สั่งซื้อ</th>
-                            <th style="width: 25%;">ชื่อผู้จำหน่าย</th>
+                            <th style="width: 20%;">วันที่สั่งซื้อ</th>
+                            <th style="width: 20%;">ชื่อผู้จำหน่าย</th>
                             <th style="width: 15%;">ราคาทุนรวม</th>
-                            <th style="width: 20%; text-align: right;">การดำเนินการ</th>
+                            <th style="width: 15%; text-align: center;">สถานะ</th>
+                            <th style="width: 15%; text-align: right;">การดำเนินการ</th>
                         </tr>
                     </thead>
                     <tbody id="poHistoryBody">
@@ -386,6 +417,8 @@
     <script>
         let currentFilter = 'all';
         let currentKeyword = '';
+        let currentPage = 1;
+        const itemsPerPage = 20;
         let allProducts = [];
         let rowCounter = 0;
 
@@ -413,62 +446,127 @@
                 const response = await fetch(url);
                 const result = await response.json();
                 if (response.ok) {
-                    renderProducts(result.data);
+                    allProducts = result.data || [];
+                    renderProducts(allProducts);
                 } else {
                     document.getElementById('productContainer').innerHTML = '<div style="padding: 50px; text-align: center; color: red;">Failed to load data</div>';
                 }
             } catch (error) {
+                console.error("fetchProducts error:", error);
                 document.getElementById('productContainer').innerHTML = '<div style="padding: 50px; text-align: center; color: red;">Connection error</div>';
             }
         }
 
         function renderProducts(products) {
             const container = document.getElementById('productContainer');
+            const paginationContainer = document.getElementById('paginationContainer');
             if (products.length === 0) {
                 container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบสินค้า</div>';
+                if (paginationContainer) paginationContainer.innerHTML = '';
                 return;
             }
 
-            container.innerHTML = products.map(p => {
+            // Pagination boundaries check
+            const totalPages = Math.ceil(products.length / itemsPerPage);
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedProducts = products.slice(startIndex, endIndex);
+
+            container.innerHTML = paginatedProducts.map(p => {
+                let statusClass = 'status-in-stock';
+                let statusText = 'In Stock';
                 const qty = parseInt(p.stock_qty) || 0;
-                let statusColor = '#94ad5e'; // Green for in stock
-                let statusText = `${qty} in stock`;
 
                 if (qty === 0) {
-                    statusColor = '#ef4444'; // Red
+                    statusClass = 'status-out-of-stock';
                     statusText = 'Out of Stock';
                 } else if (qty <= 5) {
-                    statusColor = '#eab308'; // Yellow
-                    statusText = `${qty} Low Stock`;
+                    statusClass = 'status-low-stock';
+                    statusText = 'Low Stock';
                 }
 
                 return `
-                <div class="product-row staff-mobile-row">
-                    <div class="product-details">
-                        <h3 class="product-name">${p.product_name}</h3>
+                <div class="product-row" style="display: flex; align-items: center; width: 100%;">
+                    <div class="product-details" style="flex: 2; margin-right: 20px;">
+                        <div class="product-name">${p.product_name}</div>
                     </div>
-                    <div class="stock-status" style="color: ${statusColor}; font-weight: 500;">
-                        ${statusText}
+                    <div class="stock-status" style="flex: 1; text-align: center; font-weight: 500;">
+                        <span class="${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="stock-status" style="flex: 1; text-align: center; color: #475569; font-weight: 500;">
+                        ${qty}
                     </div>
                 </div>
                 `;
             }).join('');
+
+            renderPagination(products.length);
         }
 
+        function renderPagination(totalItems) {
+            const paginationContainer = document.getElementById('paginationContainer');
+            if (!paginationContainer) return;
+
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            html += `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="window.changePage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = startPage + maxVisiblePages - 1;
+
+            if (endPage > totalPages) {
+                endPage = totalPages;
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="window.changePage(${i})">${i}</button>`;
+            }
+
+            // Next button
+            html += `<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="window.changePage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+            paginationContainer.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderProducts(allProducts);
+        }
+
+        window.changePage = changePage;
+
+
         function setFilter(filterType, element) {
-            document.querySelectorAll('.staff-filter-chip').forEach(el => {
-                el.style.backgroundColor = '#dbeafe';
-                el.style.color = '#64748b';
+            document.querySelectorAll('.filter-btn').forEach(el => {
+                el.classList.remove('active');
             });
-            element.style.backgroundColor = '#93c5fd';
-            element.style.color = '#1e3a8a';
+            element.classList.add('active');
             
             currentFilter = filterType;
+            currentPage = 1;
             fetchProducts();
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
             currentKeyword = e.target.value;
+            currentPage = 1;
             fetchProducts();
         });
 
@@ -904,7 +1002,7 @@
             try {
                 Swal.fire({
                     title: 'กำลังบันทึกข้อมูลใบสั่งซื้อ',
-                    text: 'ระบบกำลังเพิ่มสต็อกสินค้าและบันทึกประวัติการปรับคลัง...',
+                    text: 'ระบบกำลังบันทึกข้อมูลใบสั่งซื้อสินค้า...',
                     allowOutsideClick: false,
                     didOpen: () => {
                         Swal.showLoading();
@@ -917,7 +1015,7 @@
                     body: JSON.stringify({
                         employee_id: employeeId,
                         supplier_name: supplier,
-                        status: 'received',
+                        status: 'pending',
                         items: items
                     })
                 });
@@ -927,7 +1025,7 @@
                     Swal.fire({
                         icon: 'success',
                         title: 'สำเร็จ',
-                        text: 'บันทึกใบสั่งซื้อและอัปเดตสต็อกเรียบร้อยแล้ว!',
+                        text: 'บันทึกใบสั่งซื้อสินค้าเรียบร้อยแล้ว!',
                         confirmButtonColor: '#3b5030'
                     }).then(() => {
                         closeModal('createPoModal');
@@ -970,7 +1068,7 @@
         function renderPoHistory(orders) {
             const tbody = document.getElementById('poHistoryBody');
             if (!orders || orders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">ไม่พบประวัติการสั่งซื้อสินค้า</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">ไม่พบประวัติการสั่งซื้อสินค้า</td></tr>`;
                 return;
             }
             
@@ -981,21 +1079,123 @@
                     hour: '2-digit', minute: '2-digit'
                 });
                 
+                const statusVal = parseInt(order.status);
+                let statusBadge = '';
+                let actionButtons = '';
+                
+                if (statusVal === 1) {
+                    statusBadge = `<span style="background-color: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 12px;">รอดำเนินการ</span>`;
+                    actionButtons = `
+                        <button class="btn-po btn-po-primary" style="padding: 4px 8px; font-size: 12px; background: linear-gradient(135deg, #10b981, #059669); color: white;" onclick="receivePoGoods(${order.restock_id})">
+                            <i class="fas fa-box-open"></i> นำสินค้าเข้าคลัง
+                        </button>
+                        <button class="btn-po btn-po-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="viewPoDocument(${order.restock_id})">
+                            <i class="fas fa-print"></i> พิมพ์ใบสั่งซื้อ
+                        </button>
+                    `;
+                } else {
+                    statusBadge = `<span style="background-color: #d1fae5; color: #059669; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 12px;">นำเข้าคลังแล้ว</span>`;
+                    actionButtons = `
+                        <button class="btn-po btn-po-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="viewPoDocument(${order.restock_id})">
+                            <i class="fas fa-print"></i> พิมพ์ใบรับเข้าสินค้า (GR)
+                        </button>
+                    `;
+                }
+                
                 return `
                     <tr>
                         <td>PO-${String(order.restock_id).padStart(5, '0')}</td>
                         <td>${formattedDate}</td>
                         <td>${order.supplier_name}</td>
                         <td>${parseFloat(order.total_cost).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท</td>
-                        <td style="text-align: right;">
-                            <button class="btn-po btn-po-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="viewPoDocument(${order.restock_id})">
-                                <i class="fas fa-print"></i> ดู/พิมพ์บิล
-                            </button>
+                        <td style="text-align: center;">${statusBadge}</td>
+                        <td style="text-align: right; display: flex; justify-content: flex-end; gap: 6px; align-items: center;">
+                            ${actionButtons}
                         </td>
                     </tr>
                 `;
             }).join('');
         }
+
+        async function receivePoGoods(restockId) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const confirmResult = await Swal.fire({
+                title: 'ยืนยันการนำสินค้าเข้าคลัง?',
+                text: 'ระบบจะเพิ่มจำนวนสินค้าเข้าสู่สต็อกจริง และบันทึกราคาทุนเฉลี่ยใหม่',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3b5030',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'ยืนยันนำเข้าคลัง',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (!confirmResult.isConfirmed) return;
+
+            try {
+                Swal.fire({
+                    title: 'กำลังนำสินค้าเข้าคลัง',
+                    text: 'กรุณารอสักครู่...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                let employeeId = 1;
+                const resMe = await fetch(`/api/staff/me?user_id=${user.user_id}`);
+                if (resMe.ok) {
+                    const jsonMe = await resMe.json();
+                    if (jsonMe.data && jsonMe.data.employee_id) {
+                        employeeId = jsonMe.data.employee_id;
+                    }
+                }
+
+                const response = await fetch('/api/restock/receive', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        restock_id: restockId,
+                        employee_id: employeeId
+                    })
+                });
+
+                const result = await response.json();
+                Swal.close();
+
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ',
+                        text: 'นำสินค้าเข้าคลังเรียบร้อยแล้ว!',
+                        confirmButtonColor: '#3b5030'
+                    }).then(() => {
+                        fetchPoHistory();
+                        fetchProducts();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ล้มเหลว',
+                        text: result.message || 'เกิดข้อผิดพลาดในการนำเข้าสินค้า',
+                        confirmButtonColor: '#3b5030'
+                    });
+                }
+            } catch (error) {
+                Swal.close();
+                console.error(error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาด',
+                    text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้',
+                    confirmButtonColor: '#3b5030'
+                });
+            }
+        }
+        window.receivePoGoods = receivePoGoods;
 
         async function viewPoDocument(id) {
             try {
@@ -1055,6 +1255,32 @@
             const totalCost = parseFloat(order.total_cost) || 0;
             const totalCostText = thaiBahtText(totalCost);
             
+            const statusVal = parseInt(order.status);
+            const docTitle = statusVal === 1 ? 'ใบสั่งซื้อสินค้า (Purchase Order / PO)' : 'ใบรับเข้าสินค้า (Goods Receipt / GR)';
+            const supplierStatusText = statusVal === 1 ? 'รอดำเนินการ (Pending)' : 'ได้รับสินค้าแล้ว (Received)';
+            const footerNote = statusVal === 1 
+                ? '* เอกสารฉบับนี้พิมพ์ขึ้นโดยระบบคลังสินค้า Hello Pet Shop มีผลผูกพันเป็นหลักฐานในการสั่งซื้อสินค้า *'
+                : '* เอกสารฉบับนี้พิมพ์ขึ้นโดยระบบคลังสินค้า Hello Pet Shop มีผลผูกพันเป็นหลักฐานในการรับของและสต็อกอัตโนมัติ *';
+            
+            let staffDetailsHtml = '';
+            if (statusVal === 1) {
+                staffDetailsHtml = `
+                    <strong style="color: #3b5030; display: block; margin-bottom: 6px;">ผู้สั่งซื้อสินค้า / Creator</strong>
+                    <div style="font-size: 13px;">
+                        <strong>ชื่อพนักงาน:</strong> ${order.employee_name || 'ไม่ระบุ'}<br>
+                        <strong>ตำแหน่ง:</strong> เจ้าหน้าที่จัดซื้อสินค้า<br>
+                    </div>
+                `;
+            } else {
+                staffDetailsHtml = `
+                    <strong style="color: #3b5030; display: block; margin-bottom: 6px;">ข้อมูลเจ้าหน้าที่ / Staff</strong>
+                    <div style="font-size: 13px;">
+                        <strong>ชื่อผู้สั่งซื้อ:</strong> ${order.employee_name || 'ไม่ระบุ'}<br>
+                        <strong>ชื่อผู้รับเข้าคลัง:</strong> ${order.receiver_name || 'ไม่ระบุ'}<br>
+                    </div>
+                `;
+            }
+
             container.innerHTML = `
                 <div style="font-family: 'Sarabun', 'Kanit', sans-serif; font-size: 14px; line-height: 1.6; color: #000;">
                     <!-- Header -->
@@ -1069,7 +1295,7 @@
                             </p>
                         </div>
                         <div style="text-align: right;">
-                            <h2 style="margin: 0 0 5px 0; font-size: 18px; color: #3b5030;">ใบสั่งซื้อสินค้า / ใบรับเข้าสต็อก</h2>
+                            <h2 style="margin: 0 0 5px 0; font-size: 18px; color: #3b5030;">${docTitle}</h2>
                             <p style="margin: 0; font-size: 13px; font-weight: bold; color: #475569;">เลขที่: PO-${String(order.restock_id).padStart(5, '0')}</p>
                             <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">วันที่: ${formattedDate}</p>
                         </div>
@@ -1081,15 +1307,11 @@
                             <strong style="color: #3b5030; display: block; margin-bottom: 6px;">ผู้จัดจำหน่าย / Supplier</strong>
                             <div style="font-size: 13px;">
                                 <strong>ชื่อบริษัท/คู่ค้า:</strong> ${order.supplier_name}<br>
-                                <strong>สถานะการรับของ:</strong> ได้รับสินค้าแล้ว (Received)<br>
+                                <strong>สถานะสั่งซื้อ:</strong> ${supplierStatusText}<br>
                             </div>
                         </div>
                         <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px;">
-                            <strong style="color: #3b5030; display: block; margin-bottom: 6px;">ผู้รับสินค้า / Receiver</strong>
-                            <div style="font-size: 13px;">
-                                <strong>ชื่อพนักงาน:</strong> ${order.employee_name || 'ไม่ระบุ'}<br>
-                                <strong>ตำแหน่ง:</strong> พนักงานจัดการสต็อกคลังสินค้า<br>
-                            </div>
+                            ${staffDetailsHtml}
                         </div>
                     </div>
                     
@@ -1136,7 +1358,7 @@
                     
                     <!-- Terms or footer note -->
                     <div style="margin-top: 50px; border-top: 1px dashed #cbd5e1; padding-top: 10px; font-size: 11px; color: #64748b; text-align: center;">
-                        * เอกสารฉบับนี้พิมพ์ขึ้นโดยระบบคลังสินค้า Hello Pet Shop มีผลผูกพันเป็นหลักฐานในการรับของและสต็อกอัตโนมัติ *
+                        ${footerNote}
                     </div>
                 </div>
             `;
@@ -1284,6 +1506,17 @@
                 });
             }
         });
+
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.addPoRow = addPoRow;
+        window.removePoRow = removePoRow;
+        window.handleProductSelect = handleProductSelect;
+        window.updateRowTotal = updateRowTotal;
+        window.submitPo = submitPo;
+        window.fetchPoHistory = fetchPoHistory;
+        window.fetchStockHistory = fetchStockHistory;
+        window.handleOcrFileSelect = handleOcrFileSelect;
     </script>
 </body>
 </html>

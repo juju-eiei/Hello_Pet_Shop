@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
             cartItemsContainer.innerHTML = `
                 <div class="py-12 text-center text-gray-500">
                     <i class="fas fa-shopping-basket text-5xl mb-4 text-gray-300"></i>
-                    <h2 class="text-xl font-medium text-gray-700">Your cart is empty</h2>
-                    <p class="mt-2 text-gray-400">Looks like you haven't added anything yet.</p>
-                    <a href="/products" class="inline-block mt-6 px-6 py-2 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 transition-colors">Start Shopping</a>
+                    <h2 class="text-xl font-medium text-gray-700">ไม่มีสินค้าในตะกร้าของคุณ</h2>
+                    <p class="mt-2 text-gray-400">ดูเหมือนว่าคุณยังไม่ได้เพิ่มสินค้าใด ๆ ลงในตะกร้าเลย</p>
+                    <a href="/products" class="inline-block mt-6 px-6 py-2 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 transition-colors">เริ่มเลือกซื้อสินค้า</a>
                 </div>
             `;
             cartSubtotal.textContent = '฿0.00';
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Image fallback logic handling
-            const imageUrl = item.image || `https://placehold.co/400x400?text=${encodeURIComponent(item.name)}`;
+            const imageUrl = item.image || '/image/non-image.png';
             
             return `
             <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 pb-8 border-b border-[#e2e8f0] last:border-0 last:pb-0 last:mb-0 relative py-2 transition-opacity ${!isSelected ? 'opacity-60' : ''}">
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     <!-- Product Image -->
                     <div class="w-24 h-24 bg-white rounded-2xl flex-shrink-0 flex items-center justify-center p-3 shadow-sm ${!isSelected ? 'grayscale-[30%]' : ''}">
-                        <img src="${imageUrl}" alt="${item.name}" class="w-full h-full object-contain">
+                        <img src="${imageUrl}" onerror="this.src='/image/non-image.png'" alt="${item.name}" class="w-full h-full object-contain">
                     </div>
                     <!-- Product Info -->
                     <div>
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const toast = document.getElementById('toast');
                 if (toast) {
                     toast.className = `fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl transition-all duration-500 z-50 bg-red-500 text-white font-medium opacity-100 translate-y-0`;
-                    toast.textContent = "Please select at least one item to checkout.";
+                    toast.textContent = "กรุณาเลือกสินค้าอย่างน้อยหนึ่งชิ้นก่อนไปชำระเงิน";
                     setTimeout(() => {
                         toast.className = `fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl transition-all duration-500 z-50 opacity-0 translate-y-4 pointer-events-none`;
                     }, 3000);

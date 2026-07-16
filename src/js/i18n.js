@@ -9,8 +9,11 @@ const dictionary = {
         "nav.category_mgmt": "จัดการหมวดหมู่",
         "nav.promotions": "โปรโมชั่น",
         "nav.staff": "จัดการพนักงาน",
+        "nav.permissions": "ตั้งค่าระดับสิทธิ์การเข้าถึง",
         "nav.orders": "คำสั่งซื้อ",
         "nav.customers": "ลูกค้า",
+        "nav.delivery": "จัดการขนส่ง",
+        "nav.rewards": "จัดการแต้มสะสม",
         "nav.pos": "ขายหน้าร้าน",
         "nav.logout": "ออกจากระบบ",
         "nav.profile": "โปรไฟล์",
@@ -19,10 +22,12 @@ const dictionary = {
         "nav.contact": "ติดต่อเรา",
         
         // Page Titles & Headers
+        "title.rewards": "ระบบจัดการแต้มสะสม",
         "title.dashboard": "แดชบอร์ด",
         "title.staff_mgmt": "จัดการพนักงาน",
         "title.pos": "POS - ขายหน้าร้าน",
         "title.orders": "คำสั่งซื้อ",
+        "title.delivery": "จัดการระบบขนส่ง",
         "title.customers": "จัดการลูกค้า",
         "title.stock": "จัดการคลังสินค้า",
         "title.product_mgmt": "จัดการสินค้า",
@@ -76,6 +81,25 @@ const dictionary = {
         "label.unit": "หน่วยนับ",
         "label.sku": "รหัสสินค้า (SKU)",
         "label.min_stock": "สต็อกขั้นต่ำ",
+        "title.salary_details": "รายละเอียดเงินเดือน",
+        "title.system_role": "บทบาทในระบบ",
+        "label.base_salary": "เงินเดือนพื้นฐาน",
+        "label.payment_frequency": "รอบความถี่ในการจ่ายเงิน",
+        "label.monthly": "รายเดือน",
+        "label.weekly": "รายสัปดาห์",
+        "label.daily": "รายวัน",
+        "label.bank_account_details": "ข้อมูลบัญชีธนาคาร",
+        "placeholder.enter_base_salary": "ระบุเงินเดือนพื้นฐาน",
+        "placeholder.enter_bank_details": "ระบุข้อมูลบัญชีธนาคาร (เช่น ชื่อธนาคาร เลขที่บัญชี)",
+        "title.attendance": "ปฏิทินเวลาทำงาน",
+        "btn.attendance": "เวลาทำงาน",
+        "label.attendance_days": "จำนวนวันที่เข้าทำงานจริง",
+        "tab.attendance": "เวลาเข้างาน",
+        "btn.view_attendance": "เปิดปฏิทินเวลาทำงาน",
+        "label.days": "วัน",
+        "title.attendance_history": "ประวัติเวลาทำงาน",
+        "tab.employee_info": "ข้อมูลพนักงาน",
+        "tab.salary_details": "รายละเอียด",
 
         // Statuses
         "status.active": "ใช้งาน",
@@ -98,8 +122,11 @@ const dictionary = {
         "nav.category_mgmt": "Category Management",
         "nav.promotions": "Promotions",
         "nav.staff": "Staff Management",
+        "nav.permissions": "Role Permissions",
         "nav.orders": "Orders",
         "nav.customers": "Customers",
+        "nav.delivery": "Shipping",
+        "nav.rewards": "Rewards",
         "nav.pos": "POS",
         "nav.logout": "Logout",
         "nav.profile": "Profile",
@@ -108,10 +135,12 @@ const dictionary = {
         "nav.contact": "Contact Us",
 
         // Page Titles & Headers
+        "title.rewards": "Reward Points Management",
         "title.dashboard": "Dashboard",
         "title.staff_mgmt": "Staff Management",
         "title.pos": "POS - Point of Sale",
         "title.orders": "Orders",
+        "title.delivery": "Shipping Management",
         "title.customers": "Customer Management",
         "title.stock": "Stock Management",
         "title.product_mgmt": "Product Management",
@@ -165,6 +194,25 @@ const dictionary = {
         "label.unit": "Unit",
         "label.sku": "SKU Code",
         "label.min_stock": "Min Stock",
+        "title.salary_details": "Salary Details",
+        "title.system_role": "System Role",
+        "label.base_salary": "Base Salary",
+        "label.payment_frequency": "Payment Frequency",
+        "label.monthly": "Monthly",
+        "label.weekly": "Weekly",
+        "label.daily": "Daily",
+        "label.bank_account_details": "Bank Account Details",
+        "placeholder.enter_base_salary": "Enter base salary",
+        "placeholder.enter_bank_details": "Enter bank account details",
+        "title.attendance": "Attendance Calendar",
+        "btn.attendance": "Attendance",
+        "label.attendance_days": "Days Worked",
+        "tab.attendance": "Attendance Logs",
+        "btn.view_attendance": "View Attendance Calendar",
+        "label.days": "days",
+        "title.attendance_history": "Attendance History",
+        "tab.employee_info": "Employee Information",
+        "tab.salary_details": "Details",
 
         // Statuses
         "status.active": "Active",
@@ -181,29 +229,24 @@ const dictionary = {
 };
 
 export function getLanguage() {
-    return localStorage.getItem('selected_lang') || 'th';
+    return 'th';
 }
 
 export function setLanguage(lang) {
-    localStorage.setItem('selected_lang', lang);
     applyTranslations();
-    updateLanguageButtons();
 }
 
 export function toggleLanguage() {
-    const current = getLanguage();
-    setLanguage(current === 'th' ? 'en' : 'th');
+    // Disabled: Always Thai
 }
 
 export function t(key, defaultVal = '') {
-    const lang = getLanguage();
-    const dict = dictionary[lang] || dictionary.th;
+    const dict = dictionary.th;
     return dict[key] || defaultVal || key;
 }
 
 export function applyTranslations() {
-    const lang = getLanguage();
-    const dict = dictionary[lang] || dictionary.th;
+    const dict = dictionary.th;
 
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
@@ -225,60 +268,14 @@ export function applyTranslations() {
             el.title = dict[key];
         }
     });
-
-    updateLanguageButtons();
 }
 
 export function updateLanguageButtons() {
-    const lang = getLanguage();
-    const btnText = lang === 'th' ? '🌐 TH' : '🌐 EN';
-    
-    document.querySelectorAll('.lang-toggle-btn').forEach(btn => {
-        btn.textContent = btnText;
-    });
+    // Disabled: No language buttons
 }
 
 export function injectLanguageToggleButtons() {
-    // 1. Sidebar header
-    const sidebarHeader = document.querySelector('.sidebar-header');
-    if (sidebarHeader && !document.getElementById('langToggleBtnAdmin')) {
-        const btn = document.createElement('button');
-        btn.id = 'langToggleBtnAdmin';
-        btn.className = 'lang-toggle-btn';
-        btn.style.marginLeft = 'auto';
-        btn.style.background = 'rgba(255,255,255,0.2)';
-        btn.style.border = 'none';
-        btn.style.color = '#fff';
-        btn.style.padding = '4px 10px';
-        btn.style.borderRadius = '20px';
-        btn.style.cursor = 'pointer';
-        btn.style.fontSize = '12px';
-        btn.style.fontWeight = '600';
-        btn.onclick = toggleLanguage;
-        sidebarHeader.appendChild(btn);
-    }
-
-    // 2. Mobile header / Top navbar
-    const mobileHeader = document.querySelector('.mobile-header');
-    if (mobileHeader && !document.getElementById('langToggleBtnMobile')) {
-        const btn = document.createElement('button');
-        btn.id = 'langToggleBtnMobile';
-        btn.className = 'lang-toggle-btn';
-        btn.style.marginLeft = 'auto';
-        btn.style.marginRight = '10px';
-        btn.style.background = 'rgba(255,255,255,0.2)';
-        btn.style.border = 'none';
-        btn.style.color = '#fff';
-        btn.style.padding = '4px 10px';
-        btn.style.borderRadius = '20px';
-        btn.style.cursor = 'pointer';
-        btn.style.fontSize = '12px';
-        btn.style.fontWeight = '600';
-        btn.onclick = toggleLanguage;
-        mobileHeader.insertBefore(btn, mobileHeader.querySelector('.fa-bell') || mobileHeader.lastChild);
-    }
-
-    updateLanguageButtons();
+    // Disabled: No language buttons
 }
 
 // Global initialization & Window API registration

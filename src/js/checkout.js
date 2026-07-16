@@ -74,14 +74,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemTotal = parseFloat(item.price) * item.quantity;
             subtotal += itemTotal;
             
-            const imageUrl = item.image || `https://placehold.co/100x100?text=${encodeURIComponent(item.name)}`;
+            const imageUrl = item.image || '/image/non-image.png';
 
             summaryItemsContainer.innerHTML += `
                 <div class="flex items-center space-x-3">
-                    <img src="${imageUrl}" alt="" class="w-12 h-12 bg-gray-50 rounded-lg object-contain p-1 border border-gray-100">
+                    <img src="${imageUrl}" onerror="this.src='/image/non-image.png'" alt="" class="w-12 h-12 bg-gray-50 rounded-lg object-contain p-1 border border-gray-100">
                     <div class="flex-1">
                         <h4 class="text-sm font-bold text-gray-800 line-clamp-1">${item.name}</h4>
-                        <div class="text-xs text-gray-500">Qty: ${item.quantity}</div>
+                        <div class="text-xs text-gray-500">จำนวน: ${item.quantity}</div>
                     </div>
                     <div class="text-sm border-gray-800 font-medium whitespace-nowrap">
                         ฿${itemTotal.toFixed(2)}

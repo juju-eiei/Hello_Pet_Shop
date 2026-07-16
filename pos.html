@@ -5,7 +5,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS - Hello Pet Shop</title>
+    <title>ระบบขายหน้าร้าน (POS) - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -364,6 +364,8 @@
                             <div style="grid-column: 1/-1; padding: 50px; text-align: center; color: #64748b;">กำลังโหลดข้อมูลสินค้า...</div>
                         </div>
                     </div>
+                    <!-- Pagination Container -->
+                    <div id="posPaginationContainer" class="pagination-container" style="padding: 12px 0 0 0; border-top: 1px solid #e2e8f0; margin-top: 12px; display: flex; justify-content: center; gap: 8px;"></div>
                 </div>
 
                 <!-- Right panel: Cart & Checkout -->
@@ -396,15 +398,7 @@
                         <div id="customerSuggestionsList" style="position: absolute; left: 0; right: 0; top: 100%; z-index: 100; background: white; border: 1.5px solid #cbd5e1; border-radius: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; display: none; margin-top: 4px;"></div>
                     </div>
 
-                    <!-- Coupon Code -->
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label style="font-size: 11px;">รหัสโปรโมชั่น / คูปอง</label>
-                        <div style="display: flex; gap: 8px;">
-                            <select id="posPromoSelect" onchange="calculateCart()" style="padding: 8px 12px; font-size: 13px;">
-                                <option value="">ไม่มีคูปอง</option>
-                            </select>
-                        </div>
-                    </div>
+
 
                     <!-- Pricing Summary -->
                     <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-top: 12px;">
@@ -416,9 +410,17 @@
                             <span>ส่วนลด (Discount)</span>
                             <span id="summaryDiscount">-฿0.00</span>
                         </div>
-                        <div class="pos-summary-row pos-summary-total">
+                        <div class="pos-summary-row pos-summary-total" style="border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
                             <span>ยอดรวมสุทธิ</span>
                             <span id="summaryNetTotal">฿0.00</span>
+                        </div>
+                        <div class="pos-summary-row" style="color: #16a34a; font-weight: 600; font-size: 13px; display: none; margin-top: 8px;" id="pointsEarnedRow">
+                            <span>แต้มสะสมที่จะได้รับ</span>
+                            <span id="summaryPointsEarned">0 แต้ม</span>
+                        </div>
+                        <div class="pos-summary-row" style="color: #d97706; font-weight: 600; font-size: 13px; display: none; margin-top: 4px;" id="freeGiftRow">
+                            <span>ของแถมที่ได้รับ</span>
+                            <span id="summaryFreeGift">-</span>
                         </div>
                     </div>
 
@@ -474,22 +476,26 @@
                 <button class="modal-btn modal-btn-confirm" onclick="printReceipt()" style="flex: 1; background: #059669;">พิมพ์ใบเสร็จ</button>
             </div>
         </div>
+        <!-- Hidden Thermal Receipt Printing Frame -->
+        <div id="receiptPrintArea"></div>
     </div>
 
-    <!-- Hidden Thermal Receipt Printing Frame -->
-    <div id="receiptPrintArea"></div>
+
 
     <div id="toast" class="toast"></div>
 
     <script>
         let allProducts = [];
         let allCustomers = [];
-        let allPromotions = [];
+        let rewardSettings = { point_earning_baht: 100, point_earning_qty: 1 };
+        let allGiftRules = [];
         let selectedCategory = 'all';
         let searchKeyword = '';
         let cart = [];
         let paymentMethod = 'cash';
         let netTotal = 0;
+        let currentPage = 1;
+        const itemsPerPage = 20;
 
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
@@ -502,69 +508,6 @@
             const displayName = user.full_name || user.username || 'Admin';
             document.getElementById('cashierDisplay').textContent = `พนักงานคุมเครื่อง: ${displayName} (${user.role_name})`;
 
-            // Generate Sidebar dynamically based on role
-            renderSidebar(user.role_name.toLowerCase());
-        }
-
-        function renderSidebar(role) {
-            const sidebar = document.getElementById('posSidebar') || document.querySelector('aside.sidebar');
-            if (!sidebar) return;
-            
-            let linksHtml = '';
-            if (role === 'admin') {
-                linksHtml = `
-                    <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Admin</div>
-                    <a href="admin_dashboard.html" class="menu-item"><i class="fas fa-home"></i><span data-i18n="nav.dashboard">แดชบอร์ด</span></a>
-                    <div class="menu-group open">
-                        <a class="menu-item active" onclick="toggleSubmenu(this)"><i class="fas fa-box"></i><span data-i18n="nav.products">สินค้า</span><i class="fas fa-chevron-down menu-arrow"></i></a>
-                        <div class="submenu">
-                            <a href="admin_stock.html" data-i18n="nav.stock">จัดการคลังสินค้า</a>
-                            <a href="admin_product_management.html" data-i18n="nav.product_mgmt">จัดการสินค้า</a>
-                            <a href="admin_categories.html" data-i18n="nav.category_mgmt">จัดการหมวดหมู่</a>
-                            <a href="admin_promotions.html" data-i18n="nav.promotions">โปรโมชั่น</a>
-                        </div>
-                    </div>
-                    <a href="admin_staff.html" class="menu-item"><i class="fas fa-users-cog"></i><span data-i18n="nav.staff">จัดการพนักงาน</span></a>
-                    <a href="admin_orders.html" class="menu-item"><i class="fas fa-file-invoice"></i><span data-i18n="nav.orders">คำสั่งซื้อ</span></a>
-                    <a href="admin_customers.html" class="menu-item"><i class="fas fa-users"></i><span data-i18n="nav.customers">ลูกค้า</span></a>
-                    <a href="pos.html" class="menu-item active"><i class="fas fa-cash-register"></i><span data-i18n="nav.pos">ขายหน้าร้าน</span></a>
-                    <a href="#" class="menu-item logout-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span data-i18n="nav.logout">ออกจากระบบ</span></a>
-                `;
-            } else {
-                linksHtml = `
-                    <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600;">Staff</div>
-                    <a href="staff_stock.html" class="menu-item"><i class="fas fa-box"></i><span data-i18n="nav.stock">จัดการคลังสินค้า</span></a>
-                    <a href="staff_orders.html" class="menu-item"><i class="fas fa-file-invoice"></i><span data-i18n="nav.orders">คำสั่งซื้อ</span></a>
-                    <a href="staff_customers.html" class="menu-item"><i class="fas fa-users"></i><span data-i18n="nav.customers">ลูกค้า</span></a>
-                    <a href="staff_promotions.html" class="menu-item"><i class="fas fa-bullhorn"></i><span data-i18n="nav.promotions">โปรโมชั่น</span></a>
-                    <a href="staff_profile.html" class="menu-item"><i class="fas fa-user-circle"></i><span data-i18n="nav.profile">โปรไฟล์</span></a>
-                    <a href="pos.html" class="menu-item active"><i class="fas fa-cash-register"></i><span data-i18n="nav.pos">ขายหน้าร้าน</span></a>
-                    <a href="#" class="menu-item logout-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span data-i18n="nav.logout">ออกจากระบบ</span></a>
-                `;
-            }
-
-            sidebar.innerHTML = `
-                <div class="sidebar-header">
-                    <i class="fas fa-paw"></i>
-                    <span>Hello Pet Shop</span>
-                </div>
-                <nav class="sidebar-menu">
-                    ${linksHtml}
-                </nav>
-            `;
-            if (window.applyTranslations) window.applyTranslations();
-        }
-
-        function logout() {
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
-        }
-
-        function toggleSubmenu(el) {
-            const group = el.closest('.menu-group');
-            if (group) {
-                group.classList.toggle('open');
-            }
         }
 
         async function initData() {
@@ -584,17 +527,27 @@
                 }
             } catch (e) { console.error("Error loading customers:", e); }
 
+
+
             try {
-                const resPromo = await fetch('/api/promotions');
-                if (resPromo.ok) {
-                    const jsonPromo = await resPromo.json();
-                    allPromotions = jsonPromo.data || [];
+                const resSettings = await fetch('/api/rewards/settings');
+                if (resSettings.ok) {
+                    const jsonSettings = await resSettings.json();
+                    rewardSettings = jsonSettings.data || { point_earning_baht: 100, point_earning_qty: 1 };
                 }
-            } catch (e) { console.error("Error loading promotions:", e); }
+            } catch (e) { console.error("Error loading reward settings:", e); }
+
+            try {
+                const resGifts = await fetch('/api/rewards/gifts');
+                if (resGifts.ok) {
+                    const jsonGifts = await resGifts.json();
+                    allGiftRules = jsonGifts.data || [];
+                    allGiftRules.sort((a, b) => parseFloat(b.min_spend) - parseFloat(a.min_spend));
+                }
+            } catch (e) { console.error("Error loading gift rules:", e); }
 
             try { renderCategoryTabs(); } catch(e) { console.error(e); }
             try { renderCustomerDropdown(); } catch(e) { console.error(e); }
-            try { renderPromoDropdown(); } catch(e) { console.error(e); }
             try { renderProductGrid(); } catch(e) { console.error(e); }
         }
 
@@ -736,6 +689,7 @@
                     }
                 }
             }
+            try { calculateCart(); } catch(e) {}
         }
 
         function renderCustomerDropdown() {
@@ -750,19 +704,7 @@
         window.selectCustomerFromSuggestion = selectCustomerFromSuggestion;
         window.clearCustomerInput = clearCustomerInput;
 
-        function renderPromoDropdown() {
-            const dropdown = document.getElementById('posPromoSelect');
-            if (!dropdown) return;
-            const activePromos = allPromotions.filter(p => p.is_active == 1);
-            dropdown.innerHTML = '<option value="">ไม่มีคูปอง</option>' +
-                activePromos.map(p => {
-                    const pId = p.promo_id || p.id;
-                    const pName = p.promo_name || p.code || 'โปรโมชั่น';
-                    const isPercent = (p.discount_type == 1 || p.discount_type === 'percent');
-                    const discText = isPercent ? `${parseFloat(p.discount_value || 0)}%` : `฿${parseFloat(p.discount_value || 0)}`;
-                    return `<option value="${pId}">${pName} (${discText})</option>`;
-                }).join('');
-        }
+
 
         function renderProductGrid() {
             const grid = document.getElementById('posProductsGrid');
@@ -776,14 +718,30 @@
                 return matchCat && matchesKeyword && (p.is_active == 1 || p.is_active === undefined);
             });
 
+            const paginationContainer = document.getElementById('posPaginationContainer');
+
             if (filtered.length === 0) {
                 grid.innerHTML = '<div style="grid-column: 1/-1; padding: 50px; text-align: center; color: #64748b;">ไม่พบสินค้า</div>';
+                if (paginationContainer) paginationContainer.innerHTML = '';
                 return;
             }
 
-            grid.innerHTML = filtered.map(p => `
+            // Pagination boundaries check
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedProducts = filtered.slice(startIndex, endIndex);
+
+            grid.innerHTML = paginatedProducts.map(p => `
                 <div class="pos-product-card" onclick="addToCart(${p.product_id})">
-                    <img class="pos-product-img" src="${p.image_url || 'https://placehold.co/400x400?text=' + encodeURIComponent(p.product_name)}" alt="${p.product_name}">
+                    <img class="pos-product-img" src="${p.image_url || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="${p.product_name}">
                     <div>
                         <div class="pos-product-name">${p.product_name}</div>
                         <div class="pos-product-price">฿${parseFloat(p.selling_price || 0).toFixed(2)}</div>
@@ -791,17 +749,70 @@
                     </div>
                 </div>
             `).join('');
+
+            renderPagination(filtered.length);
+        }
+
+        function renderPagination(totalItems) {
+            const paginationContainer = document.getElementById('posPaginationContainer');
+            if (!paginationContainer) return;
+
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            html += `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="window.changePage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = startPage + maxVisiblePages - 1;
+
+            if (endPage > totalPages) {
+                endPage = totalPages;
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="window.changePage(${i})">${i}</button>`;
+            }
+
+            // Next button
+            html += `<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="window.changePage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+            paginationContainer.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderProductGrid();
         }
 
         function filterCategory(cat) {
             selectedCategory = cat;
+            currentPage = 1;
             document.querySelectorAll('#posCategoryTabs button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if (window.event && window.event.target) {
+                window.event.target.classList.add('active');
+            } else {
+                const buttons = document.querySelectorAll('#posCategoryTabs button');
+                buttons.forEach(btn => {
+                    if (btn.getAttribute('onclick')?.includes(`'${cat}'`)) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
             renderProductGrid();
         }
 
         document.getElementById('barcodeSearchInput').addEventListener('input', (e) => {
             searchKeyword = e.target.value.trim();
+            currentPage = 1;
             renderProductGrid();
         });
 
@@ -812,7 +823,24 @@
                 const code = e.target.value.trim();
                 if (!code) return;
                 
-                // Find product by exact barcode match
+
+                
+                // 2. Check if it's a member phone number (9-10 digits)
+                const isPhone = /^[0-9]{9,10}$/.test(code);
+                if (isPhone) {
+                    const cust = allCustomers.find(c => {
+                        const cleanPhone = (c.phone || '').replace(/[- ]/g, '');
+                        return cleanPhone === code;
+                    });
+                    if (cust) {
+                        selectCustomerFromSuggestion(cust.customer_id || cust.id);
+                        showToast(`เลือกสมาชิก: ${cust.name} สำเร็จ`, "success");
+                        clearSearch();
+                        return;
+                    }
+                }
+
+                // 3. Find product by exact barcode match
                 const match = allProducts.find(p => p.barcode === code && p.is_active == 1);
                 if (match) {
                     addToCart(match.product_id);
@@ -826,6 +854,7 @@
 
         function clearSearch() {
             searchKeyword = '';
+            currentPage = 1;
             document.getElementById('barcodeSearchInput').value = '';
             document.getElementById('barcodeSearchInput').focus();
             renderProductGrid();
@@ -888,6 +917,10 @@
                 document.getElementById('summarySubtotal').textContent = '฿0.00';
                 document.getElementById('summaryDiscount').textContent = '-฿0.00';
                 document.getElementById('summaryNetTotal').textContent = '฿0.00';
+                const pointsRow = document.getElementById('pointsEarnedRow');
+                if (pointsRow) pointsRow.style.display = 'none';
+                const giftRow = document.getElementById('freeGiftRow');
+                if (giftRow) giftRow.style.display = 'none';
                 netTotal = 0;
                 updateChangeDue();
                 return;
@@ -918,25 +951,37 @@
 
             // Discount calculations
             let discount = 0;
-            const promoSelect = document.getElementById('posPromoSelect');
-            const promoId = promoSelect.value;
-            if (promoId) {
-                const promo = allPromotions.find(p => p.id == promoId);
-                if (promo) {
-                    if (promo.discount_type === 'percent') {
-                        discount = (subtotal * parseFloat(promo.discount_value)) / 100;
-                    } else {
-                        discount = parseFloat(promo.discount_value);
-                    }
-                }
-            }
-
-            discount = Math.min(discount, subtotal);
             netTotal = Math.max(0, subtotal - discount);
 
             document.getElementById('summarySubtotal').textContent = `฿${subtotal.toFixed(2)}`;
             document.getElementById('summaryDiscount').textContent = `-฿${discount.toFixed(2)}`;
             document.getElementById('summaryNetTotal').textContent = `฿${netTotal.toFixed(2)}`;
+
+            // Points calculation and display
+            const pointsRow = document.getElementById('pointsEarnedRow');
+            if (pointsRow) {
+                const peBaht = parseFloat(rewardSettings.point_earning_baht) || 100;
+                const peQty = parseInt(rewardSettings.point_earning_qty) || 1;
+                const pointsEarned = Math.floor(netTotal / peBaht) * peQty;
+                if (pointsEarned > 0) {
+                    document.getElementById('summaryPointsEarned').textContent = `+${pointsEarned} แต้ม`;
+                    pointsRow.style.display = 'flex';
+                } else {
+                    pointsRow.style.display = 'none';
+                }
+            }
+
+            // Free Gift calculation and display
+            const giftRow = document.getElementById('freeGiftRow');
+            if (giftRow) {
+                const qualifiedGiftRule = allGiftRules.find(rule => netTotal >= parseFloat(rule.min_spend));
+                if (qualifiedGiftRule) {
+                    document.getElementById('summaryFreeGift').innerHTML = `<i class="fas fa-gift"></i> ${qualifiedGiftRule.gift_name}`;
+                    giftRow.style.display = 'flex';
+                } else {
+                    giftRow.style.display = 'none';
+                }
+            }
 
             updateChangeDue();
         }
@@ -985,22 +1030,6 @@
             document.getElementById('changeDueLabel').textContent = `฿${change.toFixed(2)}`;
         }
 
-        function updateCustomerPoints() {
-            const select = document.getElementById('posCustomerSelect');
-            const custId = select.value;
-            const label = document.getElementById('customerPointsLabel');
-            
-            if (custId) {
-                const customer = allCustomers.find(c => c.customer_id == custId);
-                if (customer) {
-                    label.textContent = `คะแนนสะสมที่มี: ${customer.points || 0} แต้ม`;
-                    label.style.display = 'block';
-                    return;
-                }
-            }
-            label.style.display = 'none';
-        }
-
         function showToast(message, type) {
             const toast = document.getElementById('toast');
             if (!toast) return;
@@ -1016,7 +1045,7 @@
             }
 
             const customerId = selectedCustomer ? (selectedCustomer.customer_id || selectedCustomer.id) : '';
-            const promoId = document.getElementById('posPromoSelect').value;
+            const promoId = null;
             const cashReceived = parseFloat(document.getElementById('cashReceivedInput').value) || 0;
 
             if (paymentMethod === 'cash' && cashReceived < netTotal) {
@@ -1076,7 +1105,7 @@
             const receiptHtml = `
                 <div class="receipt-header">
                     <div class="receipt-shop">Hello Pet Shop</div>
-                    <div class="receipt-info">สาขาใหญ่ กทม. โทร. 02-123-4567</div>
+                    <div class="receipt-info">จังหวัดเชียงใหม่ โทร. 06-5249-6925</div>
                     <div class="receipt-info" style="margin-top: 1mm;">
                         <div>เลขที่ใบเสร็จ: ${orderData.order_number}</div>
                         <div>วันที่: ${orderData.date}</div>
@@ -1112,6 +1141,16 @@
                     <span>เงินทอน</span>
                     <span>฿${parseFloat(orderData.change).toFixed(2)}</span>
                 </div>
+                ${(orderData.points_earned && orderData.points_earned > 0) ? `
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
+                    <span>แต้มได้รับครั้งนี้</span>
+                    <span>+${orderData.points_earned} แต้ม</span>
+                </div>` : ''}
+                ${orderData.free_gift ? `
+                <div class="receipt-summary-row" style="font-weight: bold; font-size: 11px;">
+                    <span>*** ของแถมได้รับ ***</span>
+                    <span>${orderData.free_gift}</span>
+                </div>` : ''}
                 <div class="receipt-divider"></div>
                 <div class="receipt-footer">
                     <div>ขอขอบคุณที่ใช้บริการ</div>
@@ -1119,10 +1158,18 @@
                 </div>
             `;
 
-            container.innerHTML = receiptHtml;
+            if (container) {
+                container.innerHTML = receiptHtml;
+            }
 
             // Load to printing iframe/div
-            document.getElementById('receiptPrintArea').innerHTML = receiptHtml;
+            let printArea = document.getElementById('receiptPrintArea');
+            if (!printArea) {
+                printArea = document.createElement('div');
+                printArea.id = 'receiptPrintArea';
+                document.body.appendChild(printArea);
+            }
+            printArea.innerHTML = receiptHtml;
 
             const modal = document.getElementById('receiptModal');
             modal.style.display = 'flex';
@@ -1152,6 +1199,23 @@
             }
         });
 
+
+
+        // Global barcode auto-focus
+        document.addEventListener('keydown', (e) => {
+            const activeEl = document.activeElement;
+            const isInput = activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT' || activeEl.isContentEditable;
+            const receiptModal = document.getElementById('receiptModal');
+            const isReceiptModalOpen = receiptModal && receiptModal.style.display === 'flex';
+            
+            if (!isInput && !isReceiptModalOpen && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                const searchInput = document.getElementById('barcodeSearchInput');
+                if (searchInput) {
+                    searchInput.focus();
+                }
+            }
+        });
+
         // Expose functions globally for inline HTML events
         window.addToCart = addToCart;
         window.filterCategory = filterCategory;
@@ -1165,8 +1229,9 @@
         window.closeReceiptModal = closeReceiptModal;
         window.printReceipt = printReceipt;
         window.toggleSidebar = toggleSidebar;
-        window.logout = logout;
-        window.toggleSubmenu = toggleSubmenu;
+
+
+        window.changePage = changePage;
 
         checkAuth();
         initData();

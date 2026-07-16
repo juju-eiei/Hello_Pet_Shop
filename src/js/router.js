@@ -140,7 +140,7 @@ function syncBodyExtraElements(doc) {
         const className = child.className || '';
         const id = child.id || '';
 
-        if (id.includes('Modal') || id.includes('Drawer') || id.includes('toast') || className.includes('modal') || className.includes('drawer') || className.includes('toast')) {
+        if (id.includes('Modal') || id.includes('Drawer') || id.includes('toast') || id.includes('receipt') || id.includes('Print') || className.includes('modal') || className.includes('drawer') || className.includes('toast') || className.includes('receipt')) {
             if (id) {
                 const existing = document.getElementById(id);
                 if (existing) existing.remove();
@@ -172,8 +172,10 @@ async function executePageScripts(doc) {
             // Execute inline script wrapped in IIFE or Function to prevent global scope variable redeclaration SyntaxErrors!
             try {
                 const code = script.innerHTML;
-                // Wrap code safely to avoid Identifier 'x' has already been declared error
-                const wrappedCode = `(function(){\n${code}\n})();`;
+                // Auto-export top-level function declarations to window so inline onclick handlers work in SPA mode
+                const fnNames = Array.from(code.matchAll(/(?:async\s+)?function\s+([a-zA-Z0-9_$]+)\s*\(/g), m => m[1]);
+                const bindings = fnNames.map(name => `try { if (typeof ${name} !== 'undefined') window.${name} = ${name}; } catch(e){}`).join('\n');
+                const wrappedCode = `(function(){\n${code}\n\n${bindings}\n})();`;
                 const fn = new Function(wrappedCode);
                 fn();
             } catch (err) {

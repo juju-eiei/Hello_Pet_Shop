@@ -5,70 +5,281 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Management - Hello Pet Shop</title>
+    <title>จัดการพนักงาน - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .staff-tabs {
-            display: flex; gap: 24px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px;
+        /* Calendar Styles */
+        .calendar-header-day {
+            text-align: center; font-weight: 600; font-size: 12px; color: #94a3b8; padding: 4px 0;
         }
-        .staff-tab {
-            padding: 12px 0; color: #64748b; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;
+        .calendar-day {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 8px; cursor: pointer; transition: background 0.2s, color 0.2s; border: 1px solid #f1f5f9; background: #fff; color: #334155;
         }
-        .staff-tab.active {
-            color: #0f172a; border-bottom-color: #0f172a;
+        .calendar-day:hover:not(.empty) {
+            background: #f0fdf4;
+            color: var(--primary-green);
         }
-        .search-container-staff {
-            background: #dbeafe; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; width: 100%; max-width: 500px;
+        .calendar-day.checked-in {
+            background: var(--primary-green); color: #fff; font-weight: bold; border-color: var(--primary-green);
         }
-        .search-container-staff input {
-            background: transparent; border: none; outline: none; margin-left: 10px; width: 100%; color: #1e3a8a;
+        .calendar-day.empty {
+            border: none; background: transparent; cursor: default;
         }
-        .search-container-staff i {
-            color: #60a5fa;
-        }
-        
-        /* Modal Styles */
+
+        /* Premium Modal / Drawer Styles */
         .drawer-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; display: none; opacity: 0; transition: opacity 0.3s; align-items: center; justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            opacity: 0;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            align-items: center;
+            justify-content: center;
         }
-        .drawer-overlay.show { display: flex; opacity: 1; }
+        .drawer-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
         
         .drawer {
-            position: relative; width: 100%; max-width: 600px; max-height: 90vh; background: white; z-index: 1000; transition: transform 0.3s ease, opacity 0.3s ease; overflow-y: auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: scale(0.95); opacity: 0;
+            position: relative;
+            width: 100%;
+            max-width: 680px;
+            max-height: 85vh;
+            background: white;
+            z-index: 2001;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 0;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transform: translateY(30px);
+            opacity: 0;
         }
-        .drawer.open { transform: scale(1); opacity: 1; }
+        .drawer.open {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 40px 10px 40px;
+        }
+
+        /* Custom Scrollbar for Drawer Body */
+        .drawer-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        .drawer-body::-webkit-scrollbar-track {
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        .drawer-body::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .drawer-body::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
 
         .drawer-header {
-            font-size: 20px; font-weight: bold; margin-bottom: 24px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;
+            background: linear-gradient(135deg, var(--primary-green) 0%, #476a3d 100%);
+            color: white !important;
+            padding: 24px 40px;
+            margin: 0;
+            border-radius: 24px 24px 0 0;
+            font-size: 20px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(49, 77, 42, 0.15);
+            font-family: 'Outfit', 'Kanit', sans-serif;
+            border: none;
+            flex-shrink: 0;
+        }
+
+        .form-section-card {
+            background: #fbfdfb;
+            border: 1px solid rgba(148, 173, 94, 0.2);
+            border-left: 4px solid var(--primary-green);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+            transition: all 0.3s ease;
+        }
+        .form-section-card:hover {
+            box-shadow: 0 4px 15px rgba(49, 77, 42, 0.06);
+            border-color: rgba(148, 173, 94, 0.4);
         }
 
         .section-title {
-            font-size: 18px; font-weight: 700; margin-bottom: 16px; margin-top: 32px; color: #1e293b;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--primary-green);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .section-title:first-child { margin-top: 0; }
         
+        /* Grid form group layouts */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0 24px;
+        }
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+            .drawer {
+                padding: 0;
+                max-height: 90vh;
+                width: 95%;
+            }
+            .form-section-card {
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+            .drawer-header {
+                padding: 20px 24px;
+                margin: 0;
+                border-radius: 12px 12px 0 0;
+            }
+            .drawer-body {
+                padding: 20px 20px 10px 20px;
+            }
+            .drawer-footer {
+                padding: 16px 20px;
+                border-radius: 0 0 12px 12px;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
         .form-group label {
-            display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .form-group input, .form-group select {
-            width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; color: #334155; margin-bottom: 16px; outline: none;
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #d8e2dc;
+            border-radius: 12px;
+            font-size: 15px;
+            color: #1e293b;
+            outline: none;
+            background: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .form-group input:focus, .form-group select:focus { border-color: #94ad5e; }
-
-        .checkbox-group {
-            display: flex; align-items: center; margin-bottom: 12px; cursor: pointer;
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--primary-green);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(49, 77, 42, 0.08);
         }
-        .checkbox-group input { margin-right: 10px; width: 16px; height: 16px; cursor: pointer; }
-        .checkbox-group span { font-size: 14px; color: #475569; }
 
         .drawer-footer {
-            margin-top: 40px; display: flex; justify-content: flex-end; gap: 12px;
+            padding: 20px 40px;
+            background: #f8fafc;
+            border-top: 1.5px solid #f1f5f9;
+            border-radius: 0 0 24px 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            flex-shrink: 0;
         }
-        .btn-cancel { padding: 10px 24px; border-radius: 6px; border: none; background: #fb7185; color: white; cursor: pointer; font-weight: 600; }
-        .btn-save { padding: 10px 24px; border-radius: 6px; border: none; background: #a3e635; color: #064e3b; cursor: pointer; font-weight: 600; }
-        .action-text-link { color: #10b981; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 14px; margin: 0 4px; }
-        .action-text-link:hover { text-decoration: underline; }
+        .btn-cancel {
+            padding: 12px 28px;
+            border-radius: 12px;
+            border: 1px solid #fee2e2;
+            background: #fff5f5;
+            color: #ef4444;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+        .btn-cancel:hover {
+            background: #fee2e2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+        }
+        .btn-save {
+            padding: 12px 28px;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary-green);
+            color: white;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 15px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(49, 77, 42, 0.2);
+        }
+        .btn-save:hover {
+            background: #1a2a18;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(49, 77, 42, 0.3);
+        }
+
+        .staff-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 15px;
+        }
+
+        .attendance-link {
+            color: #2563eb;
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+        }
+        .attendance-link:hover {
+            background: #2563eb;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+        .btn-attendance {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 600;
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-attendance:hover {
+            background-color: #dbeafe;
+            transform: translateY(-1px);
+        }
     </style>
 
     <!-- Mobile User-Agent Check -->
@@ -89,19 +300,21 @@
 
         <main class="main-content">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h1 style="font-size: 24px; color: #0f172a;">Staff Management</h1>
-                <button class="save-btn" id="addStaffBtn" style="padding: 10px 20px; font-size: 14px; background: #94ad5e;">Add New Staff</button>
+                <h1 data-i18n="title.staff_mgmt">Staff Management</h1>
+                <button class="save-btn" id="addStaffBtn" style="padding: 10px 24px; font-size: 14px;">
+                    <i class="fas fa-plus" style="margin-right: 8px;"></i>
+                    <span data-i18n="btn.add_staff">Add New Staff</span>
+                </button>
             </div>
 
-            <div class="search-container-staff">
+            <div class="search-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search staff">
+                <input type="text" id="searchInput" placeholder="Search staff" data-i18n-placeholder="label.search_placeholder">
             </div>
 
-            <div class="staff-tabs">
-                <div class="staff-tab active" data-tab="info">Employee Information</div>
-                <div class="staff-tab" data-tab="salary">Salary Details</div>
-                <div class="staff-tab" data-tab="roles">Roles & Permissions</div>
+            <div class="filter-tabs">
+                <button type="button" class="filter-btn active" data-tab="info" data-i18n="tab.employee_info">Employee Information</button>
+                <button type="button" class="filter-btn" data-tab="salary" data-i18n="tab.salary_details">Salary Details</button>
             </div>
 
             <div class="stock-table">
@@ -112,6 +325,8 @@
                     <div style="padding: 50px; text-align: center; color: #718096;">Loading data...</div>
                 </div>
             </div>
+            <!-- Pagination -->
+            <div id="paginationContainer" class="pagination-container"></div>
         </main>
     </div>
 
@@ -119,80 +334,99 @@
     <div class="drawer-overlay" id="drawerOverlay">
         <div class="drawer" id="staffDrawer">
             <div class="drawer-header" id="drawerHeader">ส่วนงานจัดการพนักงาน - Add New Staff</div>
-            <form id="staffForm">
+            <form id="staffForm" style="display: flex; flex-direction: column; overflow: hidden; flex: 1;">
             <input type="hidden" id="employee_id" name="id">
             
-            <div class="section-title">Employee Information</div>
-            
-            <div class="form-group">
-                <label>First Name</label>
-                <input type="text" id="first_name" name="first_name" placeholder="Enter first name" required>
+            <div class="drawer-body">
+                <div class="form-section-card">
+                    <div class="section-title"><i class="fas fa-id-card"></i> <span>Employee Information</span></div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" id="first_name" name="first_name" placeholder="Enter first name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" id="last_name" name="last_name" placeholder="Enter last name">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Username (for Login)</label>
+                            <input type="text" id="username" name="username" placeholder="Enter login username" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Contact Email</label>
+                            <input type="email" id="email" name="email" placeholder="Enter contact email" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Password (for Login)</label>
+                            <input type="password" id="password" name="password" placeholder="Enter new password (leave blank to keep current)">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="text" id="phone" name="phone" placeholder="Enter phone number">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Address</label>
+                        <input type="text" id="address" name="address" placeholder="Enter address">
+                    </div>
+                </div>
+
+                <div class="form-section-card">
+                    <div class="section-title"><i class="fas fa-wallet"></i> <span data-i18n="title.salary_details">Salary Details</span></div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label data-i18n="label.base_salary">Base Salary</label>
+                            <input type="number" step="100" id="base_salary" name="base_salary" placeholder="Enter base salary" data-i18n-placeholder="placeholder.enter_base_salary">
+                        </div>
+
+                        <div class="form-group">
+                            <label data-i18n="label.payment_frequency">Payment Frequency</label>
+                            <select id="payment_frequency" name="payment_frequency">
+                                <option value="Monthly" data-i18n="label.monthly">Monthly</option>
+                                <option value="Weekly" data-i18n="label.weekly">Weekly</option>
+                                <option value="Daily" data-i18n="label.daily">Daily</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="label.bank_account_details">Bank Account Details</label>
+                        <input type="text" id="bank_account_details" name="bank_account_details" placeholder="Enter bank account details" data-i18n-placeholder="placeholder.enter_bank_details">
+                    </div>
+                </div>
+
+                <div class="form-section-card">
+                    <div class="section-title"><i class="fas fa-user-shield"></i> <span data-i18n="title.system_role">System Role</span></div>
+
+                    <div class="form-group">
+                        <label data-i18n="label.role">Role</label>
+                        <select id="role_id" name="role_id" required>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+
+                    <div id="editModalAttendanceSection" style="display: none; border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px;">
+                        <div class="section-title" data-i18n="title.attendance_history" style="font-size: 14px; margin-bottom: 12px;"><i class="far fa-calendar-alt"></i> <span>Attendance History</span></div>
+                        <button type="button" class="btn-attendance" onclick="openAttendanceFromEdit()">
+                            <i class="far fa-calendar-check"></i>
+                            <span data-i18n="btn.view_attendance">View Attendance Calendar</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            
-            <div class="form-group">
-                <label>Last Name</label>
-                <input type="text" id="last_name" name="last_name" placeholder="Enter last name">
-            </div>
-
-            <div class="form-group">
-                <label>Username (for Login)</label>
-                <input type="text" id="username" name="username" placeholder="Enter login username" required>
-            </div>
-
-            <div class="form-group">
-                <label>Contact Email</label>
-                <input type="email" id="email" name="email" placeholder="Enter contact email" required>
-            </div>
-
-            <div class="form-group">
-                <label>Password (for Login)</label>
-                <input type="password" id="password" name="password" placeholder="Enter new password (leave blank to keep current)">
-            </div>
-
-            <div class="form-group">
-                <label>Phone Number</label>
-                <input type="text" id="phone" name="phone" placeholder="Enter phone number">
-            </div>
-
-            <div class="form-group">
-                <label>Address</label>
-                <input type="text" id="address" name="address" placeholder="Enter address">
-            </div>
-
-            <div class="section-title">Salary Details</div>
-
-            <div class="form-group">
-                <label>Base Salary</label>
-                <input type="number" step="100" id="base_salary" name="base_salary" placeholder="Enter base salary">
-            </div>
-
-            <div class="form-group">
-                <label>Payment Frequency</label>
-                <select id="payment_frequency" name="payment_frequency">
-                    <option value="Monthly">Monthly</option>
-                    <option value="Weekly">Weekly</option>
-                    <option value="Bi-weekly">Bi-weekly</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Bank Account Details</label>
-                <input type="text" id="bank_account_details" name="bank_account_details" placeholder="Enter bank account details">
-            </div>
-
-            <div class="section-title">Roles & Permissions</div>
-
-            <div class="form-group">
-                <label>Role</label>
-                <select id="role_id" name="role_id" required>
-                    <!-- Populated by JS -->
-                </select>
-            </div>
-
-            <label class="checkbox-group"><input type="checkbox" name="permissions[]" value="Manage Products"> <span>Manage Products</span></label>
-            <label class="checkbox-group"><input type="checkbox" name="permissions[]" value="View Orders"> <span>View Orders</span></label>
-            <label class="checkbox-group"><input type="checkbox" name="permissions[]" value="Manage Promotions"> <span>Manage Promotions</span></label>
-            <label class="checkbox-group"><input type="checkbox" name="permissions[]" value="Manage Staff"> <span>Manage Staff</span></label>
 
             <div class="drawer-footer">
                 <button type="button" class="btn-cancel" onclick="closeDrawer()">Cancel</button>
@@ -202,10 +436,38 @@
     </div>
     </div>
 
+    <!-- Attendance Calendar Modal -->
+    <div class="drawer-overlay" id="attendanceOverlay" onclick="if(event.target === this) closeAttendanceModal();">
+        <div class="drawer" id="attendanceDrawer" style="max-width: 450px; padding: 24px;">
+            <div class="drawer-header" style="font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #0f172a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+                <span id="attendanceHeaderTitle" data-i18n="title.attendance">Attendance Calendar</span>
+                <i class="fas fa-times" onclick="closeAttendanceModal()" style="cursor: pointer; color: #94a3b8; font-size: 20px;"></i>
+            </div>
+            
+            <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px; justify-content: space-between;">
+                <button type="button" class="action-btn" onclick="changeAttendanceMonth(-1)" style="padding: 6px 12px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; cursor: pointer; transition: background 0.2s;"><i class="fas fa-chevron-left"></i></button>
+                <span id="attendanceMonthLabel" style="font-weight: 600; font-size: 16px; color: #334155; text-align: center;">Month Year</span>
+                <button type="button" class="action-btn" onclick="changeAttendanceMonth(1)" style="padding: 6px 12px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; cursor: pointer; transition: background 0.2s;"><i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 20px;">
+                <!-- Dynamically generated calendar days -->
+            </div>
+
+            <div style="font-size: 13px; color: #64748b; margin-top: 12px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+                <span data-i18n="label.attendance_days">Days Worked</span>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script>
         let currentKeyword = '';
+        let currentPage = 1;
+        const itemsPerPage = 20;
         let currentStaff = [];
         let rolesList = [];
         let activeTab = 'info';
@@ -259,53 +521,125 @@
 
         function renderHeaders() {
             const header = document.getElementById('tableHeader');
+            const getT = (key, defaultVal) => window.i18n ? window.i18n.t(key, defaultVal) : defaultVal;
+            
             if (activeTab === 'info') {
-                header.innerHTML = `<span style="flex: 2;">Name</span><span style="flex: 2;">Role</span><span style="flex: 2;">Contact Information</span><span style="flex: 1; text-align: right;">Actions</span>`;
+                header.innerHTML = `<span style="flex: 2;">${getT('label.name', 'Name')}</span><span style="flex: 2;">${getT('label.role', 'Role')}</span><span style="flex: 2;">${getT('label.contact', 'Contact Information')}</span><span style="flex: 1; text-align: right;">${getT('label.action', 'Actions')}</span>`;
             } else if (activeTab === 'salary') {
-                header.innerHTML = `<span style="flex: 2;">Name</span><span style="flex: 1;">Base Salary</span><span style="flex: 1;">Frequency</span><span style="flex: 2;">Bank Account</span><span style="flex: 1; text-align: right;">Actions</span>`;
+                header.innerHTML = `<span style="flex: 2;">${getT('label.name', 'Name')}</span><span style="flex: 1;">${getT('label.base_salary', 'Base Salary')}</span><span style="flex: 1;">${getT('label.payment_frequency', 'Frequency')}</span><span style="flex: 2;">${getT('label.bank_account_details', 'Bank Account')}</span><span style="flex: 1; text-align: right;">${getT('label.action', 'Actions')}</span>`;
             } else {
-                header.innerHTML = `<span style="flex: 2;">Name</span><span style="flex: 1;">Role</span><span style="flex: 3;">Permissions</span><span style="flex: 1; text-align: right;">Actions</span>`;
+                header.innerHTML = `<span style="flex: 2;">${getT('label.name', 'Name')}</span><span style="flex: 1;">${getT('label.role', 'Role')}</span><span style="flex: 2;">${getT('label.attendance_days', 'Days Worked')}</span><span style="flex: 1; text-align: right;">${getT('label.action', 'Actions')}</span>`;
             }
             renderStaff();
         }
 
         function renderStaff() {
             const container = document.getElementById('staffContainer');
+            const paginationContainer = document.getElementById('paginationContainer');
+            const getT = (key, defaultVal) => window.i18n ? window.i18n.t(key, defaultVal) : defaultVal;
             if (currentStaff.length === 0) {
                 container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบพนักงาน</div>';
+                if (paginationContainer) paginationContainer.innerHTML = '';
                 return;
             }
 
-            container.innerHTML = currentStaff.map(s => {
+            // Pagination boundaries check
+            const totalPages = Math.ceil(currentStaff.length / itemsPerPage);
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedStaff = currentStaff.slice(startIndex, endIndex);
+
+            container.innerHTML = paginatedStaff.map(s => {
                 const name = `${s.first_name} ${s.last_name}`;
                 let rowHtml = `<div class="product-row">`;
                 
-                rowHtml += `<div class="staff-name" style="flex: 2; font-weight: 500; color: #334155;">${name}</div>`;
+                rowHtml += `<div class="staff-name" style="flex: 2;">${name}</div>`;
 
                 if (activeTab === 'info') {
                     rowHtml += `<div style="flex: 2; color: #64748b;">${s.role_name || 'N/A'}</div>`;
                     rowHtml += `<div style="flex: 2; color: #3b82f6;">${s.email}</div>`;
                 } else if (activeTab === 'salary') {
                     rowHtml += `<div style="flex: 1; color: #64748b;">฿${parseFloat(s.base_salary || 0).toLocaleString()}</div>`;
-                    rowHtml += `<div style="flex: 1; color: #64748b;">${s.payment_frequency || '-'}</div>`;
+                    const freqKey = s.payment_frequency ? 'label.' + s.payment_frequency.toLowerCase().replace('-', '_') : '';
+                    let freqText = freqKey && window.i18n ? window.i18n.t(freqKey, s.payment_frequency) : (s.payment_frequency || '-');
+                    if (s.payment_frequency === 'Daily' || s.payment_frequency === 'Weekly') {
+                        freqText += ` (${s.days_worked || 0} ${getT('label.days', 'วัน')})`;
+                    }
+                    rowHtml += `<div style="flex: 1; color: #64748b;">${freqText}</div>`;
                     rowHtml += `<div style="flex: 2; color: #64748b;">${s.bank_account_details || '-'}</div>`;
                 } else {
                     rowHtml += `<div style="flex: 1; color: #64748b;">${s.role_name || 'N/A'}</div>`;
-                    const perms = Array.isArray(s.permissions) && s.permissions.length > 0 ? s.permissions.join(', ') : 'None';
-                    rowHtml += `<div style="flex: 3; color: #64748b; font-size: 13px;">${perms}</div>`;
+                    const daysVal = (s.payment_frequency === 'Daily' || s.payment_frequency === 'Weekly') ? `${s.days_worked || 0} ${getT('label.days', 'days')}` : '-';
+                    rowHtml += `<div style="flex: 2; color: #64748b;">${daysVal}</div>`;
                 }
 
-                rowHtml += `<div style="flex: 1; justify-content: flex-end; display: flex; gap: 12px;">
-                    <a href="#" onclick="editStaff(${s.employee_id})" class="action-link" style="width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background-color: #ebfbee; color: #2b7a3b; font-size: 18px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Edit">
+                const showCalendar = activeTab === 'salary';
+                const calendarBtn = showCalendar ? `<button type="button" onclick="openAttendanceModal(${s.employee_id})" class="action-link attendance-link" title="Attendance"><i class="far fa-calendar-check"></i></button>` : '';
+
+                rowHtml += `<div style="flex: 1; justify-content: flex-end; display: flex; gap: 8px;">
+                    ${calendarBtn}
+                    <button type="button" onclick="editStaff(${s.employee_id})" class="action-link edit-link" title="Edit">
                         <i class="fas fa-edit"></i>
-                    </a>
-                    <a href="#" onclick="deleteStaff(${s.employee_id})" class="action-link" style="width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background-color: #fff0f2; color: #e03131; font-size: 18px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Delete">
+                    </button>
+                    <button type="button" onclick="deleteStaff(${s.employee_id})" class="action-link delete-link" title="Delete">
                         <i class="fas fa-trash-alt"></i>
-                    </a>
+                    </button>
                 </div></div>`;
                 return rowHtml;
             }).join('');
+
+            renderPagination(currentStaff.length);
         }
+
+        function renderPagination(totalItems) {
+            const paginationContainer = document.getElementById('paginationContainer');
+            if (!paginationContainer) return;
+
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            html += `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="window.changePage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = startPage + maxVisiblePages - 1;
+
+            if (endPage > totalPages) {
+                endPage = totalPages;
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="window.changePage(${i})">${i}</button>`;
+            }
+
+            // Next button
+            html += `<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="window.changePage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+            paginationContainer.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderStaff();
+        }
+
+        window.changePage = changePage;
+
 
         // Drawer logic
         const drawer = document.getElementById('staffDrawer');
@@ -316,6 +650,8 @@
             document.getElementById('staffForm').reset();
             document.getElementById('employee_id').value = '';
             document.getElementById('password').setAttribute('required', 'true');
+            const attSection = document.getElementById('editModalAttendanceSection');
+            if (attSection) attSection.style.display = 'none';
             openDrawer("ส่วนงานจัดการพนักงาน - Add New Staff");
         });
 
@@ -335,44 +671,73 @@
             document.getElementById('payment_frequency').value = s.payment_frequency || 'Monthly';
             document.getElementById('bank_account_details').value = s.bank_account_details || '';
             document.getElementById('role_id').value = s.role_id;
-            
-            const perms = Array.isArray(s.permissions) ? s.permissions : [];
-            document.querySelectorAll('input[name="permissions[]"]').forEach(cb => {
-                cb.checked = perms.includes(cb.value);
-            });
+
+            const attSection = document.getElementById('editModalAttendanceSection');
+            if (attSection) {
+                attSection.style.display = 'block';
+            }
 
             openDrawer("ส่วนงานจัดการพนักงาน - Edit Staff");
         }
 
         function openDrawer(titleCode) {
-            dHeader.textContent = titleCode;
-            overlay.classList.add('show');
-            setTimeout(() => {
-                drawer.classList.add('open');
-            }, 10);
+            const drawer = document.getElementById('staffDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            const dHeader = document.getElementById('drawerHeader');
+            if (drawer && overlay && dHeader) {
+                dHeader.innerHTML = `<i class="fas fa-user-cog" style="margin-right: 12px; font-size: 22px;"></i><span>${titleCode}</span>`;
+                overlay.classList.add('show');
+                setTimeout(() => {
+                    drawer.classList.add('open');
+                }, 10);
+            }
         }
 
         function closeDrawer() {
-            drawer.classList.remove('open');
-            setTimeout(() => {
-                overlay.classList.remove('show');
-            }, 300);
+            const drawer = document.getElementById('staffDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            if (drawer && overlay) {
+                drawer.classList.remove('open');
+                setTimeout(() => {
+                    overlay.classList.remove('show');
+                }, 300);
+            }
         }
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) closeDrawer();
+        document.addEventListener('click', (e) => {
+            const overlay = document.getElementById('drawerOverlay');
+            if (overlay && e.target === overlay) closeDrawer();
+        });
+
+        document.getElementById('payment_frequency').addEventListener('change', (e) => {
+            const attSection = document.getElementById('editModalAttendanceSection');
+            if (attSection) {
+                const employeeId = document.getElementById('employee_id').value;
+                if (employeeId) {
+                    attSection.style.display = 'block';
+                } else {
+                    attSection.style.display = 'none';
+                }
+            }
         });
 
         // Form Submit
         document.getElementById('saveStaffBtn').addEventListener('click', async () => {
             const form = document.getElementById('staffForm');
-            if(!form.checkValidity()) { form.reportValidity(); return; }
+            console.log("saveStaffBtn clicked. Form validity:", form.checkValidity());
+            if(!form.checkValidity()) {
+                const invalidFields = Array.from(form.querySelectorAll(':invalid')).map(el => ({ name: el.name, id: el.id, value: el.value }));
+                console.warn("Form validation failed. Invalid fields: " + JSON.stringify(invalidFields));
+                form.reportValidity();
+                return;
+            }
 
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
-            data.permissions = Array.from(formData.getAll("permissions[]"));
             
             const isUpdate = !!data.id;
             const url = isUpdate ? `/api/staff/update?id=${data.id}` : `/api/staff/create`;
+
+            console.log("saveStaffBtn start: " + JSON.stringify({ url, data }));
 
             try {
                 const response = await fetch(url, {
@@ -380,15 +745,23 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+                
+                console.log("saveStaffBtn response status:", response.status);
+                
                 if (response.ok) {
+                    console.log("saveStaffBtn success!");
                     showToast(isUpdate ? "อัปเดตพนักงานสำเร็จ" : "เพิ่มพนักงานสำเร็จ", "success");
                     closeDrawer();
                     fetchStaff();
                 } else {
                     const res = await response.json();
+                    console.error("saveStaffBtn failed:", res);
                     showToast(res.message || "เกิดข้อผิดพลาด", "error");
                 }
-            } catch (error) { showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error"); }
+            } catch (error) { 
+                console.error("saveStaffBtn error:", error);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error"); 
+            }
         });
 
         async function deleteStaff(id) {
@@ -402,18 +775,317 @@
             } catch (error) { showToast("เกิดข้อผิดพลาด", "error"); }
         }
 
+        // Attendance Calendar Logic
+        let currentEmployeeIdForAttendance = null;
+        let currentEmployeeNameForAttendance = '';
+        let currentEmployeeFrequencyForAttendance = 'Monthly';
+        let attendanceCurrentMonthDate = new Date();
+        let checkedInDates = [];
+
+        function openAttendanceModal(employeeId, employeeName) {
+            try {
+                console.log("openAttendanceModal called with:", { employeeId, employeeName });
+                const s = currentStaff.find(x => x.employee_id == employeeId);
+                if (!employeeName) {
+                    employeeName = s ? `${s.first_name} ${s.last_name}` : '';
+                }
+                currentEmployeeIdForAttendance = employeeId;
+                currentEmployeeNameForAttendance = employeeName;
+                currentEmployeeFrequencyForAttendance = s && s.payment_frequency ? s.payment_frequency : 'Monthly';
+                currentEmployeeNameForAttendance = employeeName;
+                attendanceCurrentMonthDate = new Date();
+                
+                const overlay = document.getElementById('attendanceOverlay');
+                const drawer = document.getElementById('attendanceDrawer');
+                
+                if (overlay && drawer) {
+                    overlay.classList.add('show');
+                    setTimeout(() => {
+                        drawer.classList.add('open');
+                    }, 10);
+                    
+                    fetchAndRenderCalendar();
+                } else {
+                    console.error("Attendance modal overlay or drawer elements not found in DOM!", { overlay, drawer });
+                    showToast("ไม่พบองค์ประกอบประวัติเวลาทำงานในหน้านี้", "error");
+                }
+            } catch (err) {
+                console.error("Exception in openAttendanceModal:", err);
+                showToast("เกิดข้อผิดพลาดในการเปิดระบบเวลาทำงาน: " + err.message, "error");
+            }
+        }
+
+        function closeAttendanceModal() {
+            const overlay = document.getElementById('attendanceOverlay');
+            const drawer = document.getElementById('attendanceDrawer');
+            if (overlay && drawer) {
+                drawer.classList.remove('open');
+                setTimeout(() => {
+                    overlay.classList.remove('show');
+                }, 300);
+            }
+        }
+
+        function changeAttendanceMonth(direction) {
+            if (currentEmployeeFrequencyForAttendance === 'Monthly') {
+                attendanceCurrentMonthDate.setFullYear(attendanceCurrentMonthDate.getFullYear() + direction);
+            } else {
+                attendanceCurrentMonthDate.setMonth(attendanceCurrentMonthDate.getMonth() + direction);
+            }
+            fetchAndRenderCalendar();
+        }
+
+        async function fetchAndRenderCalendar() {
+            if (!currentEmployeeIdForAttendance) return;
+
+            const year = attendanceCurrentMonthDate.getFullYear();
+            let monthStr = '';
+            
+            if (currentEmployeeFrequencyForAttendance === 'Monthly') {
+                monthStr = `${year}`;
+            } else {
+                const month = String(attendanceCurrentMonthDate.getMonth() + 1).padStart(2, '0');
+                monthStr = `${year}-${month}`;
+            }
+
+            // Fetch checked in dates
+            try {
+                const response = await fetch(`/api/attendance?employee_id=${currentEmployeeIdForAttendance}&month=${monthStr}`);
+                const result = await response.json();
+                if (response.ok) {
+                    checkedInDates = result.data.dates || [];
+                } else {
+                    checkedInDates = [];
+                    console.error("Error fetching attendance logs:", result.message);
+                }
+            } catch (err) {
+                checkedInDates = [];
+                console.error("Connection error fetching attendance logs:", err);
+            }
+
+            renderCalendarGrid();
+        }
+
+        function renderCalendarGrid() {
+            const grid = document.getElementById('calendarGrid');
+            const label = document.getElementById('attendanceMonthLabel');
+            
+            // Format month year label depending on current language
+            const lang = window.i18n ? window.i18n.getLanguage() : 'th';
+            const options = { month: 'long', year: 'numeric' };
+            const locale = lang === 'th' ? 'th-TH' : 'en-US';
+            label.textContent = attendanceCurrentMonthDate.toLocaleDateString(locale, options);
+
+            const freq = currentEmployeeFrequencyForAttendance;
+            if (freq === 'Monthly') {
+                const yearOptions = { year: 'numeric' };
+                label.textContent = attendanceCurrentMonthDate.toLocaleDateString(locale, yearOptions);
+
+                grid.style.display = 'grid';
+                grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                grid.style.gap = '12px';
+                grid.style.padding = '0';
+                grid.innerHTML = '';
+
+                const monthNames = lang === 'th'
+                    ? ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
+                    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+                const year = attendanceCurrentMonthDate.getFullYear();
+
+                for (let m = 0; m < 12; m++) {
+                    const monthPrefix = `${year}-${String(m + 1).padStart(2, '0')}`;
+                    const isMonthCheckedIn = checkedInDates.some(date => date.startsWith(monthPrefix));
+
+                    const cell = document.createElement('div');
+                    cell.className = `calendar-day${isMonthCheckedIn ? ' checked-in' : ''}`;
+                    cell.style.aspectRatio = 'auto';
+                    cell.style.padding = '12px 6px';
+                    cell.style.display = 'flex';
+                    cell.style.alignItems = 'center';
+                    cell.style.justifyContent = 'center';
+                    cell.style.fontWeight = '600';
+                    cell.style.fontSize = '14px';
+                    cell.style.borderRadius = '8px';
+                    cell.style.cursor = 'pointer';
+                    cell.style.transition = 'all 0.2s';
+                    cell.textContent = monthNames[m];
+
+                    const firstDayStr = `${monthPrefix}-01`;
+                    cell.addEventListener('click', () => toggleAttendanceDate(firstDayStr, isMonthCheckedIn, m));
+                    grid.appendChild(cell);
+                }
+                return;
+            }
+
+            // Restore defaults for Weekly/Daily
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+            grid.style.gap = '8px';
+            grid.style.padding = '0';
+
+            grid.innerHTML = '';
+
+            // Render day of week headers (Sun - Sat)
+            const thHeaders = lang === 'th' 
+                ? ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'] 
+                : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+                
+            thHeaders.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-header-day';
+                dayEl.textContent = day;
+                grid.appendChild(dayEl);
+            });
+
+            const year = attendanceCurrentMonthDate.getFullYear();
+            const month = attendanceCurrentMonthDate.getMonth();
+
+            // First day of the month
+            const firstDay = new Date(year, month, 1).getDay();
+            // Total days in the month
+            const totalDays = new Date(year, month + 1, 0).getDate();
+
+            // Render empty cells before the first day of the month
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-day empty';
+                grid.appendChild(emptyCell);
+            }
+
+            // Render days of the month
+            for (let day = 1; day <= totalDays; day++) {
+                const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isCheckedIn = checkedInDates.includes(dayStr);
+                
+                const cell = document.createElement('div');
+                cell.className = `calendar-day${isCheckedIn ? ' checked-in' : ''}`;
+                cell.textContent = day;
+                
+                if (isCheckedIn) {
+                    cell.title = `${currentEmployeeNameForAttendance} - Checked In`;
+                }
+
+                cell.addEventListener('click', () => toggleAttendanceDate(dayStr, isCheckedIn));
+                grid.appendChild(cell);
+            }
+        }
+
+        async function toggleAttendanceDate(dateStr, isCurrentlyCheckedIn, targetMonthIndex) {
+            const url = isCurrentlyCheckedIn ? '/api/attendance/checkout' : '/api/attendance/checkin';
+            
+            // Calculate batch dates based on frequency
+            let dates = [];
+            const parts = dateStr.split('-');
+            const year = parseInt(parts[0], 10);
+            
+            const freq = currentEmployeeFrequencyForAttendance;
+            
+            if (freq === 'Monthly') {
+                const month = targetMonthIndex !== undefined ? targetMonthIndex : (parseInt(parts[1], 10) - 1);
+                // Get all dates in this month
+                const totalDays = new Date(year, month + 1, 0).getDate();
+                for (let d = 1; d <= totalDays; d++) {
+                    dates.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+                }
+            } else if (freq === 'Weekly') {
+                const month = parseInt(parts[1], 10) - 1; // 0-indexed
+                const day = parseInt(parts[2], 10);
+                // Get 7 consecutive days starting from clicked date
+                for (let i = 0; i < 7; i++) {
+                    const nextDate = new Date(year, month, day + i);
+                    const y = nextDate.getFullYear();
+                    const m = String(nextDate.getMonth() + 1).padStart(2, '0');
+                    const d = String(nextDate.getDate()).padStart(2, '0');
+                    dates.push(`${y}-${m}-${d}`);
+                }
+            } else {
+                // Daily or others: just the single clicked date
+                dates.push(dateStr);
+            }
+
+            console.log("toggleAttendanceDate start: " + JSON.stringify({ url, dates, freq, isCurrentlyCheckedIn }));
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        employee_id: currentEmployeeIdForAttendance,
+                        work_date: dates
+                    })
+                });
+                
+                console.log("toggleAttendanceDate HTTP response status:", response.status);
+                
+                if (response.ok) {
+                    let successMsg = '';
+                    if (isCurrentlyCheckedIn) {
+                        successMsg = freq === 'Monthly' ? "ยกเลิกการจองตารางงานรายเดือนสำเร็จ" : (freq === 'Weekly' ? "ยกเลิกการจองตารางงานรายสัปดาห์สำเร็จ" : "บันทึกเอาวันทำงานออกสำเร็จ");
+                    } else {
+                        successMsg = freq === 'Monthly' ? "จองตารางงานรายเดือนสำเร็จ" : (freq === 'Weekly' ? "จองตารางงานรายสัปดาห์สำเร็จ" : "บันทึกวันทำงานสำเร็จ");
+                    }
+                    showToast(successMsg, "success");
+                    fetchAndRenderCalendar();
+                } else {
+                    const result = await response.json();
+                    console.error("toggleAttendanceDate failed with API response:", result);
+                    showToast(result.message || "เกิดข้อผิดพลาด", "error");
+                }
+            } catch (err) {
+                console.error("toggleAttendanceDate fetch error:", err);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        function openAttendanceFromEdit() {
+            try {
+                const employeeIdEl = document.getElementById('employee_id');
+                const firstNameEl = document.getElementById('first_name');
+                const lastNameEl = document.getElementById('last_name');
+                
+                if (!employeeIdEl) {
+                    console.error("openAttendanceFromEdit: Hidden input element #employee_id not found in DOM!");
+                    showToast("เกิดข้อผิดพลาด: ไม่พบฟิลด์ ID พนักงาน", "error");
+                    return;
+                }
+                
+                const employeeId = employeeIdEl.value;
+                const firstName = firstNameEl ? firstNameEl.value : '';
+                const lastName = lastNameEl ? lastNameEl.value : '';
+                const name = `${firstName} ${lastName}`.trim();
+                
+                console.log("openAttendanceFromEdit called. Values read:", { employeeId, name });
+                
+                if (employeeId) {
+                    closeDrawer();
+                    setTimeout(() => {
+                        openAttendanceModal(employeeId, name);
+                    }, 350);
+                } else {
+                    console.warn("openAttendanceFromEdit: employeeId value is empty!");
+                    showToast("ไม่พบข้อมูลรหัสพนักงานในแบบฟอร์มแก้ไข", "error");
+                }
+            } catch (err) {
+                console.error("Exception in openAttendanceFromEdit:", err);
+                showToast("เกิดข้อผิดพลาด: " + err.message, "error");
+            }
+        }
+
         // Tabs
-        document.querySelectorAll('.staff-tab').forEach(tab => {
+        document.querySelectorAll('.filter-btn').forEach(tab => {
             tab.addEventListener('click', (e) => {
-                document.querySelectorAll('.staff-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.filter-btn').forEach(t => t.classList.remove('active'));
                 e.target.classList.add('active');
                 activeTab = e.target.getAttribute('data-tab');
+                currentPage = 1;
                 renderHeaders();
             });
         });
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
             currentKeyword = e.target.value;
+            currentPage = 1;
             fetchStaff();
         });
 

@@ -58,21 +58,21 @@ document.addEventListener('DOMContentLoaded', () => {
             card.innerHTML = `
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
                     <div>
-                        <div class="text-sm font-bold text-[#8bb35c] uppercase tracking-wide">Order #${order.id}</div>
+                        <div class="text-sm font-bold text-[#8bb35c] uppercase tracking-wide">คำสั่งซื้อ #${order.id}</div>
                         <div class="text-xs text-gray-400 mt-0.5">${date}</div>
                     </div>
                     <div class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${order.status === 'Preparing' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}">
-                        ${order.status}
+                        ${order.status === 'Preparing' ? 'กำลังเตรียมสินค้า' : 'สำเร็จ'}
                     </div>
                 </div>
                 
                 <div class="border-t border-gray-50 pt-4 flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center space-x-2">
-                        <span class="text-xs text-gray-400">Total:</span>
+                        <span class="text-xs text-gray-400">ยอดสุทธิ:</span>
                         <span class="text-lg font-bold text-gray-800">฿${order.total.toFixed(2)}</span>
                     </div>
                     <button class="view-details-btn px-4 py-2 bg-gray-50 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-100 transition-colors" data-id="${order.id}">
-                        View Details
+                        ดูรายละเอียด
                     </button>
                 </div>
             `;
@@ -96,21 +96,21 @@ document.addEventListener('DOMContentLoaded', () => {
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
         
-        modalStatus.textContent = order.status;
+        modalStatus.textContent = order.status === 'Preparing' ? 'กำลังเตรียมสินค้า' : 'สำเร็จ';
         modalStatus.className = `text-sm font-bold uppercase ${order.status === 'Preparing' ? 'text-amber-600' : 'text-green-600'}`;
         
-        modalPayment.textContent = order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Bank Transfer';
-        modalShipping.textContent = order.deliveryMethod === 'standard' ? 'Standard Delivery' : 'Express Delivery';
+        modalPayment.textContent = order.paymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนผ่านธนาคาร';
+        modalShipping.textContent = order.deliveryMethod === 'standard' ? 'ส่งธรรมดา' : 'ส่งด่วนพิเศษ';
         
         // Render items
         modalItems.innerHTML = order.items.map(item => `
             <div class="flex items-center space-x-4">
                 <div class="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center p-2 shrink-0">
-                    <img src="${item.image || 'https://placehold.co/100x100'}" alt="" class="w-full h-full object-contain">
+                    <img src="${item.image || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="" class="w-full h-full object-contain">
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-bold text-gray-800 truncate">${item.name}</div>
-                    <div class="text-xs text-gray-500">Qty: ${item.quantity} × ฿${parseFloat(item.price).toFixed(2)}</div>
+                    <div class="text-xs text-gray-500">จำนวน: ${item.quantity} × ฿${parseFloat(item.price).toFixed(2)}</div>
                 </div>
                 <div class="text-sm font-bold text-gray-800">
                     ฿${(parseFloat(item.price) * item.quantity).toFixed(2)}

@@ -4,6 +4,7 @@
     "type": "project",
     "require": {
         "php": ">=7.4",
-        "firebase/php-jwt": "^7.0.0"
+        "firebase/php-jwt": "^7.0.0",
+        "phpmailer/phpmailer": "^7.1"
     }
 }
