@@ -5,7 +5,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Promotions - Staff</title>
+    <title>จัดการโปรโมชั่น (พนักงาน) - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="/css/staff_mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -16,6 +16,85 @@
         }
     </script>
 <script type="module" src="/src/js/main.js"></script>
+    <style>
+        .premium-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            transition: all 0.2s ease-in-out;
+        }
+        .premium-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .card-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rate-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .rate-table th {
+            text-align: left;
+            padding: 12px;
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            font-size: 13px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .rate-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+            color: #334155;
+        }
+        .rate-table tr:hover td {
+            background-color: #f8fafc;
+        }
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+            text-align: center;
+        }
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #cbd5e1;
+        }
+        .empty-state p {
+            margin: 0;
+            font-size: 14px;
+        }
+        .badge {
+            background-color: #fef3c7;
+            color: #d97706;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 1px solid #fde68a;
+        }
+    </style>
 </head>
 <body class="preload">
     <div class="admin-wrapper">
@@ -29,32 +108,26 @@
 
         <!-- Main Content -->
         <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto; padding-bottom: 80px;">
-            <div class="page-header">
-                <h1>Promotions</h1>
-            </div>
-
-            <!-- Search -->
-            <div class="staff-stock-search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search promotions...">
-            </div>
-
-            <!-- Table -->
-            <div class="staff-stock-table" style="border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                <div class="staff-stock-header" style="display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 16px 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #475569; align-items: center;">
-                    <span style="flex: 1;">Promotion Name</span>
-                    <span style="flex: 1; text-align: center;">Discount Type</span>
-                    <span style="flex: 1; text-align: center;">Validity Period</span>
+            <div style="max-width: 1000px; margin: 0 auto; padding: 24px;">
+                <div class="page-header">
+                    <h1>โปรโมชั่น</h1>
+                    <p style="color: #64748b; margin-top: 6px;">รายการของแถมตามระดับยอดซื้อสินค้า</p>
                 </div>
-                <div id="promoContainer">
-                    <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
+
+                <div class="premium-card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h2><i class="fas fa-gift" style="color: #ef4444;"></i> รายการของแถมตามระดับยอดซื้อ</h2>
+                    </div>
+                    <div id="giftsContainer">
+                        <div style="padding: 30px; text-align: center; color: #94a3b8;">กำลังโหลดข้อมูล...</div>
+                    </div>
                 </div>
             </div>
         </main>
         
         <!-- Bottom Navigation for Mobile -->
         <nav class="bottom-nav">
-            <a href="staff_stock.html" class="nav-item active">
+            <a href="staff_stock.html" class="nav-item">
                 <i class="fas fa-box"></i>
                 <span data-i18n="nav.stock">จัดการคลังสินค้า</span>
             </a>
@@ -76,8 +149,6 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        let currentKeyword = '';
-
         function toggleSidebar() { const sidebar = document.querySelector('.sidebar'); const overlay = document.getElementById('sidebarOverlay'); if (sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } }
 
         function toggleSubmenu(el) {
@@ -96,80 +167,82 @@
             return user;
         }
 
-        async function fetchPromotions() {
+        async function fetchGiftRules() {
+            const container = document.getElementById('giftsContainer');
             try {
-                const response = await fetch(`/api/promotions?keyword=${encodeURIComponent(currentKeyword)}`);
+                const response = await fetch('/api/rewards/gifts');
                 const result = await response.json();
                 if (response.ok) {
-                    renderPromotions(result.data || []);
+                    renderGiftRules(result.data || []);
                 } else {
                     if (response.status === 401 || response.status === 403) {
                         localStorage.removeItem('user');
                         window.location.href = 'login.html';
                         return;
                     }
-                    showToast(result.message || "เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
+                    container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">${result.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล"}</div>`;
                 }
             } catch (error) {
-                console.error("fetchPromotions error:", error);
-                showToast("เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
+                console.error("fetchGiftRules error:", error);
+                container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>`;
             }
         }
 
-        function renderPromotions(promos) {
-            const container = document.getElementById('promoContainer');
-            if (promos.length === 0) {
-                container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบโปรโมชัน</div>';
+        function renderGiftRules(rules) {
+            const container = document.getElementById('giftsContainer');
+            if (rules.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-gift" style="font-size: 36px; margin-bottom: 12px; color: #cbd5e1;"></i>
+                        <p style="margin: 0; font-size: 14px;">ยังไม่มีโปรโมชั่นของแถมในระบบ</p>
+                    </div>`;
                 return;
             }
 
-            container.innerHTML = promos.map(p => {
-                const discount = (p.discount_type == 1 || p.discount_type == 2 || p.discount_type === 'percent') ? `${parseFloat(p.discount_value)}% off` : `฿${parseFloat(p.discount_value)} off`;
-                const validity = `${p.start_date.split(' ')[0]} - ${p.end_date.split(' ')[0]}`;
-                
-                return `
-                    <div class="staff-stock-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 16px 24px; border-bottom: 1px solid #e2e8f0; align-items: center; transition: background 0.2s;">
-                        <div style="font-size: 14px; color: #334155; font-weight: 500;">
-                            ${p.promo_name}
-                        </div>
-                        <div style="text-align: center; color: #10b981; font-weight: 700; font-size: 14px;">
-                            ${discount}
-                        </div>
-                        <div style="text-align: center; font-size: 14px; color: #64748b;">
-                            <i class="far fa-calendar-alt" style="margin-right: 6px;"></i> ${validity}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            let html = `
+                <table class="rate-table">
+                    <thead>
+                        <tr>
+                            <th>ยอดซื้อขั้นต่ำ (บาท)</th>
+                            <th>ของแถมที่ได้รับ</th>
+                            <th style="text-align: center;">จำนวน (ชิ้น)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            rules.forEach(rule => {
+                html += `
+                    <tr>
+                        <td><strong>฿${parseFloat(rule.min_spend).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
+                        <td><span class="badge"><i class="fas fa-gift"></i> ${rule.gift_name}</span></td>
+                        <td style="text-align: center;"><strong>${rule.gift_qty}</strong></td>
+                    </tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
         }
 
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            currentKeyword = e.target.value;
-            fetchPromotions();
-        });
+        const menuGroup = document.querySelector('.menu-group');
+        if (menuGroup) {
+            const isOpen = localStorage.getItem('staffProductsMenuOpen');
+            if (isOpen === 'true') menuGroup.classList.add('open');
+            else if (isOpen === 'false') menuGroup.classList.remove('open');
+        }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const menuGroup = document.querySelector('.menu-group');
-            if (menuGroup) {
-                const isOpen = localStorage.getItem('staffProductsMenuOpen');
-                if (isOpen === 'true') menuGroup.classList.add('open');
-                else if (isOpen === 'false') menuGroup.classList.remove('open');
-            }
+        const user = checkAuth();
+        if (user) {
+            fetchGiftRules();
+        }
 
-            const user = checkAuth();
-            if (user) {
-                fetchPromotions();
-            }
-
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('user');
-                    window.location.href = '/login.html';
-                });
-            }
-        });
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+            });
+        }
 
         function showToast(message, type) {
             const toast = document.getElementById('toast');

@@ -5,7 +5,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orders - Hello Pet Shop</title>
+    <title>จัดการคำสั่งซื้อ - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -205,6 +205,8 @@
                     <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
                 </div>
             </div>
+            <!-- Pagination -->
+            <div id="paginationContainer" class="pagination-container"></div>
         </main>
 
         <!-- Bottom Navigation for Mobile -->
@@ -216,11 +218,15 @@
     <script>
         (function() {
             let allOrders = [];
+            let filteredOrders = [];
+            let currentPage = 1;
+            const itemsPerPage = 20;
             const urlParams = new URLSearchParams(window.location.search);
             let currentTypeFilter = urlParams.get('type') || 'all';
 
             window.setOrderTypeFilter = function(type) {
                 currentTypeFilter = type;
+                currentPage = 1;
                 updateTabUI();
                 renderOrders();
             };
@@ -259,6 +265,7 @@
                     if (!res.ok) throw new Error('Network error');
                     const json = await res.json();
                     allOrders = json.data || [];
+                    currentPage = 1;
                     updateBadges();
                     updateTabUI();
                     renderOrders();
@@ -282,12 +289,13 @@
 
             function renderOrders() {
                 const container = document.getElementById('ordersContainer');
+                const paginationContainer = document.getElementById('paginationContainer');
                 const searchInput = document.getElementById('searchInput');
                 if (!container || !searchInput) return;
                 
                 const keyword = searchInput.value.toLowerCase();
                 
-                const filteredOrders = allOrders.filter(o => {
+                filteredOrders = allOrders.filter(o => {
                     const matchesKeyword = o.number.toLowerCase().includes(keyword) || 
                                            o.status.toLowerCase().includes(keyword) ||
                                            (o.order_type_label && o.order_type_label.toLowerCase().includes(keyword)) ||
@@ -302,10 +310,24 @@
 
                 if (filteredOrders.length === 0) {
                     container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบคำสั่งซื้อ</div>';
+                    if (paginationContainer) paginationContainer.innerHTML = '';
                     return;
                 }
 
-                container.innerHTML = filteredOrders.map(o => `
+                // Pagination boundaries check
+                const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+                if (currentPage > totalPages) {
+                    currentPage = totalPages;
+                }
+                if (currentPage < 1) {
+                    currentPage = 1;
+                }
+
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+
+                container.innerHTML = paginatedOrders.map(o => `
                     <div class="order-row" onclick="(window.navigateTo ? window.navigateTo('admin_order_details.html?id=${o.id}') : window.location.href='admin_order_details.html?id=${o.id}')" style="cursor: pointer;">
                         <div class="order-date">${o.date}</div>
                         <div class="order-number">
@@ -330,10 +352,59 @@
                         </div>
                     </div>
                 `).join('');
+
+                renderPagination(filteredOrders.length);
             }
 
+            function renderPagination(totalItems) {
+                const paginationContainer = document.getElementById('paginationContainer');
+                if (!paginationContainer) return;
+
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                if (totalPages <= 1) {
+                    paginationContainer.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+                
+                // Previous button
+                html += `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="window.changePage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+
+                // Page numbers
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = startPage + maxVisiblePages - 1;
+
+                if (endPage > totalPages) {
+                    endPage = totalPages;
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="window.changePage(${i})">${i}</button>`;
+                }
+
+                // Next button
+                html += `<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="window.changePage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+                paginationContainer.innerHTML = html;
+            }
+
+            function changePage(page) {
+                currentPage = page;
+                renderOrders();
+            }
+
+            window.changePage = changePage;
+
             const searchInput = document.getElementById('searchInput');
-            if (searchInput) searchInput.addEventListener('input', renderOrders);
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    currentPage = 1;
+                    renderOrders();
+                });
+            }
 
             // Initialize page logic
             checkAuth();

@@ -98,9 +98,27 @@ class CustomerController {
         }
     }
 
+    private function uploadPetImage($file) {
+        $target_dir = __DIR__ . "/../assets/img/pets/";
+        if (!file_exists($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+        $file_ext = strtolower(pathinfo($file["name"], PATHINFO_EXTENSION));
+        $new_filename = uniqid() . "." . $file_ext;
+        $target_file = $target_dir . $new_filename;
+        
+        if (move_uploaded_file($file["tmp_name"], $target_file)) {
+            return "assets/img/pets/" . $new_filename;
+        }
+        return false;
+    }
+
     public function savePet() {
         try {
-            $data = json_decode(file_get_contents('php://input'), true);
+            $data = $_POST;
+            if (empty($data)) {
+                $data = json_decode(file_get_contents('php://input'), true);
+            }
             
             if (empty($data['customer_id']) || empty($data['pet_name']) || empty($data['pet_type'])) {
                 Response::json(400, "Missing required pet information");
@@ -115,18 +133,41 @@ class CustomerController {
             $birthdate = !empty($data['birthdate']) ? trim($data['birthdate']) : null;
             $weight = isset($data['weight']) && $data['weight'] !== '' ? (float)$data['weight'] : null;
             $allergy = isset($data['allergy_info']) ? trim($data['allergy_info']) : null;
+            $imageUrl = isset($data['image_url']) ? trim($data['image_url']) : null;
+
+            // Handle Image Upload
+            if (isset($_FILES['pet_image']) && $_FILES['pet_image']['error'] === UPLOAD_ERR_OK) {
+                $uploadedUrl = $this->uploadPetImage($_FILES['pet_image']);
+                if ($uploadedUrl) {
+                    $imageUrl = $uploadedUrl;
+                }
+            } else if (isset($data['remove_image']) && $data['remove_image'] === 'true') {
+                $imageUrl = null;
+            }
 
             if ($petId > 0) {
+                // If the user did not choose a new image, keep the existing one (unless removed)
+                if ($imageUrl === null && (!isset($data['remove_image']) || $data['remove_image'] !== 'true')) {
+                    // Fetch existing image_url
+                    $qGetImg = "SELECT image_url FROM pets WHERE pet_id = ? AND customer_id = ?";
+                    $stmtImg = $this->db->prepare($qGetImg);
+                    $stmtImg->execute([$petId, $customerId]);
+                    $existing = $stmtImg->fetch(PDO::FETCH_ASSOC);
+                    if ($existing) {
+                        $imageUrl = $existing['image_url'];
+                    }
+                }
+
                 // UPDATE
-                $qUpdate = "UPDATE pets SET pet_name=?, pet_type=?, breed=?, birthdate=?, weight=?, allergy_info=? WHERE pet_id=? AND customer_id=?";
+                $qUpdate = "UPDATE pets SET pet_name=?, pet_type=?, breed=?, birthdate=?, weight=?, allergy_info=?, image_url=? WHERE pet_id=? AND customer_id=?";
                 $stmt = $this->db->prepare($qUpdate);
-                $stmt->execute([$name, $type, $breed, $birthdate, $weight, $allergy, $petId, $customerId]);
+                $stmt->execute([$name, $type, $breed, $birthdate, $weight, $allergy, $imageUrl, $petId, $customerId]);
                 Response::json(200, "Pet updated successfully");
             } else {
                 // INSERT
-                $qInsert = "INSERT INTO pets (customer_id, pet_name, pet_type, breed, birthdate, weight, allergy_info) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $qInsert = "INSERT INTO pets (customer_id, pet_name, pet_type, breed, birthdate, weight, allergy_info, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 $stmt = $this->db->prepare($qInsert);
-                $stmt->execute([$customerId, $name, $type, $breed, $birthdate, $weight, $allergy]);
+                $stmt->execute([$customerId, $name, $type, $breed, $birthdate, $weight, $allergy, $imageUrl]);
                 Response::json(201, "Pet added successfully");
             }
 

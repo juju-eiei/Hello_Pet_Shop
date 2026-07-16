@@ -126,6 +126,7 @@ CREATE TABLE orders (
     status ENUM('pending', 'paid', 'preparing', 'shipped', 'completed', 'cancelled') DEFAULT 'pending',
     payment_method ENUM('transfer', 'cash', 'credit_card') DEFAULT 'transfer',
     order_type ENUM('online', 'pos') DEFAULT 'online',
+    free_gift VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
     FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL,
@@ -266,6 +267,15 @@ CREATE TABLE store_settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     setting_key VARCHAR(100) UNIQUE NOT NULL,
     setting_value TEXT NOT NULL
+);
+
+-- 24. gift_rules
+CREATE TABLE gift_rules (
+    rule_id INT AUTO_INCREMENT PRIMARY KEY,
+    min_spend DECIMAL(10, 2) UNIQUE NOT NULL,
+    gift_name VARCHAR(255) NOT NULL,
+    gift_qty INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ===========================================

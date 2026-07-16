@@ -8,7 +8,7 @@ class Category {
     }
 
     public function getAll() {
-        $query = "SELECT * FROM " . $this->table . " ORDER BY category_name ASC";
+        $query = "SELECT * FROM " . $this->table . " ORDER BY category_id ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;

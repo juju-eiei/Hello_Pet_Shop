@@ -51,9 +51,27 @@ class RestockController {
 
         $restock_id = $this->restockModel->create($data);
         if ($restock_id) {
-            Response::json(201, "Purchase order created and stock updated successfully", ["restock_id" => $restock_id]);
+            Response::json(201, "Purchase order created successfully", ["restock_id" => $restock_id]);
         } else {
             Response::json(500, "Failed to create purchase order");
+        }
+    }
+
+    public function receive() {
+        $data = json_decode(file_get_contents("php://input"), true);
+        $restock_id = $data['restock_id'] ?? null;
+        $employee_id = $data['employee_id'] ?? null;
+
+        if (!$restock_id || !$employee_id) {
+            Response::json(400, "Bad Request: Missing restock_id or employee_id");
+            return;
+        }
+
+        $success = $this->restockModel->receive($restock_id, $employee_id);
+        if ($success) {
+            Response::json(200, "Goods imported to stock successfully");
+        } else {
+            Response::json(500, "Failed to import goods to stock");
         }
     }
 }

@@ -1,27 +1,48 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Details - Staff</title>
+    <title>รายละเอียดคำสั่งซื้อ (พนักงาน) - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .status-pill {
-            padding: 6px 16px; 
-            border-radius: 50px; 
-            font-size: 13px; 
-            font-weight: 600; 
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
             width: auto;
             display: inline-block;
         }
-        .status-pill.pending { background-color: #fef08a; color: #854d0e; }
-        .status-pill.processing { background-color: #bfdbfe; color: #1e3a8a; }
-        .status-pill.intransit { background-color: #fce7f3; color: #9d174d; }
-        .status-pill.completed { background-color: #dcfce7; color: #166534; }
-        .status-pill.cancelled { background-color: #fecdd3; color: #9f1239; }
+
+        .status-pill.pending {
+            background-color: #fef08a;
+            color: #854d0e;
+        }
+
+        .status-pill.processing {
+            background-color: #bfdbfe;
+            color: #1e3a8a;
+        }
+
+        .status-pill.intransit {
+            background-color: #fce7f3;
+            color: #9d174d;
+        }
+
+        .status-pill.completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-pill.cancelled {
+            background-color: #fecdd3;
+            color: #9f1239;
+        }
 
         .channel-pill {
             padding: 4px 12px;
@@ -32,11 +53,13 @@
             align-items: center;
             gap: 5px;
         }
+
         .channel-pill.online {
             background-color: #e0f2fe;
             color: #0284c7;
             border: 1px solid #bae6fd;
         }
+
         .channel-pill.pos {
             background-color: #f0fdf4;
             color: #16a34a;
@@ -54,7 +77,7 @@
             background: white;
             border-radius: 12px;
             padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
             margin-bottom: 24px;
         }
 
@@ -75,11 +98,13 @@
             margin-bottom: 12px;
             font-size: 14px;
         }
+
         .info-label {
             flex: 1;
             color: #64748b;
             font-weight: 500;
         }
+
         .info-value {
             flex: 2;
             color: #334155;
@@ -90,6 +115,7 @@
             width: 100%;
             border-collapse: collapse;
         }
+
         .order-items-table th {
             text-align: left;
             padding: 12px 16px;
@@ -98,17 +124,20 @@
             font-weight: 600;
             font-size: 13px;
         }
+
         .order-items-table td {
             padding: 16px;
             border-bottom: 1px solid #f1f5f9;
             color: #334155;
             font-size: 14px;
         }
+
         .order-product {
             display: flex;
             align-items: center;
             gap: 12px;
         }
+
         .order-product img {
             width: 48px;
             height: 48px;
@@ -123,6 +152,7 @@
             font-size: 14px;
             color: #475569;
         }
+
         .summary-total {
             display: flex;
             justify-content: space-between;
@@ -145,7 +175,7 @@
             color: #1e293b;
             margin-bottom: 16px;
         }
-        
+
         .form-label {
             display: block;
             margin-bottom: 6px;
@@ -168,40 +198,228 @@
             .details-grid {
                 grid-template-columns: minmax(0, 1fr);
             }
-            .left-col, .right-col {
+
+            .left-col,
+            .right-col {
                 min-width: 0;
             }
         }
+
         @media (max-width: 768px) {
-            .page-header > div {
+            .page-header>div {
                 align-items: flex-start !important;
             }
+
             .page-header h1 {
                 flex-wrap: wrap;
                 font-size: 22px !important;
                 line-height: 1.4;
             }
-            .details-card { 
-                padding: 16px; 
-                max-width: 100%; 
-                overflow: hidden; 
-                box-sizing: border-box; 
+
+            .details-card {
+                padding: 16px;
+                max-width: 100%;
+                overflow: hidden;
+                box-sizing: border-box;
             }
+
             .order-items-table {
                 min-width: 400px;
             }
+
             .table-responsive-wrapper {
                 width: 100%;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
             }
+
             .info-row {
                 flex-direction: column;
                 margin-bottom: 16px;
             }
-            .info-label { margin-bottom: 2px; font-size: 13px; }
-            .info-value { font-size: 15px; word-break: break-all; }
-            .status-pill { padding: 4px 12px; font-size: 12px; }
+
+            .info-label {
+                margin-bottom: 2px;
+                font-size: 13px;
+            }
+
+            .info-value {
+                font-size: 15px;
+                word-break: break-all;
+            }
+
+            .status-pill {
+                padding: 4px 12px;
+                font-size: 12px;
+            }
+        }
+
+        /* Modal overlay styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            max-width: 90%;
+            width: 86mm;
+            padding: 20px;
+        }
+
+        .modal-overlay.show .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-btns {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .modal-btn-cancel {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #e2e8f0;
+        }
+
+        .modal-btn-confirm {
+            background: #10b981;
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            background: #059669;
+        }
+
+        /* Thermal Receipt 80mm Styling */
+        #receiptPrintArea {
+            display: none;
+        }
+
+        .receipt-card {
+            width: 80mm;
+            background: white;
+            padding: 4mm;
+            font-family: 'Kanit', sans-serif;
+            color: #000;
+            box-sizing: border-box;
+            text-align: left;
+        }
+
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 4mm;
+        }
+
+        .receipt-shop {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .receipt-info {
+            font-size: 10px;
+            color: #000;
+            line-height: 1.4;
+            margin-top: 1mm;
+        }
+
+        .receipt-divider {
+            border-top: 1px dashed #000;
+            margin: 2mm 0;
+        }
+
+        .receipt-item-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            margin-bottom: 1mm;
+            line-height: 1.3;
+        }
+
+        .receipt-summary-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 1mm;
+        }
+
+        .receipt-footer {
+            text-align: center;
+            font-size: 9px;
+            margin-top: 5mm;
+            line-height: 1.4;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #receiptPrintArea,
+            #receiptPrintArea * {
+                visibility: visible;
+            }
+
+            #receiptPrintArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 80mm;
+                background: white;
+                margin: 0;
+                padding: 0;
+                display: block !important;
+            }
+
+            @page {
+                size: 80mm auto;
+                margin: 0;
+            }
         }
     </style>
 
@@ -211,8 +429,9 @@
             document.documentElement.classList.add('mobile-device');
         }
     </script>
-<script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="/src/js/main.js"></script>
 </head>
+
 <body class="preload">
     <div class="admin-wrapper">
         <!-- Mobile Header -->
@@ -225,13 +444,28 @@
 
         <!-- Main Content -->
         <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto;">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div class="page-header"
+                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                 <div style="display: flex; align-items: center; gap: 16px;">
-                    <a href="staff_orders.html" style="color: #64748b; font-size: 20px; text-decoration: none; padding: 8px; border-radius: 8px; background: #f1f5f9;"><i class="fas fa-arrow-left"></i></a>
+                    <a href="staff_orders.html"
+                        style="color: #64748b; font-size: 20px; text-decoration: none; padding: 8px; border-radius: 8px; background: #f1f5f9;"><i
+                            class="fas fa-arrow-left"></i></a>
                     <div>
-                        <h1 style="margin: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">Order <span id="displayOrderId">#ORD-000</span> <span id="headerChannel" class="channel-pill online"><i class="fas fa-globe"></i> ออนไลน์</span> <span id="headerStatus" class="status-pill pending">Pending</span></h1>
-                        <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;"><i class="far fa-calendar-alt"></i> Date: <span id="displayDate">YYYY-MM-DD HH:MM</span></p>
+                        <h1 style="margin: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">Order
+                            <span id="displayOrderId">#ORD-000</span> <span id="headerChannel"
+                                class="channel-pill online"><i class="fas fa-globe"></i> ออนไลน์</span> <span
+                                id="headerStatus" class="status-pill pending">Pending</span>
+                        </h1>
+                        <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;"><i
+                                class="far fa-calendar-alt"></i> Date: <span id="displayDate">YYYY-MM-DD HH:MM</span>
+                        </p>
                     </div>
+                </div>
+                <div>
+                    <button onclick="openReceiptModal()" class="save-btn"
+                        style="background: #10b981; border: none; display: flex; align-items: center; gap: 8px; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; color: white; border-radius: 8px;">
+                        <i class="fas fa-print"></i> พิมพ์ใบเสร็จ
+                    </button>
                 </div>
             </div>
 
@@ -239,7 +473,8 @@
                 <!-- Left Column -->
                 <div class="left-col">
                     <div class="details-card">
-                        <div class="card-header"><i class="fas fa-user" style="color: #3b82f6;"></i> Customer Information</div>
+                        <div class="card-header"><i class="fas fa-user" style="color: #3b82f6;"></i> Customer
+                            Information</div>
                         <div class="info-row">
                             <div class="info-label">Customer Name</div>
                             <div class="info-value" id="cName">Somchai PetLover</div>
@@ -252,14 +487,16 @@
                             <div class="info-label">Phone</div>
                             <div class="info-value" id="cPhone">089-123-4567</div>
                         </div>
-                        <div class="info-row">
+                        <div class="info-row" id="shippingAddressRow">
                             <div class="info-label">Shipping Address</div>
-                            <div class="info-value" id="cAddress" style="line-height: 1.5;">123 Happy Street, Pet City, Bangkok 10110</div>
+                            <div class="info-value" id="cAddress" style="line-height: 1.5;">123 Happy Street, Pet City,
+                                Bangkok 10110</div>
                         </div>
                     </div>
 
                     <div class="details-card">
-                        <div class="card-header"><i class="fas fa-shopping-basket" style="color: #10b981;"></i> Order Items</div>
+                        <div class="card-header"><i class="fas fa-shopping-basket" style="color: #10b981;"></i> Order
+                            Items</div>
                         <div class="table-responsive-wrapper">
                             <table class="order-items-table">
                                 <thead>
@@ -280,17 +517,36 @@
 
                 <!-- Right Column -->
                 <div class="right-col">
-                    <div class="details-card" style="background-color: #f8fafc; border: 1px solid #e2e8f0; box-shadow: none;">
-                        <div class="card-header"><i class="fas fa-receipt" style="color: #8b5cf6;"></i> Payment Summary</div>
+                    <div class="details-card"
+                        style="background-color: #f8fafc; border: 1px solid #e2e8f0; box-shadow: none;">
+                        <div class="card-header"><i class="fas fa-receipt" style="color: #8b5cf6;"></i> Payment Summary
+                        </div>
                         <div class="summary-row"><span>Subtotal</span> <span id="sSubtotal">฿0.00</span></div>
-                        <div class="summary-row"><span>Shipping Fee</span> <span id="sShipping">฿0.00</span></div>
-                        <div class="summary-row" style="color: #10b981;"><span>Discount</span> <span id="sDiscount">-฿0.00</span></div>
-                        <div class="summary-total"><span>Grand Total</span> <span id="sTotal" style="color: #3b82f6;">฿0.00</span></div>
+                        <div class="summary-row" id="shippingFeeRow"><span>Shipping Fee</span> <span id="sShipping">฿0.00</span></div>
+                        <div class="summary-row" style="color: #10b981;"><span>Discount</span> <span
+                                id="sDiscount">-฿0.00</span></div>
+                        <div class="summary-total"><span>Grand Total</span> <span id="sTotal"
+                                style="color: #3b82f6;">฿0.00</span></div>
+                        
+                        <div class="summary-row" id="cashReceivedRow" style="display: none; border-top: 1px dashed #cbd5e1; padding-top: 8px; margin-top: 8px;">
+                            <span>รับเงินมา (Cash Received)</span> <span id="sCashReceived">฿0.00</span>
+                        </div>
+                        <div class="summary-row" id="changeRow" style="display: none;">
+                            <span>เงินทอน (Change Due)</span> <span id="sChange" style="font-weight: 700; color: #b45309;">฿0.00</span>
+                        </div>
+                        <div class="summary-row" id="pointsEarnedRow" style="display: none; color: #16a34a; font-weight: 600;">
+                            <span>แต้มสะสมได้รับ (Points Earned)</span> <span id="sPointsEarned">+0 แต้ม</span>
+                        </div>
+
+                        <div class="summary-row" style="color: #d97706; display: none; border-top: 1px dashed #cbd5e1; padding-top: 8px; margin-top: 8px; font-weight: 600;" id="freeGiftRow">
+                            <span>ของแถมได้รับ (Free Gift)</span> <span id="sFreeGift">-</span>
+                        </div>
                     </div>
 
                     <div class="details-card">
-                        <div class="card-header"><i class="fas fa-truck-fast" style="color: #f59e0b;"></i> Update Status</div>
-                        
+                        <div class="card-header"><i class="fas fa-truck-fast" style="color: #f59e0b;"></i> Update Status
+                        </div>
+
                         <form id="statusForm">
                             <label class="form-label">Order Status</label>
                             <select class="status-select" id="orderStatusSelect">
@@ -308,10 +564,13 @@
                                 </select>
 
                                 <label class="form-label" style="margin-top: 15px;">Tracking Number (optional)</label>
-                                <input type="text" id="trackingInput" class="tracking-input" placeholder="e.g. TH123456789">
+                                <input type="text" id="trackingInput" class="tracking-input"
+                                    placeholder="e.g. TH123456789">
                             </div>
 
-                            <button type="submit" class="save-btn" style="width: 100%; padding: 12px; font-size: 15px; background: #3b82f6;">Update Order Status</button>
+                            <button type="submit" class="save-btn"
+                                style="width: 100%; padding: 12px; font-size: 15px; background: #3b82f6;">Update Order
+                                Status</button>
                         </form>
                     </div>
                 </div>
@@ -319,9 +578,31 @@
         </main>
     </div>
 
+    <!-- Thermal Receipt Preview Modal -->
+    <div id="receiptModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-title">ตัวอย่างใบเสร็จรับเงิน</div>
+
+            <div
+                style="background: #f1f5f9; border-radius: 12px; overflow-y: auto; max-height: 380px; padding: 4px; display: flex; justify-content: center; border: 1px solid #cbd5e1; margin-bottom: 20px;">
+                <div class="receipt-card" id="receiptCardContent"></div>
+            </div>
+
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeReceiptModal()">ปิดหน้าต่าง</button>
+                <button class="modal-btn modal-btn-confirm" onclick="printReceipt()"><i class="fas fa-print"></i>
+                    พิมพ์ใบเสร็จ</button>
+            </div>
+        </div>
+        <!-- Hidden Thermal Receipt Printing Frame -->
+        <div id="receiptPrintArea"></div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script>
+        let currentOrderData = null;
+
         // Fetch True data from API
         function getStatusClass(status) {
             return status.toLowerCase().replace(" ", "");
@@ -380,39 +661,40 @@
             try {
                 const res = await fetch('/api/orders/details?id=' + orderId);
                 const json = await res.json();
-                
+
                 if (!res.ok) throw new Error(json.message || 'Error fetching order');
-                
+
                 const data = json.data;
+                currentOrderData = data;
 
-            // Header Elements
-            document.getElementById('displayOrderId').textContent = data.number;
-            document.getElementById('displayDate').textContent = data.date;
-            
-            const headerStatus = document.getElementById('headerStatus');
-            headerStatus.textContent = data.status;
-            headerStatus.className = 'status-pill ' + getStatusClass(data.status);
+                // Header Elements
+                document.getElementById('displayOrderId').textContent = data.number;
+                document.getElementById('displayDate').textContent = data.date;
 
-            const headerChannel = document.getElementById('headerChannel');
-            if (headerChannel) {
-                const isPos = data.order_type === 2;
-                headerChannel.className = 'channel-pill ' + (isPos ? 'pos' : 'online');
-                headerChannel.innerHTML = `<i class="fas ${isPos ? 'fa-store' : 'fa-globe'}"></i> ${data.order_type_label || (isPos ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์')}`;
-            }
-            
-            // Customer Info Phase
-            document.getElementById('cName').textContent = data.customer.name;
-            document.getElementById('cEmail').textContent = data.customer.email;
-            document.getElementById('cPhone').textContent = data.customer.phone;
-            document.getElementById('cAddress').textContent = data.customer.address;
+                const headerStatus = document.getElementById('headerStatus');
+                headerStatus.textContent = data.status;
+                headerStatus.className = 'status-pill ' + getStatusClass(data.status);
 
-            // Items
-            const tbody = document.getElementById('orderItemsBody');
-            tbody.innerHTML = data.items.map(item => `
+                const headerChannel = document.getElementById('headerChannel');
+                if (headerChannel) {
+                    const isPos = data.order_type === 2;
+                    headerChannel.className = 'channel-pill ' + (isPos ? 'pos' : 'online');
+                    headerChannel.innerHTML = `<i class="fas ${isPos ? 'fa-store' : 'fa-globe'}"></i> ${data.order_type_label || (isPos ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์')}`;
+                }
+
+                // Customer Info Phase
+                document.getElementById('cName').textContent = data.customer.name;
+                document.getElementById('cEmail').textContent = data.customer.email;
+                document.getElementById('cPhone').textContent = data.customer.phone;
+                document.getElementById('cAddress').textContent = data.customer.address;
+
+                // Items
+                const tbody = document.getElementById('orderItemsBody');
+                tbody.innerHTML = data.items.map(item => `
                 <tr>
                     <td>
                         <div class="order-product">
-                            <img src="${item.image}" alt="">
+                            <img src="${item.image || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="">
                             <div style="font-weight: 600; color: #334155;">${item.name}</div>
                         </div>
                     </td>
@@ -422,33 +704,195 @@
                 </tr>
             `).join('');
 
-            // Summary
-            document.getElementById('sSubtotal').textContent = '฿' + Number(data.summary.subtotal || 0).toFixed(2);
-            document.getElementById('sShipping').textContent = '฿' + Number(data.summary.shipping || 0).toFixed(2);
-            document.getElementById('sDiscount').textContent = '-฿' + Number(data.summary.discount || 0).toFixed(2);
-            document.getElementById('sTotal').textContent = '฿' + Number(data.summary.total || 0).toFixed(2);
+                // Summary
+                document.getElementById('sSubtotal').textContent = '฿' + Number(data.summary.subtotal || 0).toFixed(2);
+                document.getElementById('sShipping').textContent = '฿' + Number(data.summary.shipping || 0).toFixed(2);
+                document.getElementById('sDiscount').textContent = '-฿' + Number(data.summary.discount || 0).toFixed(2);
+                document.getElementById('sTotal').textContent = '฿' + Number(data.summary.total || 0).toFixed(2);
 
-            // Set Form Data
-            const select = document.getElementById('orderStatusSelect');
-            select.value = data.status;
-            
-            if (data.tracking_number) {
-                document.getElementById('trackingInput').value = data.tracking_number;
-            }
-            if (data.company_id) {
-                document.getElementById('deliveryCompanySelect').value = data.company_id;
-            }
-            
-            toggleTrackingContainer(data.status);
+                const giftRow = document.getElementById('freeGiftRow');
+                const giftSpan = document.getElementById('sFreeGift');
+                if (giftRow && giftSpan) {
+                    if (data.free_gift) {
+                        giftSpan.innerHTML = `<i class="fas fa-gift"></i> ${data.free_gift}`;
+                        giftRow.style.display = 'flex';
+                    } else {
+                        giftRow.style.display = 'none';
+                    }
+                }
+
+                // Set Form Data
+                const select = document.getElementById('orderStatusSelect');
+                select.value = data.status;
+
+                if (data.tracking_number) {
+                    document.getElementById('trackingInput').value = data.tracking_number;
+                }
+                if (data.company_id) {
+                    document.getElementById('deliveryCompanySelect').value = data.company_id;
+                }
+
+                const isPos = data.order_type === 2;
+
+                // Hide/show shipping address row
+                const shippingAddressRow = document.getElementById('shippingAddressRow');
+                if (shippingAddressRow) {
+                    shippingAddressRow.style.display = isPos ? 'none' : 'flex';
+                }
+
+                // Hide/show shipping fee row
+                const shippingFeeRow = document.getElementById('shippingFeeRow');
+                if (shippingFeeRow) {
+                    shippingFeeRow.style.display = isPos ? 'none' : 'flex';
+                }
+
+                // Hide/show POS only fields (Cash Received, Change)
+                const cashReceivedRow = document.getElementById('cashReceivedRow');
+                const changeRow = document.getElementById('changeRow');
+                if (cashReceivedRow && changeRow) {
+                    if (isPos) {
+                        const cashReceivedVal = data.cash_received !== null ? data.cash_received : data.summary.total;
+                        const changeVal = data.change !== null ? data.change : 0.00;
+                        document.getElementById('sCashReceived').textContent = '฿' + Number(cashReceivedVal).toFixed(2);
+                        document.getElementById('sChange').textContent = '฿' + Number(changeVal).toFixed(2);
+                        cashReceivedRow.style.display = 'flex';
+                        changeRow.style.display = 'flex';
+                    } else {
+                        cashReceivedRow.style.display = 'none';
+                        changeRow.style.display = 'none';
+                    }
+                }
+
+                // Hide/show points earned
+                const pointsEarnedRow = document.getElementById('pointsEarnedRow');
+                if (pointsEarnedRow) {
+                    if (data.points_earned > 0) {
+                        document.getElementById('sPointsEarned').textContent = '+' + data.points_earned + ' แต้ม';
+                        pointsEarnedRow.style.display = 'flex';
+                    } else {
+                        pointsEarnedRow.style.display = 'none';
+                    }
+                }
+
+                toggleTrackingContainer(data.status);
             } catch (error) {
                 console.error(error);
                 showToast("เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
             }
         }
 
+        function openReceiptModal() {
+            if (!currentOrderData) {
+                showToast("ข้อมูลคำสั่งซื้อยังโหลดไม่เสร็จ", "error");
+                return;
+            }
+
+            const container = document.getElementById('receiptCardContent');
+            const printArea = document.getElementById('receiptPrintArea');
+
+            const itemsHtml = currentOrderData.items.map(item => `
+                <div class="receipt-item-row">
+                    <div style="flex: 2; margin-right: 2mm;">${item.name}</div>
+                    <div style="flex: 1; text-align: center;">${item.qty} x ฿${Number(item.price).toFixed(2)}</div>
+                    <div style="flex: 1; text-align: right;">฿${(Number(item.price) * Number(item.qty)).toFixed(2)}</div>
+                </div>
+            `).join('');
+
+            const paymentMethodLabel = currentOrderData.payment_method === 'cash' ? 'เงินสด' : currentOrderData.payment_method === 'credit_card' ? 'บัตรเครดิต' : 'เงินโอน';
+
+            const isPos = currentOrderData.order_type === 2;
+
+            const receiptHtml = `
+                <div class="receipt-header">
+                    <div class="receipt-shop">Hello Pet Shop</div>
+                    <div class="receipt-info">จังหวัดเชียงใหม่ โทร. 06-5249-6925 </div>
+                    <div class="receipt-info" style="margin-top: 1mm;">
+                        <div>เลขที่ใบเสร็จ: ${currentOrderData.number}</div>
+                        <div>วันที่: ${currentOrderData.date}</div>
+                        <div>ช่องทาง: ${currentOrderData.order_type_label}</div>
+                        ${isPos ? `<div>พนักงานขาย: ${currentOrderData.cashier_name}</div>` : ''}
+                        <div>ลูกค้า: ${currentOrderData.customer.name}</div>
+                    </div>
+                </div>
+                <div class="receipt-divider"></div>
+                ${itemsHtml}
+                <div class="receipt-divider"></div>
+                <div class="receipt-summary-row">
+                    <span>ยอดรวม (Subtotal)</span>
+                    <span>฿${parseFloat(currentOrderData.summary.subtotal).toFixed(2)}</span>
+                </div>
+                ${!isPos && currentOrderData.summary.shipping > 0 ? `
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
+                    <span>ค่าจัดส่ง (Shipping)</span>
+                    <span>฿${parseFloat(currentOrderData.summary.shipping).toFixed(2)}</span>
+                </div>
+                ` : ''}
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
+                    <span>ส่วนลด (Discount)</span>
+                    <span>-฿${parseFloat(currentOrderData.summary.discount).toFixed(2)}</span>
+                </div>
+                <div class="receipt-summary-row">
+                    <span>ยอดสุทธิ (Total)</span>
+                    <span>฿${parseFloat(currentOrderData.summary.total).toFixed(2)}</span>
+                </div>
+                <div class="receipt-divider"></div>
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
+                    <span>ช่องทางชำระ</span>
+                    <span>${paymentMethodLabel}</span>
+                </div>
+                ${isPos ? `
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
+                    <span>รับเงินมา</span>
+                    <span>฿${parseFloat(currentOrderData.cash_received !== null ? currentOrderData.cash_received : currentOrderData.summary.total).toFixed(2)}</span>
+                </div>
+                <div class="receipt-summary-row">
+                    <span>เงินทอน</span>
+                    <span>฿${parseFloat(currentOrderData.change !== null ? currentOrderData.change : 0.00).toFixed(2)}</span>
+                </div>
+                ` : ''}
+                ${(currentOrderData.points_earned && currentOrderData.points_earned > 0) ? `
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
+                    <span>แต้มได้รับครั้งนี้</span>
+                    <span>+${currentOrderData.points_earned} แต้ม</span>
+                </div>` : ''}
+                ${currentOrderData.free_gift ? `
+                <div class="receipt-summary-row" style="font-weight: bold; font-size: 11px;">
+                    <span>*** ของแถมได้รับ ***</span>
+                    <span>${currentOrderData.free_gift}</span>
+                </div>` : ''}
+                <div class="receipt-divider"></div>
+                <div class="receipt-footer">
+                    <div>ขอขอบคุณที่ใช้บริการ</div>
+                    <div>Hello Pet Shop ยินดีต้อนรับเสมอค่ะ</div>
+                </div>
+            `;
+
+            container.innerHTML = receiptHtml;
+            printArea.innerHTML = receiptHtml;
+
+            const modal = document.getElementById('receiptModal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeReceiptModal() {
+            const modal = document.getElementById('receiptModal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+        }
+
+        function printReceipt() {
+            window.print();
+        }
+
         function toggleTrackingContainer(status) {
             const tContainer = document.getElementById('trackingContainer');
-            if (status === 'In Transit' || status === 'Completed') {
+            const isPos = currentOrderData && currentOrderData.order_type === 2;
+            if (isPos) {
+                tContainer.style.display = 'none';
+            } else if (status === 'In Transit' || status === 'Completed') {
                 tContainer.style.display = 'block';
             } else {
                 tContainer.style.display = 'none';
@@ -464,7 +908,7 @@
             const newStatus = document.getElementById('orderStatusSelect').value;
             const trackingNo = document.getElementById('trackingInput').value;
             const companyId = document.getElementById('deliveryCompanySelect').value;
-            
+
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('id');
 
@@ -479,7 +923,7 @@
                         company_id: companyId || null
                     })
                 });
-                
+
                 if (res.ok) {
                     const headerStatus = document.getElementById('headerStatus');
                     headerStatus.textContent = newStatus;
@@ -502,28 +946,27 @@
             setTimeout(() => toast.className = 'toast', 3000);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const menuGroup = document.querySelector('.menu-group');
-            if (menuGroup) {
-                const isOpen = localStorage.getItem('staffProductsMenuOpen');
-                if (isOpen === 'true') menuGroup.classList.add('open');
-                else if (isOpen === 'false') menuGroup.classList.remove('open');
-            }
+        const menuGroup = document.querySelector('.menu-group');
+        if (menuGroup) {
+            const isOpen = localStorage.getItem('staffProductsMenuOpen');
+            if (isOpen === 'true') menuGroup.classList.add('open');
+            else if (isOpen === 'false') menuGroup.classList.remove('open');
+        }
 
-            const user = checkAuth();
-            if (user) {
-                setTimeout(initData, 100);
-            }
+        const user = checkAuth();
+        if (user) {
+            setTimeout(initData, 100);
+        }
 
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('user');
-                    window.location.href = '/login.html';
-                });
-            }
-        });
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+            });
+        }
     </script>
 </body>
+
 </html>

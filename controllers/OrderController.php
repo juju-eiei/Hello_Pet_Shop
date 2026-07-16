@@ -75,13 +75,35 @@ class OrderController {
             $shipping_fee = $data['shipping_fee'] ?? 0;
             $net_total = ($subtotal - $discount) + $shipping_fee;
             if ($net_total < 0) $net_total = 0;
+
+            // Calculate Tiered Gift
+            $freeGift = null;
+            $stmtGift = $this->db->prepare("SELECT gift_name FROM gift_rules WHERE min_spend <= ? ORDER BY min_spend DESC LIMIT 1");
+            $stmtGift->execute([$net_total]);
+            $giftRow = $stmtGift->fetch(PDO::FETCH_ASSOC);
+            if ($giftRow) {
+                $freeGift = $giftRow['gift_name'];
+            }
+            
+            // Calculate reward points first
+            $pointsEarned = 0;
+            $customerId = !empty($data['customer_id']) ? (int)$data['customer_id'] : null;
+            if ($customerId) {
+                $stmtSettings = $this->db->query("SELECT point_earning_baht, point_earning_qty FROM store_settings LIMIT 1");
+                $settings = $stmtSettings->fetch(PDO::FETCH_ASSOC);
+                $peBaht = $settings && isset($settings['point_earning_baht']) ? (float)$settings['point_earning_baht'] : 100.00;
+                $peQty = $settings && isset($settings['point_earning_qty']) ? (int)$settings['point_earning_qty'] : 1;
+
+                if ($peBaht > 0 && $peQty > 0) {
+                    $pointsEarned = (int)(floor($net_total / $peBaht) * $peQty);
+                }
+            }
             
             // 3. insert into orders
-            $payment_method = $data['payment_method'] ?? 'transfer';
-            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, payment_method, order_type) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 1)");
+            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, order_type, free_gift, points_earned) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)");
             $promo_id = !empty($data['promo_id']) ? $data['promo_id'] : null;
-            $stmtOrder->execute([$data['customer_id'], $data['address_id'], $promo_id, $subtotal, $discount, $shipping_fee, $net_total, $payment_method]);
-            $order_id = $this->db->lastInsertId();
+            $stmtOrder->execute([$data['customer_id'], $data['address_id'], $promo_id, $subtotal, $discount, $shipping_fee, $net_total, $freeGift, $pointsEarned]);
+            $order_id = (int)$this->db->lastInsertId();
             
             $stmtDetail = $this->db->prepare("INSERT INTO order_details (order_id, product_id, quantity, unit_cost, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)");
             $stmtUpdateStock = $this->db->prepare("UPDATE products SET stock_qty = stock_qty - ? WHERE product_id = ? AND stock_qty >= ?");
@@ -101,9 +123,26 @@ class OrderController {
                 $stmtLog->execute([$detail['product_id'], $order_id, -$detail['quantity'], $detail['unit_cost']]); 
             }
             
+            // Award reward points to customer
+            if ($customerId && $pointsEarned > 0) {
+                // Update points in customers
+                $stmtUpdatePoints = $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?");
+                $stmtUpdatePoints->execute([$pointsEarned, $customerId]);
+
+                // Insert log
+                $orderNum = "ORD-" . date('Y') . "-" . str_pad($order_id, 3, '0', STR_PAD_LEFT);
+                $stmtLogPoints = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
+                $stmtLogPoints->execute([$customerId, $order_id, $pointsEarned, "ได้รับแต้มสะสมจากรายการสั่งซื้อออนไลน์ #$orderNum"]);
+            }
+            
             $this->db->commit();
             
-            Response::json(201, "Order created successfully", ["order_id" => $order_id, "net_total" => $net_total]);
+            Response::json(201, "Order created successfully", [
+                "order_id" => $order_id, 
+                "net_total" => $net_total,
+                "free_gift" => $freeGift,
+                "points_earned" => $pointsEarned
+            ]);
             
         } catch (Exception $e) {
             $this->db->rollBack();
@@ -230,15 +269,47 @@ class OrderController {
 
             $paymentMethod = $data['payment_method'] ?? 'cash';
 
+            // Calculate Tiered Gift
+            $freeGift = null;
+            $stmtGift = $this->db->prepare("SELECT gift_name FROM gift_rules WHERE min_spend <= ? ORDER BY min_spend DESC LIMIT 1");
+            $stmtGift->execute([$net_total]);
+            $giftRow = $stmtGift->fetch(PDO::FETCH_ASSOC);
+            if ($giftRow) {
+                $freeGift = $giftRow['gift_name'];
+            }
+
+            // Calculate reward points first
+            $pointsEarned = 0;
+            if ($customerId) {
+                $stmtSettings = $this->db->query("SELECT point_earning_baht, point_earning_qty FROM store_settings LIMIT 1");
+                $settings = $stmtSettings->fetch(PDO::FETCH_ASSOC);
+                $peBaht = $settings && isset($settings['point_earning_baht']) ? (float)$settings['point_earning_baht'] : 100.00;
+                $peQty = $settings && isset($settings['point_earning_qty']) ? (int)$settings['point_earning_qty'] : 1;
+
+                if ($peBaht > 0 && $peQty > 0) {
+                    $pointsEarned = (int)(floor($net_total / $peBaht) * $peQty);
+                }
+            }
+
+            // 7. Record cash received and change if cash payment
+            $cashReceived = isset($data['cash_received']) ? (float)$data['cash_received'] : $net_total;
+            $changeAmount = max(0, $cashReceived - $net_total);
+
             // 5. Insert into orders (status = 4 for Completed, order_type = 2 for POS)
-            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, employee_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, order_type) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 4, 2)");
-            $stmtOrder->execute([$customerId, $employeeId, $addressId, $promoId ? $promoId : null, $subtotal, $discount, $net_total]);
+            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, employee_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, order_type, free_gift, points_earned, cash_received) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 4, 2, ?, ?, ?)");
+            $stmtOrder->execute([$customerId, $employeeId, $addressId, $promoId ? $promoId : null, $subtotal, $discount, $net_total, $freeGift, $pointsEarned, $cashReceived]);
             $orderId = (int)$this->db->lastInsertId();
 
             // Insert into payments table
             try {
-                $stmtPayment = $this->db->prepare("INSERT INTO payments (order_id, payment_method, amount, status) VALUES (?, ?, ?, 'verified')");
-                $stmtPayment->execute([$orderId, $paymentMethod, $net_total]);
+                $paymentMethodMap = [
+                    'transfer' => 1,
+                    'cash' => 2,
+                    'credit_card' => 3
+                ];
+                $payMethodInt = $paymentMethodMap[$paymentMethod] ?? 2;
+                $stmtPayment = $this->db->prepare("INSERT INTO payments (order_id, payment_method, amount, status) VALUES (?, ?, ?, 2)");
+                $stmtPayment->execute([$orderId, $payMethodInt, $net_total]);
             } catch (Exception $exPay) {
                 // Ignore payment insert failure if any constraint
             }
@@ -259,11 +330,17 @@ class OrderController {
                 $stmtLog->execute([$detail['product_id'], $employeeId, $orderId, -$detail['quantity'], $detail['unit_cost']]);
             }
 
-            // 7. Record cash received and change if cash payment
-            $cashReceived = isset($data['cash_received']) ? (float)$data['cash_received'] : $net_total;
-            $changeAmount = max(0, $cashReceived - $net_total);
+            // Award reward points to customer
+            if ($customerId && $pointsEarned > 0) {
+                // Update points in customers
+                $stmtUpdatePoints = $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?");
+                $stmtUpdatePoints->execute([$pointsEarned, $customerId]);
 
-            $this->db->commit();
+                // Insert log
+                $orderNum = "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
+                $stmtLogPoints = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
+                $stmtLogPoints->execute([$customerId, $orderId, $pointsEarned, "ได้รับแต้มสะสมจากรายการสั่งซื้อ POS #$orderNum"]);
+            }
 
             // Retrieve employee name for cashier on receipt
             $stmtEmpName = $this->db->prepare("SELECT first_name, last_name FROM employees WHERE employee_id = ?");
@@ -277,6 +354,8 @@ class OrderController {
             $custName = $stmtCustName->fetch(PDO::FETCH_ASSOC);
             $customerName = $custName ? trim($custName['first_name'] . ' ' . $custName['last_name']) : 'Walk-in Customer';
 
+            $this->db->commit();
+
             Response::json(201, "POS Order completed successfully", [
                 "order_id" => $orderId,
                 "order_number" => "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT),
@@ -288,7 +367,9 @@ class OrderController {
                 "change" => $changeAmount,
                 "payment_method" => $paymentMethod,
                 "cashier_name" => $cashierName,
-                "customer_name" => $customerName
+                "customer_name" => $customerName,
+                "free_gift" => $freeGift,
+                "points_earned" => $pointsEarned
             ]);
 
         } catch (Exception $e) {
@@ -345,13 +426,15 @@ class OrderController {
             $qOrder = "SELECT o.order_id, o.order_date, 
                               CASE WHEN o.order_type = 2 THEN CONCAT('ORD-POS-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0'))
                                    ELSE CONCAT('ORD-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0')) END as number, 
-                              o.status, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, o.order_type,
+                              o.status, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, o.order_type, o.free_gift, o.points_earned, o.cash_received,
                               c.first_name, c.last_name, c.phone, u.email,
-                              a.address_detail, a.province, a.zip_code
+                              a.address_detail, a.province, a.zip_code,
+                              e.first_name as employee_first_name, e.last_name as employee_last_name
                        FROM orders o
                        JOIN customers c ON o.customer_id = c.customer_id
                        JOIN users u ON c.user_id = u.user_id
                        LEFT JOIN addresses a ON o.address_id = a.address_id
+                       LEFT JOIN employees e ON o.employee_id = e.employee_id
                        WHERE o.order_id = ?";
             $stmt = $this->db->prepare($qOrder);
             $stmt->execute([$orderId]);
@@ -384,6 +467,28 @@ class OrderController {
                 }
             } catch(Exception $ex) {}
 
+            // Fetch payment method
+            $payment_method = 'transfer';
+            try {
+                $qPay = "SELECT payment_method FROM payments WHERE order_id = ? LIMIT 1";
+                $stmtPay = $this->db->prepare($qPay);
+                $stmtPay->execute([$orderId]);
+                $pay = $stmtPay->fetch(PDO::FETCH_ASSOC);
+                if ($pay) {
+                    if ((int)$pay['payment_method'] === 2) {
+                        $payment_method = 'cash';
+                    } elseif ((int)$pay['payment_method'] === 3) {
+                        $payment_method = 'credit_card';
+                    } else {
+                        $payment_method = 'transfer';
+                    }
+                }
+            } catch (Exception $exPay) {}
+
+            if ($order['order_type'] == 2 && $payment_method === 'transfer') {
+                $payment_method = 'cash';
+            }
+
             $statusMap = [1 => 'Pending', 2 => 'Processing', 3 => 'In Transit', 4 => 'Completed', 5 => 'Cancelled'];
             $sId = (int)$order['status'];
             $statusStr = isset($statusMap[$sId]) ? $statusMap[$sId] : 'Pending';
@@ -397,6 +502,12 @@ class OrderController {
                 'order_type_label' => ((int)($order['order_type'] ?? 1) == 2) ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์',
                 'tracking_number' => $tracking_number,
                 'company_id' => $company_id,
+                'payment_method' => $payment_method,
+                'free_gift' => $order['free_gift'],
+                'points_earned' => (int)($order['points_earned'] ?? 0),
+                'cash_received' => $order['cash_received'] !== null ? (float)$order['cash_received'] : null,
+                'change' => $order['cash_received'] !== null ? max(0, (float)$order['cash_received'] - (float)$order['net_total']) : 0.00,
+                'cashier_name' => $order['employee_first_name'] ? trim($order['employee_first_name'] . ' ' . $order['employee_last_name']) : 'System',
                 'customer' => [
                     'name' => trim($order['first_name'] . ' ' . $order['last_name']),
                     'email' => $order['email'] ? $order['email'] : '-',

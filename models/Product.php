@@ -8,9 +8,10 @@ class Product {
     }
 
     public function getAll($keyword = "", $filter = "all") {
-        $query = "SELECT p.*, c.category_name 
+        $query = "SELECT p.*, c.category_name, CONCAT(e.first_name, ' ', e.last_name) AS creator_name 
                   FROM " . $this->table . " p 
-                  LEFT JOIN product_categories c ON p.category_id = c.category_id ";
+                  LEFT JOIN product_categories c ON p.category_id = c.category_id 
+                  LEFT JOIN employees e ON p.created_by = e.employee_id ";
         
         $conditions = [];
         $params = [];
@@ -52,9 +53,10 @@ class Product {
     }
 
     public function getById($id) {
-        $query = "SELECT p.*, c.category_name 
+        $query = "SELECT p.*, c.category_name, CONCAT(e.first_name, ' ', e.last_name) AS creator_name 
                   FROM " . $this->table . " p 
                   LEFT JOIN product_categories c ON p.category_id = c.category_id 
+                  LEFT JOIN employees e ON p.created_by = e.employee_id 
                   WHERE p.product_id = :id";
         
         $stmt = $this->conn->prepare($query);
@@ -74,6 +76,8 @@ class Product {
                   stock_qty = :stock_quantity,
                   barcode = :barcode,
                   weight = :weight,
+                  weight_value = :weight_value,
+                  weight_unit = :weight_unit,
                   image_url = :image_url,
                   is_active = :status
                   WHERE product_id = :id";
@@ -90,6 +94,8 @@ class Product {
         $stmt->bindParam(':stock_quantity', $data['stock_quantity']);
         $stmt->bindParam(':barcode', $data['barcode']);
         $stmt->bindParam(':weight', $data['weight']);
+        $stmt->bindParam(':weight_value', $data['weight_value']);
+        $stmt->bindParam(':weight_unit', $data['weight_unit']);
         $stmt->bindParam(':image_url', $data['image_url']);
         $stmt->bindParam(':status', $status);
         $stmt->bindParam(':id', $id);
@@ -106,8 +112,8 @@ class Product {
 
     public function create($data) {
         $query = "INSERT INTO " . $this->table . " 
-                 (category_id, product_name, description, cost_price, selling_price, stock_qty, barcode, weight, image_url, is_active) 
-                 VALUES (:category_id, :name, :description, :cost_price, :price, :stock_quantity, :barcode, :weight, :image_url, :status)";
+                 (category_id, product_name, description, cost_price, selling_price, stock_qty, barcode, weight, weight_value, weight_unit, image_url, is_active, created_by) 
+                 VALUES (:category_id, :name, :description, :cost_price, :price, :stock_quantity, :barcode, :weight, :weight_value, :weight_unit, :image_url, :status, :created_by)";
         
         $stmt = $this->conn->prepare($query);
         
@@ -121,8 +127,11 @@ class Product {
         $stmt->bindParam(':stock_quantity', $data['stock_quantity']);
         $stmt->bindParam(':barcode', $data['barcode']);
         $stmt->bindParam(':weight', $data['weight']);
+        $stmt->bindParam(':weight_value', $data['weight_value']);
+        $stmt->bindParam(':weight_unit', $data['weight_unit']);
         $stmt->bindParam(':image_url', $data['image_url']);
         $stmt->bindParam(':status', $status);
+        $stmt->bindParam(':created_by', $data['created_by']);
         
         if($stmt->execute()) {
             return $this->conn->lastInsertId();

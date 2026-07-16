@@ -1,40 +1,138 @@
 import { menuConfig } from '../config/menu.js';
 
-export function initLayout() {
+export async function initLayout() {
     const currentPath = window.location.pathname;
     const filename = currentPath.split('/').pop() || 'index.html';
     
-    // Determine Role based on filename
-    const isStaff = filename.startsWith('staff_');
-    const role = isStaff ? 'staff' : 'admin';
-    const items = menuConfig[role] || menuConfig.admin;
-
-    renderSidebar(items, filename, role);
-    renderMobileHeader(filename);
-    renderBottomNav(items, filename);
-    bindLayoutEvents();
-
-    if (window.i18n && typeof window.i18n.applyTranslations === 'function') {
-        window.i18n.applyTranslations();
+    // Determine if page bypasses authentication (login, register, home/landing page, password resets)
+    const bypassPages = ['login.html', 'register.html', 'index.html', 'products.html', 'contact.html', 'cart.html', 'forgot_password.html', 'reset_password.html'];
+    if (
+        bypassPages.includes(filename) || 
+        currentPath === '/' || 
+        currentPath === '/home' || 
+        currentPath.startsWith('/forgot-password') || 
+        currentPath.startsWith('/reset-password')
+    ) {
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) {
+            // Session expired or invalid
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+            return;
+        }
+        
+        const result = await res.json();
+        const user = result.data;
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        const roleNameLower = (user.role_name || '').toLowerCase();
+        let role = 'staff';
+        if (roleNameLower === 'admin') {
+            role = 'admin';
+        } else if (roleNameLower === 'customer') {
+            window.location.href = '/products.html';
+            return;
+        }
+        
+        const permissions = user.permissions || [];
+        
+        // Dynamic Guard Check: Is user allowed to view this page?
+        let allowed = true;
+        const allMenuUrlMaps = [];
+        
+        const traverseMenu = (menuList) => {
+            menuList.forEach(m => {
+                if (m.type === 'link') {
+                    allMenuUrlMaps.push({ url: m.url, permission: m.permission });
+                } else if (m.type === 'group' && m.items) {
+                    m.items.forEach(sub => {
+                        allMenuUrlMaps.push({ url: sub.url, permission: sub.permission });
+                    });
+                }
+            });
+        };
+        
+        traverseMenu(menuConfig.admin);
+        traverseMenu(menuConfig.staff);
+        
+        const matchingConfig = allMenuUrlMaps.find(m => m.url === filename);
+        
+        if (matchingConfig && matchingConfig.permission) {
+            if (roleNameLower !== 'admin' && !permissions.includes(matchingConfig.permission)) {
+                allowed = false;
+            }
+        }
+        
+        // Also enforce path role logic
+        if (filename.startsWith('admin_') && roleNameLower !== 'admin') {
+            allowed = false;
+        }
+        
+        if (!allowed) {
+            alert('คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้ (Access Denied)');
+            window.location.href = roleNameLower === 'admin' ? 'admin_stock.html' : 'staff_profile.html';
+            return;
+        }
+        
+        // Filter menu items for display
+        const rawItems = menuConfig[role] || menuConfig.staff;
+        const filteredItems = filterMenuByPermissions(rawItems, permissions, roleNameLower === 'admin');
+        
+        renderSidebar(filteredItems, filename, role);
+        renderMobileHeader(filename);
+        renderBottomNav(filteredItems, filename);
+        bindLayoutEvents();
+        
+        if (window.i18n && typeof window.i18n.applyTranslations === 'function') {
+            window.i18n.applyTranslations();
+        }
+    } catch (error) {
+        console.error('Error during auth validation:', error);
+        window.location.href = '/login.html';
     }
 }
 
+function filterMenuByPermissions(menuItems, permissions, isAdmin) {
+    if (isAdmin) return menuItems;
+    
+    return menuItems.map(item => {
+        if (item.type === 'link') {
+            if (!item.permission || permissions.includes(item.permission)) {
+                return item;
+            }
+        } else if (item.type === 'group') {
+            const filteredSubItems = item.items.filter(sub => !sub.permission || permissions.includes(sub.permission));
+            if (filteredSubItems.length > 0) {
+                return { ...item, items: filteredSubItems };
+            }
+        }
+        return null;
+    }).filter(Boolean);
+}
+
 export function updateActiveMenu(currentFilename) {
-    // Update active state for desktop sidebar
     document.querySelectorAll('.sidebar-menu .menu-item, .sidebar-menu .submenu a').forEach(el => {
         el.classList.remove('active');
         const href = el.getAttribute('href');
         if (href && href.endsWith(currentFilename)) {
             el.classList.add('active');
-            // If inside submenu, open parent group
             const parentGroup = el.closest('.menu-group');
             if (parentGroup) {
-                parentGroup.classList.add('open');
+                const isStaff = window.location.pathname.includes('staff');
+                const key = isStaff ? 'staffProductsMenuOpen' : 'productsMenuOpen';
+                if (localStorage.getItem(key) === 'true') {
+                    parentGroup.classList.add('open');
+                } else {
+                    parentGroup.classList.remove('open');
+                }
             }
         }
     });
 
-    // Update active state for mobile bottom nav
     document.querySelectorAll('.bottom-nav .nav-item').forEach(el => {
         el.classList.remove('active');
         const href = el.getAttribute('href');
@@ -53,16 +151,12 @@ function renderSidebar(items, currentFilename, role) {
     if (!sidebar) return;
 
     const key = role === 'staff' ? 'staffProductsMenuOpen' : 'productsMenuOpen';
-    const isGroupOpen = localStorage.getItem(key) === 'true';
-    const currentLang = (window.i18n && window.i18n.getLanguage) ? window.i18n.getLanguage() : (localStorage.getItem('selected_lang') || 'th');
-    const langBtnText = currentLang === 'th' ? '🌐 TH' : '🌐 EN';
-
+    const isGroupOpen = localStorage.getItem(key) !== 'false';
     let menuHTML = `<div class="sidebar-header" style="display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 8px;">
             <i class="fas fa-paw"></i>
             <span>Hello Pet Shop</span>
         </div>
-        <button id="langToggleBtnAdmin" class="lang-toggle-btn" style="background: rgba(255,255,255,0.2); border: none; color: #fff; padding: 4px 10px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;">${langBtnText}</button>
     </div>
     <nav class="sidebar-menu">
         <div style="padding: 10px 24px; font-size: 12px; color: #3b82f6; font-weight: 600; text-transform: uppercase;">${role}</div>`;
@@ -118,14 +212,10 @@ function renderMobileHeader(currentFilename) {
     if (!mobileHeader) return;
 
     let titleText = document.title.split('-')[0].trim();
-    const currentLang = (window.i18n && window.i18n.getLanguage) ? window.i18n.getLanguage() : (localStorage.getItem('selected_lang') || 'th');
-    const langBtnText = currentLang === 'th' ? '🌐 TH' : '🌐 EN';
-
     mobileHeader.innerHTML = `
         <i class="fas fa-bars" id="hamburgerBtn"></i>
         <h2>${titleText}</h2>
         <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
-            <button id="langToggleBtnMobile" class="lang-toggle-btn" style="background: rgba(255,255,255,0.2); border: none; color: #fff; padding: 4px 10px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;">${langBtnText}</button>
             <i class="fas fa-bell"></i>
         </div>
     `;
@@ -161,20 +251,8 @@ function renderBottomNav(items, currentFilename) {
 }
 
 function bindLayoutEvents() {
-    // Language toggle event listener binding
-    document.querySelectorAll('.lang-toggle-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (window.toggleLanguage) {
-                window.toggleLanguage();
-            } else if (window.i18n && window.i18n.toggleLanguage) {
-                window.i18n.toggleLanguage();
-            }
-        });
-    });
 
-    // Submenu toggle event
+
     document.querySelectorAll('.submenu-toggle').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -188,7 +266,6 @@ function bindLayoutEvents() {
         });
     });
 
-    // Mobile hamburger & overlay
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const sidebar = document.querySelector('aside.sidebar');
@@ -205,13 +282,14 @@ function bindLayoutEvents() {
         });
     }
 
-    // Global Logout
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('user');
             localStorage.removeItem('userProfileData');
+            localStorage.removeItem('productsMenuOpen');
+            localStorage.removeItem('staffProductsMenuOpen');
             window.location.href = '/login.html';
         });
     }

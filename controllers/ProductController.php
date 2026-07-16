@@ -178,6 +178,8 @@ class ProductController {
         // Default status and other fields if NOT in $data
         $data['status'] = $data['status'] ?? 'active';
         $data['weight'] = $data['weight'] ?? null;
+        $data['weight_value'] = isset($data['weight_value']) && $data['weight_value'] !== '' ? (float)$data['weight_value'] : null;
+        $data['weight_unit'] = $data['weight_unit'] ?? null;
         $data['image_url'] = $data['image_url'] ?? null;
         $data['barcode'] = $data['barcode'] ?? null;
         $data['description'] = $data['description'] ?? null;
@@ -246,11 +248,14 @@ class ProductController {
 
         $data['status'] = $data['status'] ?? 'active';
         $data['weight'] = $data['weight'] ?? null;
+        $data['weight_value'] = isset($data['weight_value']) && $data['weight_value'] !== '' ? (float)$data['weight_value'] : null;
+        $data['weight_unit'] = $data['weight_unit'] ?? null;
         $data['image_url'] = $data['image_url'] ?? null;
         $data['barcode'] = $data['barcode'] ?? null;
         $data['description'] = $data['description'] ?? null;
         $data['cost_price'] = $data['cost_price'] ?? 0;
         $data['stock_quantity'] = $data['stock_quantity'] ?? 0;
+        $data['created_by'] = $this->getEmployeeId();
 
         $id = $this->product->create($data);
         if($id) {

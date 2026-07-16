@@ -66,5 +66,64 @@ class AuthController {
             Response::json(500, "เกิดข้อผิดพลาดในการสมัครสมาชิก");
         }
     }
+
+    public function me() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(["message" => "Unauthorized: Please log in first"]);
+            return;
+        }
+
+        $query = "SELECT u.user_id, u.username, u.email, u.permissions AS user_permissions, r.role_name, r.permissions AS role_permissions
+                  FROM users u
+                  JOIN roles r ON u.role_id = r.role_id
+                  WHERE u.user_id = :user_id
+                  LIMIT 0,1";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':user_id', $_SESSION['user_id']);
+        $stmt->execute();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            http_response_code(404);
+            echo json_encode(["message" => "User not found"]);
+            return;
+        }
+
+        $userPerms = json_decode($user['user_permissions'] ?? '[]', true) ?: [];
+        $rolePerms = json_decode($user['role_permissions'] ?? '[]', true) ?: [];
+        
+        $roleNameLower = strtolower($user['role_name'] ?? '');
+        if ($roleNameLower === 'admin') {
+            $allPerms = [
+                "dashboard_view",
+                "products_manage",
+                "stock_manage",
+                "orders_manage",
+                "customers_manage",
+                "promotions_manage",
+                "delivery_manage",
+                "rewards_manage",
+                "staff_manage"
+            ];
+        } else {
+            $allPerms = array_unique(array_merge($userPerms, $rolePerms));
+        }
+
+        $response_data = [
+            "user_id" => $user['user_id'],
+            "username" => $user['username'],
+            "email" => $user['email'],
+            "role_name" => $user['role_name'],
+            "permissions" => array_values($allPerms)
+        ];
+
+        Response::json(200, "Successfully retrieved user state", $response_data);
+    }
 }
 ?>

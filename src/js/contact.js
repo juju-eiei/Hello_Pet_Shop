@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalBtnText = submitBtn.innerHTML;
         
         submitBtn.disabled = true;
-        submitBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> Sending...`;
+        submitBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> กำลังส่ง...`;
         
         // Simulate API call
         setTimeout(() => {
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             successMessage.classList.remove('hidden', 'opacity-0');
             successMessage.classList.add('opacity-100');
             
-            showToast("Message sent successfully!", "success");
+            showToast("ส่งข้อความสำเร็จแล้ว!", "success");
         }, 1500);
     });
 

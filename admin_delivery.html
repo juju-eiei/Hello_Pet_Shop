@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการขนส่ง - Hello Pet Shop</title>
+    <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
+    <script type="module" src="/src/js/main.js"></script>
+    <style>
+        .delivery-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 24px;
+            margin-top: 20px;
+        }
+        @media (max-width: 1024px) {
+            .delivery-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        .premium-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            transition: all 0.2s ease-in-out;
+        }
+        .premium-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .card-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .company-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border: 1px solid #f1f5f9;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .company-item:hover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: translateY(-1px);
+        }
+        .company-item.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        .company-info h3 {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .company-info p {
+            margin: 0;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            color: #64748b;
+            transition: all 0.15s;
+        }
+        .action-btn:hover {
+            background-color: #f1f5f9;
+        }
+        .action-btn.edit:hover {
+            color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .action-btn.delete:hover {
+            color: #ef4444;
+            background-color: #fee2fee;
+        }
+        .action-btn.select:hover {
+            color: #10b981;
+            background-color: #ecfdf5;
+        }
+        .rate-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .rate-table th {
+            text-align: left;
+            padding: 12px;
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            font-size: 13px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .rate-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+            color: #334155;
+        }
+        .rate-table tr:hover td {
+            background-color: #f8fafc;
+        }
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+            text-align: center;
+        }
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #cbd5e1;
+        }
+        .empty-state p {
+            margin: 0;
+            font-size: 14px;
+        }
+        .modal-body {
+            padding: 16px 0;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .premium-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .premium-btn:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+        .premium-btn.secondary {
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+        .premium-btn.secondary:hover {
+            background-color: #e2e8f0;
+        }
+        .premium-btn.danger {
+            background-color: #ef4444;
+        }
+        .premium-btn.danger:hover {
+            background-color: #dc2626;
+        }
+        .badge {
+            background-color: #ecfdf5;
+            color: #059669;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 1px solid #a7f3d0;
+        }
+    </style>
+</head>
+<body class="preload">
+    <div class="admin-wrapper">
+        <header class="mobile-header"></header>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="sidebar"></aside>
+
+        <main class="main-content">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 data-i18n="title.delivery">จัดการระบบขนส่ง</h1>
+                    <p style="color: #64748b; margin-top: 6px;">ตั้งค่าบริษัทขนส่งและจัดการอัตราค่าบริการตามน้ำหนักสินค้า</p>
+                </div>
+                <button onclick="openCompanyModal()" class="premium-btn">
+                    <i class="fas fa-plus"></i> Add Shipping Company
+                </button>
+            </div>
+
+            <div class="delivery-layout">
+                <!-- Left Panel: Shipping Companies -->
+                <div class="premium-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-truck-loading"></i> บริษัทขนส่งทั้งหมด</h2>
+                    </div>
+                    <div id="companyContainer">
+                        <div style="padding: 30px; text-align: center; color: #94a3b8;">กำลังโหลดข้อมูลบริษัทขนส่ง...</div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Weight Rates -->
+                <div class="premium-card">
+                    <div class="card-header">
+                        <h2 id="rateCardTitle"><i class="fas fa-balance-scale"></i> อัตราค่าบริการตามน้ำหนัก</h2>
+                        <button id="addRateBtn" onclick="openRateModal()" class="premium-btn secondary" style="display: none; padding: 6px 12px; font-size: 13px;">
+                            <i class="fas fa-plus"></i> Add Weight Rate
+                        </button>
+                    </div>
+                    <div id="ratesContainer">
+                        <div class="empty-state">
+                            <i class="fas fa-mouse-pointer"></i>
+                            <p>กรุณาเลือกบริษัทขนส่งจากรายการด้านซ้าย<br>เพื่อจัดการอัตราค่าจัดส่งตามน้ำหนัก</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <button onclick="openCompanyModal()" class="fab-add" style="border: none;">
+            <i class="fas fa-plus"></i>
+        </button>
+
+        <nav class="bottom-nav"></nav>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Add/Edit Company Modal -->
+    <div id="companyModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title" id="companyModalTitle">เพิ่มบริษัทขนส่งใหม่</div>
+            <div class="modal-body">
+                <input type="hidden" id="modalCompanyId">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="companyName" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">ชื่อบริษัทขนส่ง <span style="color: red;">*</span></label>
+                    <input type="text" id="companyName" class="form-control" placeholder="เช่น Kerry Express, Flash Express" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="baseRate" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">ค่าจัดส่งเริ่มต้น (บาท)</label>
+                        <input type="number" id="baseRate" class="form-control" min="0" step="0.5" value="0.00" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label for="ratePerKg" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">ค่าส่งต่อกิโลกรัม (บาท)</label>
+                        <input type="number" id="ratePerKg" class="form-control" min="0" step="0.5" value="0.00" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: #64748b; margin: 0 0 10px 0; line-height: 1.5;">
+                    * <strong>สูตรคำนวณราคาจัดส่งเริ่มต้น</strong> จะถูกนำมาใช้คำนวณโดยอัตโนมัติหากไม่ได้ตั้งราคาตามขั้นบันได หรือน้ำหนักจริงเกินกว่าช่วงขั้นบันไดสูงสุดที่กำหนดไว้
+                </p>
+            </div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeCompanyModal()">ยกเลิก</button>
+                <button class="premium-btn" onclick="saveCompany()">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Weight Rate Modal -->
+    <div id="rateModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title" id="rateModalTitle">เพิ่มอัตราค่าบริการตามช่วงน้ำหนัก</div>
+            <div class="modal-body">
+                <input type="hidden" id="modalRateId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="minWeight" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">น้ำหนักเริ่มต้น (kg) <span style="color: red;">*</span></label>
+                        <input type="number" id="minWeight" class="form-control" min="0" step="0.001" placeholder="0.000" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxWeight" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">น้ำหนักสิ้นสุด (kg) <span style="color: red;">*</span></label>
+                        <input type="number" id="maxWeight" class="form-control" min="0" step="0.001" placeholder="1.000" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="ratePrice" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">ราคาค่าบริการจัดส่ง (บาท) <span style="color: red;">*</span></label>
+                    <input type="number" id="ratePrice" class="form-control" min="0" step="0.5" placeholder="35.00" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                </div>
+            </div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeRateModal()">ยกเลิก</button>
+                <button class="premium-btn" onclick="saveRate()">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title" id="deleteModalTitle">ยืนยันการลบ</div>
+            <div class="modal-text" id="deleteModalText">คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้? การกระทำนี้ไม่สามารถย้อนกลับได้</div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">ยกเลิก</button>
+                <button class="premium-btn danger" id="confirmDeleteBtn">ยืนยันการลบ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allCompanies = [];
+        let selectedCompanyId = null;
+        let selectedCompanyRates = [];
+        
+        let deleteActionType = null; // 'company' or 'rate'
+        let deleteTargetId = null;
+
+        checkAuth();
+        fetchCompanies();
+
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role_name.toLowerCase() !== 'admin') {
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function fetchCompanies() {
+            try {
+                const response = await fetch('/api/deliveries/companies');
+                const result = await response.json();
+                if (response.ok) {
+                    allCompanies = result.data || [];
+                    renderCompanies();
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาดในการโหลดข้อมูลบริษัทขนส่ง", "error");
+                }
+            } catch (error) {
+                console.error("fetchCompanies error:", error);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย", "error");
+            }
+        }
+
+        function renderCompanies() {
+            const container = document.getElementById('companyContainer');
+            if (allCompanies.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: #94a3b8;">
+                        <i class="fas fa-truck-loading" style="font-size: 36px; margin-bottom: 12px; color: #cbd5e1;"></i>
+                        <p style="margin: 0; font-size: 14px;">ยังไม่มีข้อมูลบริษัทขนส่งในระบบ</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            allCompanies.forEach(comp => {
+                const isActive = comp.company_id == selectedCompanyId ? 'active' : '';
+                html += `
+                    <div class="company-item ${isActive}" onclick="selectCompany(${comp.company_id})">
+                        <div class="company-info">
+                            <h3>${comp.company_name}</h3>
+                            <p>สูตรคำนวณเริ่มต้น: ฿${parseFloat(comp.base_rate).toFixed(2)} + (฿${parseFloat(comp.rate_per_kg).toFixed(2)}/kg)</p>
+                        </div>
+                        <div class="action-btns" onclick="event.stopPropagation()">
+                            <button class="action-btn edit" onclick="openCompanyModal(${comp.company_id})" title="แก้ไขข้อมูล"><i class="fas fa-edit"></i></button>
+                            <button class="action-btn delete" onclick="confirmDelete('company', ${comp.company_id})" title="ลบข้อมูล"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        async function selectCompany(companyId) {
+            selectedCompanyId = companyId;
+            renderCompanies(); // highlight selection
+
+            const company = allCompanies.find(c => c.company_id == companyId);
+            if (!company) return;
+
+            document.getElementById('rateCardTitle').innerHTML = `<i class="fas fa-balance-scale"></i> ช่วงราคาน้ำหนัก: ${company.company_name}`;
+            document.getElementById('addRateBtn').style.display = 'inline-flex';
+
+            // Fetch Rates
+            const ratesContainer = document.getElementById('ratesContainer');
+            ratesContainer.innerHTML = '<div style="padding: 30px; text-align: center; color: #94a3b8;">กำลังโหลดข้อมูลอัตราค่าส่ง...</div>';
+
+            try {
+                const response = await fetch(`/api/deliveries/rates?company_id=${companyId}`);
+                const result = await response.json();
+                if (response.ok) {
+                    selectedCompanyRates = result.data || [];
+                    renderRates();
+                } else {
+                    ratesContainer.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">${result.message || "เกิดข้อผิดพลาดในการโหลดข้อมูลช่วงราคา"}</div>`;
+                }
+            } catch (error) {
+                console.error("fetchRates error:", error);
+                ratesContainer.innerHTML = '<div style="padding: 30px; text-align: center; color: #ef4444;">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>';
+            }
+        }
+
+        function renderRates() {
+            const container = document.getElementById('ratesContainer');
+            if (selectedCompanyRates.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-tags" style="font-size: 36px; margin-bottom: 12px; color: #cbd5e1;"></i>
+                        <p style="margin: 0; font-size: 14px; margin-bottom: 12px;">ยังไม่ได้กำหนดอัตราค่าส่งตามช่วงน้ำหนักสำหรับบริษัทนี้</p>
+                        <button onclick="openRateModal()" class="premium-btn secondary" style="padding: 6px 12px; font-size: 13px;">
+                            <i class="fas fa-plus"></i> เพิ่มช่วงน้ำหนักชิ้นแรก
+                        </button>
+                    </div>`;
+                return;
+            }
+
+            let html = `
+                <table class="rate-table">
+                    <thead>
+                        <tr>
+                            <th>น้ำหนักเริ่มต้น (kg)</th>
+                            <th>น้ำหนักสิ้นสุด (kg)</th>
+                            <th>ราคาจัดส่ง</th>
+                            <th style="text-align: right;">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            selectedCompanyRates.forEach(rate => {
+                html += `
+                    <tr>
+                        <td><strong>${parseFloat(rate.min_weight).toFixed(3)} kg</strong></td>
+                        <td><strong>${parseFloat(rate.max_weight).toFixed(3)} kg</strong></td>
+                        <td><span class="badge">฿${parseFloat(rate.price).toFixed(2)}</span></td>
+                        <td style="text-align: right;">
+                            <div class="action-btns" style="justify-content: flex-end;">
+                                <button class="action-btn edit" onclick="openRateModal(${rate.rate_id})" title="แก้ไขช่วงน้ำหนัก"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn delete" onclick="confirmDelete('rate', ${rate.rate_id})" title="ลบช่วงน้ำหนัก"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // Modals Management
+        function openCompanyModal(companyId = null) {
+            const modal = document.getElementById('companyModal');
+            const title = document.getElementById('companyModalTitle');
+            const nameInput = document.getElementById('companyName');
+            const baseRateInput = document.getElementById('baseRate');
+            const ratePerKgInput = document.getElementById('ratePerKg');
+            const idInput = document.getElementById('modalCompanyId');
+
+            if (companyId) {
+                title.innerText = 'แก้ไขข้อมูลบริษัทขนส่ง';
+                const comp = allCompanies.find(c => c.company_id == companyId);
+                idInput.value = comp.company_id;
+                nameInput.value = comp.company_name;
+                baseRateInput.value = comp.base_rate;
+                ratePerKgInput.value = comp.rate_per_kg;
+            } else {
+                title.innerText = 'เพิ่มบริษัทขนส่งใหม่';
+                idInput.value = '';
+                nameInput.value = '';
+                baseRateInput.value = '0.00';
+                ratePerKgInput.value = '0.00';
+            }
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeCompanyModal() {
+            const modal = document.getElementById('companyModal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        async function saveCompany() {
+            const id = document.getElementById('modalCompanyId').value;
+            const name = document.getElementById('companyName').value.trim();
+            const base_rate = parseFloat(document.getElementById('baseRate').value) || 0;
+            const rate_per_kg = parseFloat(document.getElementById('ratePerKg').value) || 0;
+
+            if (!name) {
+                showToast("กรุณากรอกชื่อบริษัทขนส่ง", "error");
+                return;
+            }
+
+            const payload = {
+                company_name: name,
+                base_rate: base_rate,
+                rate_per_kg: rate_per_kg
+            };
+
+            let url = '/api/deliveries/companies';
+            let method = 'POST';
+
+            if (id) {
+                payload.company_id = id;
+                url = '/api/deliveries/companies/update';
+                method = 'POST'; // matches route logic in api.php
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(id ? "อัปเดตบริษัทขนส่งสำเร็จ" : "เพิ่มบริษัทขนส่งสำเร็จ", "success");
+                    closeCompanyModal();
+                    await fetchCompanies();
+                    if (id && selectedCompanyId == id) {
+                        // refresh header
+                        const updatedComp = allCompanies.find(c => c.company_id == id);
+                        document.getElementById('rateCardTitle').innerHTML = `<i class="fas fa-balance-scale"></i> ช่วงราคาน้ำหนัก: ${updatedComp.company_name}`;
+                    }
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
+                }
+            } catch (error) {
+                console.error("saveCompany error:", error);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        function openRateModal(rateId = null) {
+            const modal = document.getElementById('rateModal');
+            const title = document.getElementById('rateModalTitle');
+            const idInput = document.getElementById('modalRateId');
+            const minWeightInput = document.getElementById('minWeight');
+            const maxWeightInput = document.getElementById('maxWeight');
+            const priceInput = document.getElementById('ratePrice');
+
+            if (rateId) {
+                title.innerText = 'แก้ไขช่วงราคาน้ำหนัก';
+                const rate = selectedCompanyRates.find(r => r.rate_id == rateId);
+                idInput.value = rate.rate_id;
+                minWeightInput.value = rate.min_weight;
+                maxWeightInput.value = rate.max_weight;
+                priceInput.value = rate.price;
+            } else {
+                title.innerText = 'เพิ่มช่วงน้ำหนักและราคาจัดส่ง';
+                idInput.value = '';
+                
+                // Smart default for weight based on existing max weight
+                let defaultMin = 0.000;
+                if (selectedCompanyRates.length > 0) {
+                    // find maximum max_weight
+                    const sorted = [...selectedCompanyRates].sort((a,b) => parseFloat(b.max_weight) - parseFloat(a.max_weight));
+                    defaultMin = parseFloat(sorted[0].max_weight) + 0.001;
+                }
+
+                minWeightInput.value = defaultMin.toFixed(3);
+                maxWeightInput.value = (defaultMin + 1.0).toFixed(3);
+                priceInput.value = '';
+            }
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeRateModal() {
+            const modal = document.getElementById('rateModal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        async function saveRate() {
+            const id = document.getElementById('modalRateId').value;
+            const min_weight = parseFloat(document.getElementById('minWeight').value);
+            const max_weight = parseFloat(document.getElementById('maxWeight').value);
+            const price = parseFloat(document.getElementById('ratePrice').value);
+
+            if (isNaN(min_weight) || min_weight < 0) {
+                showToast("กรุณากรอกน้ำหนักเริ่มต้นที่ถูกต้อง", "error");
+                return;
+            }
+            if (isNaN(max_weight) || max_weight <= min_weight) {
+                showToast("น้ำหนักสิ้นสุดต้องมากกว่าน้ำหนักเริ่มต้น", "error");
+                return;
+            }
+            if (isNaN(price) || price < 0) {
+                showToast("กรุณากรอกราคาค่าจัดส่งที่ถูกต้อง", "error");
+                return;
+            }
+
+            const payload = {
+                company_id: selectedCompanyId,
+                min_weight: min_weight,
+                max_weight: max_weight,
+                price: price
+            };
+
+            if (id) {
+                payload.rate_id = id;
+            }
+
+            try {
+                const response = await fetch('/api/deliveries/rates/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast("บันทึกช่วงราคาน้ำหนักสำเร็จ", "success");
+                    closeRateModal();
+                    selectCompany(selectedCompanyId); // Reload rates
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
+                }
+            } catch (error) {
+                console.error("saveRate error:", error);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        // Delete confirmation logic
+        function confirmDelete(type, id) {
+            deleteActionType = type;
+            deleteTargetId = id;
+            
+            const titleEl = document.getElementById('deleteModalTitle');
+            const textEl = document.getElementById('deleteModalText');
+
+            if (type === 'company') {
+                titleEl.innerText = "ยืนยันการลบบริษัทขนส่ง";
+                textEl.innerText = "คุณแน่ใจหรือไม่ว่าต้องการลบบริษัทขนส่งนี้? (การลบจะไม่สำเร็จหากมีคำสั่งซื้อที่อ้างอิงบริษัทขนส่งนี้อยู่)";
+            } else {
+                titleEl.innerText = "ยืนยันการลบช่วงราคาน้ำหนัก";
+                textEl.innerText = "คุณแน่ใจหรือไม่ว่าต้องการลบเรทราคาน้ำหนักพัสดุรายการนี้?";
+            }
+
+            const modal = document.getElementById('deleteModal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        // Bind click event on confirm delete button
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            if (!deleteTargetId || !deleteActionType) return;
+
+            let url = '';
+            let payload = {};
+
+            if (deleteActionType === 'company') {
+                url = '/api/deliveries/companies/delete';
+                payload = { company_id: deleteTargetId };
+            } else {
+                url = '/api/deliveries/rates/delete';
+                payload = { rate_id: deleteTargetId };
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST', // Use POST as fallback delete mechanism supported by routes
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast("ลบข้อมูลสำเร็จเรียบร้อยแล้ว", "success");
+                    closeDeleteModal();
+                    if (deleteActionType === 'company') {
+                        if (selectedCompanyId == deleteTargetId) {
+                            selectedCompanyId = null;
+                            document.getElementById('rateCardTitle').innerHTML = `<i class="fas fa-balance-scale"></i> อัตราค่าบริการตามน้ำหนัก`;
+                            document.getElementById('addRateBtn').style.display = 'none';
+                            document.getElementById('ratesContainer').innerHTML = `
+                                <div class="empty-state">
+                                    <i class="fas fa-mouse-pointer"></i>
+                                    <p>กรุณาเลือกบริษัทขนส่งจากรายการด้านซ้าย<br>เพื่อจัดการอัตราค่าจัดส่งตามน้ำหนัก</p>
+                                </div>`;
+                        }
+                        await fetchCompanies();
+                    } else {
+                        selectCompany(selectedCompanyId); // Reload rates
+                    }
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาดในการลบข้อมูล", "error");
+                }
+            } catch (error) {
+                console.error("delete error:", error);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        });
+
+        // Helper to show toasts
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Hello Pet Shop</title>
+    <title>ข้อมูลส่วนตัว - Hello Pet Shop</title>
     <!-- Use Vite to load styles -->
     <script type="module" src="/src/js/main.js"></script>
     <script type="module" src="/src/js/profile.js"></script>
@@ -39,10 +39,10 @@
                 
                 <!-- Nav Links -->
                 <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
-                    <a href="/home" class="hover:text-gray-200 transition-colors">Home</a>
-                    <a href="/my-pets" class="hover:text-gray-200 transition-colors">My Pets</a>
-                    <a href="/order-history" class="hover:text-gray-200 transition-colors">Order History</a>
-                    <a href="/contact" class="hover:text-gray-200 transition-colors">Contact Us</a>
+                    <a href="/home" class="hover:text-gray-200 transition-colors">หน้าแรก</a>
+                    <a href="/my-pets" class="hover:text-gray-200 transition-colors">สัตว์เลี้ยงของฉัน</a>
+                    <a href="/order-history" class="hover:text-gray-200 transition-colors">ประวัติคำสั่งซื้อ</a>
+                    <a href="/contact" class="hover:text-gray-200 transition-colors">ติดต่อเรา</a>
                 </div>
             </div>
 
@@ -99,7 +99,7 @@
             </div>
             
             <h1 id="displayName" class="text-[26px] font-bold text-[#1f2937] mt-5 tracking-[0.015em]">Sophia Clark</h1>
-            <p class="text-[#6490ba] font-medium text-[15px] mt-0.5"><span>Reward Points</span> : 1200</p>
+            <p class="text-[#6490ba] font-medium text-[15px] mt-0.5"><span>แต้มสะสม</span> : 1200</p>
             
             <button id="editProfileBtn" class="mt-4 transition-all focus:outline-none">
                 <i class="fa-regular fa-pen-to-square text-[22px] text-[#1f2937] hover:text-gray-600"></i>
@@ -108,19 +108,19 @@
 
         <!-- Personal Information Form -->
         <div class="max-w-[34rem] mx-auto mt-12 pb-16">
-            <h2 class="text-[20px] font-bold text-[#1f2937] mb-6 tracking-wide">Personal Information</h2>
+            <h2 class="text-[20px] font-bold text-[#1f2937] mb-6 tracking-wide">ข้อมูลส่วนตัว</h2>
             
             <div class="space-y-5">
                 <!-- Name -->
                 <div>
-                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">Name</label>
+                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">ชื่อ</label>
                     <input id="inputName" type="text" value="Sophia Clark" readonly 
                         class="w-full bg-white text-[#7b9ebb] border border-[#d6e3ec] rounded-xl px-4 py-2.5 outline-none font-normal text-[15px] transition-all">
                 </div>
 
                 <!-- Address -->
                 <div>
-                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">Address</label>
+                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">ที่อยู่</label>
                     <textarea id="inputAddress" readonly rows="4" 
                         class="w-full bg-white text-[#7b9ebb] border border-[#d6e3ec] rounded-xl px-4 py-3 outline-none font-normal text-[15px] resize-none leading-relaxed transition-all">123 Green Paw Street,
 Petville District,
@@ -130,14 +130,14 @@ Thailand</textarea>
 
                 <!-- Phone Number -->
                 <div>
-                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">Phone Number</label>
+                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">เบอร์โทรศัพท์</label>
                     <input id="inputPhone" type="text" value="063*******" readonly 
                         class="w-full bg-white text-[#7b9ebb] border border-[#d6e3ec] rounded-xl px-4 py-2.5 outline-none font-normal text-[15px] transition-all">
                 </div>
 
                 <!-- Email -->
                 <div>
-                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">Email</label>
+                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">อีเมล</label>
                     <input id="inputEmail" type="email" value="Sophia@gmail.com" readonly 
                         class="w-full bg-white text-[#7b9ebb] border border-[#d6e3ec] rounded-xl px-4 py-2.5 outline-none font-normal text-[15px] transition-all">
                 </div>

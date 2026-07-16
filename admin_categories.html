@@ -5,7 +5,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Category Management - Hello Pet Shop</title>
+    <title>จัดการหมวดหมู่สินค้า - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -26,28 +26,30 @@
 
         <main class="main-content">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h1>Categories</h1>
+                <h1>หมวดหมู่สินค้า</h1>
                 <button onclick="openAddCategoryModal()" class="save-btn" style="padding: 10px 24px; font-size: 14px; border: none; cursor: pointer;">
                     <i class="fas fa-plus" style="margin-right: 8px;"></i>
-                    Add Category
+                    เพิ่มหมวดหมู่สินค้า
                 </button>
             </div>
 
             <div class="search-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search categories...">
+                <input type="text" id="searchInput" placeholder="ค้นหาหมวดหมู่สินค้า...">
             </div>
 
             <div class="stock-table">
                 <div class="table-header">
-                    <span style="flex: 1;">ID</span>
-                    <span style="flex: 3;">Category Name</span>
-                    <span style="flex: 1; text-align: right;">Actions</span>
+                    <span style="flex: 1;">รหัส</span>
+                    <span style="flex: 3;">ชื่อหมวดหมู่</span>
+                    <span style="flex: 1; text-align: right;">การจัดการ</span>
                 </div>
                 <div id="categoryContainer">
                     <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
                 </div>
             </div>
+            <!-- Pagination -->
+            <div id="paginationContainer" class="pagination-container"></div>
         </main>
 
         <button onclick="openAddCategoryModal()" class="fab-add" style="border: none;">
@@ -110,6 +112,8 @@
     <script>
         let allCategories = [];
         let currentKeyword = '';
+        let currentPage = 1;
+        const itemsPerPage = 20;
 
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
@@ -141,6 +145,7 @@
 
         function renderCategories() {
             const container = document.getElementById('categoryContainer');
+            const paginationContainer = document.getElementById('paginationContainer');
             
             const filtered = allCategories.filter(c => 
                 c.category_name.toLowerCase().includes(currentKeyword.toLowerCase())
@@ -148,10 +153,24 @@
 
             if (filtered.length === 0) {
                 container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบประเภทสินค้า</div>';
+                if (paginationContainer) paginationContainer.innerHTML = '';
                 return;
             }
 
-            container.innerHTML = filtered.map(c => `
+            // Pagination boundaries check
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedCategories = filtered.slice(startIndex, endIndex);
+
+            container.innerHTML = paginatedCategories.map(c => `
                 <div class="product-row" style="display: flex; align-items: center; width: 100%;">
                     <div style="flex: 1; color: #64748b;">#${c.category_id}</div>
                     <div class="product-details" style="flex: 3; margin-right: 20px;">
@@ -164,7 +183,52 @@
                     </div>
                 </div>
             `).join('');
+
+            renderPagination(filtered.length);
         }
+
+        function renderPagination(totalItems) {
+            const paginationContainer = document.getElementById('paginationContainer');
+            if (!paginationContainer) return;
+
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            html += `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="window.changePage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = startPage + maxVisiblePages - 1;
+
+            if (endPage > totalPages) {
+                endPage = totalPages;
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="window.changePage(${i})">${i}</button>`;
+            }
+
+            // Next button
+            html += `<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="window.changePage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+            paginationContainer.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderCategories();
+        }
+
+        window.changePage = changePage;
+
 
         function openAddCategoryModal() {
             document.getElementById('categoryName').value = '';
@@ -263,6 +327,7 @@
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
             currentKeyword = e.target.value;
+            currentPage = 1;
             renderCategories();
         });
 

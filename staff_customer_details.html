@@ -5,7 +5,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Profile - Hello Pet Shop</title>
+    <title>โปรไฟล์ลูกค้า (พนักงาน) - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -386,6 +386,19 @@
                         <label class="form-label">Allergy Information</label>
                         <textarea class="form-control" id="petAllergy" rows="2" placeholder="Leave blank if none"></textarea>
                     </div>
+                    
+                    <div class="form-group full">
+                        <label class="form-label">Pet Image</label>
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div id="petImagePreviewContainer" style="width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
+                                <i class="fas fa-paw" id="petImagePlaceholderIcon" style="font-size: 24px; color: #cbd5e1;"></i>
+                                <img id="petImagePreviewEl" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                            </div>
+                            <input type="file" id="petImageFileInput" accept="image/*" style="display: none;">
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('petImageFileInput').click()" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;">Choose Image</button>
+                            <button type="button" class="btn btn-secondary" id="removePetImageBtn" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #ef4444; display: none;">Remove</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
@@ -432,17 +445,15 @@
             return user;
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('user');
-                    window.location.href = 'login.html';
-                });
-            }
-            checkAuth();
-        });
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            });
+        }
+        checkAuth();
 
         let currentCustomerId = null;
         let petsData = [];
@@ -478,12 +489,15 @@
             }
         }
 
+        let selectedPetImageFile = null;
+        let removePetImageFlag = false;
+
         function getIconClass(type) {
             const t = type.toLowerCase();
             if (t.includes('cat')) return 'cat fa-cat';
             if (t.includes('dog')) return 'dog fa-dog';
             if (t.includes('bird')) return 'bird fa-crow';
-            if (t.includes('fish')) return 'fa-fish';
+            if (t.includes('fish')) return 'fish fa-fish';
             return 'fa-paw';
         }
 
@@ -529,6 +543,24 @@
                     ageStr = years > 0 ? `${years} years` : 'Under 1 yr';
                 }
 
+                let iconHtml = '';
+                if (p.image_url) {
+                    iconHtml = `
+                        <div class="pet-icon" style="background: transparent; padding: 0; display: block; overflow: hidden; border: 1px solid #e2e8f0;">
+                            <img src="/${p.image_url}" onerror="this.src='/image/non-image.png'" alt="${p.pet_name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px; display: block;">
+                        </div>
+                    `;
+                } else {
+                    const iconClasses = getIconClass(p.pet_type);
+                    const bgClass = iconClasses.split(' ')[0] || '';
+                    const faIcon = iconClasses.split(' ')[1] || 'fa-paw';
+                    iconHtml = `
+                        <div class="pet-icon ${bgClass}">
+                            <i class="fas ${faIcon}"></i>
+                        </div>
+                    `;
+                }
+
                 return `
                 <div class="pet-card">
                     <div class="pet-actions">
@@ -536,9 +568,7 @@
                         <i class="fas fa-trash-alt action-icon delete" onclick="deletePet(${p.pet_id})"></i>
                     </div>
                     <div class="pet-header">
-                        <div class="pet-icon ${getIconClass(p.pet_type).split(' ')[0]}">
-                            <i class="fas ${getIconClass(p.pet_type).split(' ')[1] || 'fa-paw'}"></i>
-                        </div>
+                        ${iconHtml}
                         <div>
                             <h4 style="margin: 0; font-size: 16px; font-weight:700; color: #1e293b;">${p.pet_name}</h4>
                             <span style="color: #64748b; font-size: 12px;">${p.pet_type} ${p.breed ? '| ' + p.breed : ''}</span>
@@ -558,9 +588,67 @@
                 `;
             }).join('');
         }
+
+        // Setup file input listener
+        const petImageFileInput = document.getElementById('petImageFileInput');
+        if (petImageFileInput) {
+            petImageFileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (!file.type.startsWith('image/')) {
+                        showToast("Please select an image file", "error");
+                        return;
+                    }
+                    selectedPetImageFile = file;
+                    removePetImageFlag = false;
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.getElementById('petImagePreviewEl');
+                        img.src = event.target.result;
+                        img.style.display = 'block';
+                        document.getElementById('petImagePlaceholderIcon').style.display = 'none';
+                        document.getElementById('removePetImageBtn').style.display = 'inline-flex';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        const removePetImageBtn = document.getElementById('removePetImageBtn');
+        if (removePetImageBtn) {
+            removePetImageBtn.addEventListener('click', function() {
+                selectedPetImageFile = null;
+                removePetImageFlag = true;
+                document.getElementById('petImageFileInput').value = '';
+                document.getElementById('petImagePreviewEl').src = '';
+                document.getElementById('petImagePreviewEl').style.display = 'none';
+                document.getElementById('petImagePlaceholderIcon').style.display = 'block';
+                document.getElementById('removePetImageBtn').style.display = 'none';
+            });
+        }
+
         function openPetModal(index = null) {
             const form = document.getElementById('petForm');
             form.reset();
+            
+            selectedPetImageFile = null;
+            removePetImageFlag = false;
+            
+            const fileInput = document.getElementById('petImageFileInput');
+            if (fileInput) fileInput.value = '';
+            
+            const previewEl = document.getElementById('petImagePreviewEl');
+            if (previewEl) {
+                previewEl.src = '';
+                previewEl.style.display = 'none';
+            }
+            
+            const placeholderIcon = document.getElementById('petImagePlaceholderIcon');
+            if (placeholderIcon) placeholderIcon.style.display = 'block';
+            
+            const removeBtn = document.getElementById('removePetImageBtn');
+            if (removeBtn) removeBtn.style.display = 'none';
             
             if (index !== null) {
                 const p = petsData[index];
@@ -572,6 +660,15 @@
                 document.getElementById('petBirthdate').value = p.birthdate || '';
                 document.getElementById('petWeight').value = p.weight || '';
                 document.getElementById('petAllergy').value = p.allergy_info || '';
+                
+                if (p.image_url) {
+                    if (previewEl) {
+                        previewEl.src = '/' + p.image_url;
+                        previewEl.style.display = 'block';
+                    }
+                    if (placeholderIcon) placeholderIcon.style.display = 'none';
+                    if (removeBtn) removeBtn.style.display = 'inline-flex';
+                }
             } else {
                 document.getElementById('modalTitle').textContent = 'Add Pet';
                 document.getElementById('petId').value = '0';
@@ -587,22 +684,27 @@
         document.getElementById('petForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const payload = {
-                customer_id: currentCustomerId,
-                pet_id: document.getElementById('petId').value,
-                pet_name: document.getElementById('petName').value,
-                pet_type: document.getElementById('petType').value,
-                breed: document.getElementById('petBreed').value,
-                birthdate: document.getElementById('petBirthdate').value,
-                weight: document.getElementById('petWeight').value,
-                allergy_info: document.getElementById('petAllergy').value,
-            };
+            const formData = new FormData();
+            formData.append('customer_id', currentCustomerId);
+            formData.append('pet_id', document.getElementById('petId').value);
+            formData.append('pet_name', document.getElementById('petName').value);
+            formData.append('pet_type', document.getElementById('petType').value);
+            formData.append('breed', document.getElementById('petBreed').value);
+            formData.append('birthdate', document.getElementById('petBirthdate').value);
+            formData.append('weight', document.getElementById('petWeight').value);
+            formData.append('allergy_info', document.getElementById('petAllergy').value);
+            
+            if (selectedPetImageFile) {
+                formData.append('pet_image', selectedPetImageFile);
+            }
+            if (removePetImageFlag) {
+                formData.append('remove_image', 'true');
+            }
 
             try {
                 const res = await fetch('/api/pets/save', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: formData
                 });
                 const json = await res.json();
                 

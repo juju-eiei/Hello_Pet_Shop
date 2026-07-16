@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pets.forEach(pet => {
             const ageDisplay = calculateAge(pet.birthDate);
             const imageHtml = pet.image 
-                ? `<img src="${pet.image}" alt="${pet.name}" class="w-full h-full object-cover">`
+                ? `<img src="${pet.image}" onerror="this.src='/image/non-image.png'" alt="${pet.name}" class="w-full h-full object-cover">`
                 : `<i class="fas fa-paw text-gray-300 text-4xl"></i>`;
 
             const card = document.createElement('div');
@@ -103,12 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 <div class="grid grid-cols-2 gap-y-3 gap-x-4 bg-gray-50/50 rounded-xl p-4 border border-gray-50">
                     <div>
-                        <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Age</div>
+                        <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">อายุ</div>
                         <div class="text-sm text-gray-700 font-medium">${ageDisplay || '-'}</div>
                     </div>
                     <div>
-                        <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Weight</div>
-                        <div class="text-sm text-gray-700 font-medium">${pet.weight ? pet.weight + ' kg' : '-'}</div>
+                        <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">น้ำหนัก</div>
+                        <div class="text-sm text-gray-700 font-medium">${pet.weight ? pet.weight + ' กก.' : '-'}</div>
                     </div>
                 </div>
             `;
@@ -137,11 +137,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (years > 0) {
-            return `${years} yr ${months > 0 ? months + ' mo' : ''}`;
+            return `${years} ปี ${months > 0 ? months + ' เดือน' : ''}`;
         } else if (months > 0) {
-            return `${months} mo`;
+            return `${months} เดือน`;
         } else {
-            return `< 1 mo`;
+            return `น้อยกว่า 1 เดือน`;
         }
     }
 
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Edit Mode
             const pet = pets.find(p => p.id === petId);
             if (pet) {
-                modalTitle.textContent = "Edit Pet";
+                modalTitle.textContent = "แก้ไขข้อมูลสัตว์เลี้ยง";
                 petIdInput.value = pet.id;
                 petNameInput.value = pet.name;
                 petSpeciesInput.value = pet.species;
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             // Add Mode
-            modalTitle.textContent = "Add New Pet";
+            modalTitle.textContent = "เพิ่มสัตว์เลี้ยงใหม่";
             petIdInput.value = "";
         }
 
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = e.target.files[0];
         if (file) {
             if (!file.type.startsWith('image/')) {
-                showToast("Please upload an image file", "error");
+                showToast("กรุณาอัปโหลดไฟล์รูปภาพ", "error");
                 return;
             }
             const reader = new FileReader();
@@ -243,12 +243,12 @@ document.addEventListener('DOMContentLoaded', () => {
     savePetBtn.addEventListener('click', () => {
         // Validation
         if (!petNameInput.value.trim()) {
-            showToast("Pet Name is required", "error");
+            showToast("กรุณากรอกชื่อสัตว์เลี้ยง", "error");
             petNameInput.focus();
             return;
         }
         if (!petSpeciesInput.value) {
-            showToast("Species is required", "error");
+            showToast("กรุณาเลือกชนิดสัตว์เลี้ยง", "error");
             petSpeciesInput.focus();
             return;
         }
@@ -269,12 +269,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const index = pets.findIndex(p => p.id === petIdInput.value);
             if (index !== -1) {
                 pets[index] = petData;
-                showToast(`Updated ${petData.name}'s profile`, "success");
+                showToast(`อัปเดตโปรไฟล์ของ ${petData.name} เรียบร้อยแล้ว`, "success");
             }
         } else {
             // Add new
             pets.unshift(petData);
-            showToast(`Added ${petData.name} successfully`, "success");
+            showToast(`เพิ่มสัตว์เลี้ยง ${petData.name} สำเร็จ`, "success");
         }
 
         savePetsToLocal();
@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pets = pets.filter(p => p.id !== petToDeleteId);
             savePetsToLocal();
             renderPets();
-            showToast("Pet removed from your profile", "success");
+            showToast("ลบสัตว์เลี้ยงออกจากโปรไฟล์แล้ว", "success");
             closeDeleteModal();
         }
     });

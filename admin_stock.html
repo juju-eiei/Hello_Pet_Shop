@@ -5,7 +5,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Management - Hello Pet Shop</title>
+    <title>จัดการคลังสินค้า - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -209,39 +209,41 @@
         <!-- Main Content -->
         <main class="main-content">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
-                <h1 style="margin: 0;">Stock Management</h1>
+                <h1 style="margin: 0;">จัดการคลังสินค้า</h1>
                 <div style="display: flex; gap: 12px;" class="no-print">
-                    <button class="btn-po btn-po-secondary" id="stockHistoryBtn" onclick="openModal('stockHistoryModal')"><i class="fas fa-history"></i> Stock History</button>
-                    <button class="btn-po btn-po-secondary" id="poHistoryBtn" onclick="openModal('poHistoryModal')"><i class="fas fa-history"></i> PO History</button>
-                    <button class="btn-po btn-po-primary" id="createPoBtn" onclick="openModal('createPoModal')"><i class="fas fa-file-invoice"></i> Create PO</button>
+                    <button class="btn-po btn-po-secondary" id="stockHistoryBtn" onclick="openModal('stockHistoryModal')"><i class="fas fa-history"></i> ประวัติสต็อกสินค้า</button>
+                    <button class="btn-po btn-po-secondary" id="poHistoryBtn" onclick="openModal('poHistoryModal')"><i class="fas fa-history"></i> ประวัติการสั่งซื้อ (PO)</button>
+                    <button class="btn-po btn-po-primary" id="createPoBtn" onclick="openModal('createPoModal')"><i class="fas fa-file-invoice"></i> สร้างใบสั่งซื้อ (PO)</button>
                 </div>
             </div>
 
             <!-- Search -->
             <div class="search-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search products...">
+                <input type="text" id="searchInput" placeholder="ค้นหาสินค้า...">
             </div>
 
             <!-- Filters -->
             <div class="filter-tabs">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="low_stock">Low Stock</button>
-                <button class="filter-btn" data-filter="out_of_stock">Out of Stock</button>
+                <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
+                <button class="filter-btn" data-filter="low_stock">สต็อกต่ำ</button>
+                <button class="filter-btn" data-filter="out_of_stock">สินค้าหมด</button>
             </div>
 
             <!-- Table -->
             <div class="stock-table">
                 <div class="table-header">
-                    <span style="flex: 2;">Product Name</span>
-                    <span style="flex: 1; text-align: center;">Status</span>
-                    <span style="flex: 1; text-align: center;">Stock Quantity</span>
-                    <span style="flex: 1; text-align: right;">Actions</span>
+                    <span style="flex: 2;">ชื่อสินค้า</span>
+                    <span style="flex: 1; text-align: center;">สถานะ</span>
+                    <span style="flex: 1; text-align: center;">จำนวนสินค้าคงเหลือ</span>
+                    <span style="flex: 1; text-align: right;">การจัดการ</span>
                 </div>
                 <div id="productContainer">
                     <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
                 </div>
             </div>
+            <!-- Pagination -->
+            <div id="paginationContainer" class="pagination-container"></div>
         </main>
 
         <!-- Bottom Navigation -->
@@ -320,7 +322,7 @@
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn-po btn-po-secondary" onclick="closeModal('createPoModal')">ยกเลิก</button>
-                    <button class="btn-po btn-po-primary" onclick="submitPo()"><i class="fas fa-save"></i> บันทึกและเพิ่มสต็อก</button>
+                    <button class="btn-po btn-po-primary" onclick="submitPo()"><i class="fas fa-save"></i> บันทึกใบสั่งซื้อ (PO)</button>
                 </div>
             </div>
         </div>
@@ -343,10 +345,11 @@
                     <thead>
                         <tr>
                             <th style="width: 15%;">รหัสใบสั่งซื้อ</th>
-                            <th style="width: 25%;">วันที่สั่งซื้อ</th>
-                            <th style="width: 25%;">ชื่อผู้จำหน่าย</th>
+                            <th style="width: 20%;">วันที่สั่งซื้อ</th>
+                            <th style="width: 20%;">ชื่อผู้จำหน่าย</th>
                             <th style="width: 15%;">ราคาทุนรวม</th>
-                            <th style="width: 20%; text-align: right;">การดำเนินการ</th>
+                            <th style="width: 15%; text-align: center;">สถานะ</th>
+                            <th style="width: 15%; text-align: right;">การดำเนินการ</th>
                         </tr>
                     </thead>
                     <tbody id="poHistoryBody">
@@ -415,6 +418,8 @@
         let currentFilter = new URLSearchParams(window.location.search).get('filter') || 'all';
         if (!['all', 'low_stock', 'out_of_stock'].includes(currentFilter)) currentFilter = 'all';
         let currentKeyword = '';
+        let currentPage = 1;
+        const itemsPerPage = 20;
         let allProducts = [];
         let rowCounter = 0;
 
@@ -431,7 +436,8 @@
                 const response = await fetch(url);
                 const result = await response.json();
                 if (response.ok) {
-                    renderProducts(result.data || []);
+                    allProducts = result.data || [];
+                    renderProducts(allProducts);
                 } else {
                     if (response.status === 401 || response.status === 403) {
                         localStorage.removeItem('user');
@@ -448,12 +454,27 @@
 
         function renderProducts(products) {
             const container = document.getElementById('productContainer');
+            const paginationContainer = document.getElementById('paginationContainer');
             if (products.length === 0) {
                 container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบสินค้า</div>';
+                if (paginationContainer) paginationContainer.innerHTML = '';
                 return;
             }
 
-            container.innerHTML = products.map(p => {
+            // Pagination boundaries check
+            const totalPages = Math.ceil(products.length / itemsPerPage);
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedProducts = products.slice(startIndex, endIndex);
+
+            container.innerHTML = paginatedProducts.map(p => {
                 let statusClass = 'status-in-stock';
                 let statusText = 'In Stock';
                 const qty = parseInt(p.stock_qty) || 0;
@@ -489,7 +510,52 @@
                 </div>
                 `;
             }).join('');
+
+            renderPagination(products.length);
         }
+
+        function renderPagination(totalItems) {
+            const paginationContainer = document.getElementById('paginationContainer');
+            if (!paginationContainer) return;
+
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            html += `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="window.changePage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = startPage + maxVisiblePages - 1;
+
+            if (endPage > totalPages) {
+                endPage = totalPages;
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="window.changePage(${i})">${i}</button>`;
+            }
+
+            // Next button
+            html += `<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="window.changePage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+            paginationContainer.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderProducts(allProducts);
+        }
+
+        window.changePage = changePage;
+
 
         async function updateQty(id, newQty) {
             if (isNaN(newQty) || newQty < 0) {
@@ -524,6 +590,7 @@
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
             currentKeyword = e.target.value;
+            currentPage = 1;
             fetchProducts();
         });
 
@@ -532,6 +599,7 @@
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.filter;
+                currentPage = 1;
                 fetchProducts();
             });
         });
@@ -990,7 +1058,7 @@
             try {
                 Swal.fire({
                     title: 'กำลังบันทึกข้อมูลใบสั่งซื้อ',
-                    text: 'ระบบกำลังเพิ่มสต็อกสินค้าและบันทึกประวัติการปรับคลัง...',
+                    text: 'ระบบกำลังบันทึกข้อมูลใบสั่งซื้อสินค้า...',
                     allowOutsideClick: false,
                     didOpen: () => {
                         Swal.showLoading();
@@ -1003,7 +1071,7 @@
                     body: JSON.stringify({
                         employee_id: employeeId,
                         supplier_name: supplier,
-                        status: 'received',
+                        status: 'pending',
                         items: items
                     })
                 });
@@ -1013,7 +1081,7 @@
                     Swal.fire({
                         icon: 'success',
                         title: 'สำเร็จ',
-                        text: 'บันทึกใบสั่งซื้อและอัปเดตสต็อกเรียบร้อยแล้ว!',
+                        text: 'บันทึกใบสั่งซื้อสินค้าเรียบร้อยแล้ว!',
                         confirmButtonColor: '#314d2a'
                     }).then(() => {
                         closeModal('createPoModal');
@@ -1056,7 +1124,7 @@
         function renderPoHistory(orders) {
             const tbody = document.getElementById('poHistoryBody');
             if (!orders || orders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">ไม่พบประวัติการสั่งซื้อสินค้า</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">ไม่พบประวัติการสั่งซื้อสินค้า</td></tr>`;
                 return;
             }
             
@@ -1067,21 +1135,123 @@
                     hour: '2-digit', minute: '2-digit'
                 });
                 
+                const statusVal = parseInt(order.status);
+                let statusBadge = '';
+                let actionButtons = '';
+                
+                if (statusVal === 1) {
+                    statusBadge = `<span style="background-color: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 12px;">รอดำเนินการ</span>`;
+                    actionButtons = `
+                        <button class="btn-po btn-po-primary" style="padding: 4px 8px; font-size: 12px; background: linear-gradient(135deg, #10b981, #059669); color: white;" onclick="receivePoGoods(${order.restock_id})">
+                            <i class="fas fa-box-open"></i> นำสินค้าเข้าคลัง
+                        </button>
+                        <button class="btn-po btn-po-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="viewPoDocument(${order.restock_id})">
+                            <i class="fas fa-print"></i> พิมพ์ใบสั่งซื้อ
+                        </button>
+                    `;
+                } else {
+                    statusBadge = `<span style="background-color: #d1fae5; color: #059669; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 12px;">นำเข้าคลังแล้ว</span>`;
+                    actionButtons = `
+                        <button class="btn-po btn-po-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="viewPoDocument(${order.restock_id})">
+                            <i class="fas fa-print"></i> พิมพ์ใบรับเข้าสินค้า (GR)
+                        </button>
+                    `;
+                }
+                
                 return `
                     <tr>
                         <td>PO-${String(order.restock_id).padStart(5, '0')}</td>
                         <td>${formattedDate}</td>
                         <td>${order.supplier_name}</td>
                         <td>${parseFloat(order.total_cost).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท</td>
-                        <td style="text-align: right;">
-                            <button class="btn-po btn-po-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="viewPoDocument(${order.restock_id})">
-                                <i class="fas fa-print"></i> ดู/พิมพ์บิล
-                            </button>
+                        <td style="text-align: center;">${statusBadge}</td>
+                        <td style="text-align: right; display: flex; justify-content: flex-end; gap: 6px; align-items: center;">
+                            ${actionButtons}
                         </td>
                     </tr>
                 `;
             }).join('');
         }
+
+        async function receivePoGoods(restockId) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const confirmResult = await Swal.fire({
+                title: 'ยืนยันการนำสินค้าเข้าคลัง?',
+                text: 'ระบบจะเพิ่มจำนวนสินค้าเข้าสู่สต็อกจริง และบันทึกราคาทุนเฉลี่ยใหม่',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#314d2a',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'ยืนยันนำเข้าคลัง',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (!confirmResult.isConfirmed) return;
+
+            try {
+                Swal.fire({
+                    title: 'กำลังนำสินค้าเข้าคลัง',
+                    text: 'กรุณารอสักครู่...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                let employeeId = 1;
+                const resMe = await fetch(`/api/staff/me?user_id=${user.user_id}`);
+                if (resMe.ok) {
+                    const jsonMe = await resMe.json();
+                    if (jsonMe.data && jsonMe.data.employee_id) {
+                        employeeId = jsonMe.data.employee_id;
+                    }
+                }
+
+                const response = await fetch('/api/restock/receive', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        restock_id: restockId,
+                        employee_id: employeeId
+                    })
+                });
+
+                const result = await response.json();
+                Swal.close();
+
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ',
+                        text: 'นำสินค้าเข้าคลังเรียบร้อยแล้ว!',
+                        confirmButtonColor: '#314d2a'
+                    }).then(() => {
+                        fetchPoHistory();
+                        fetchProducts();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ล้มเหลว',
+                        text: result.message || 'เกิดข้อผิดพลาดในการนำเข้าสินค้า',
+                        confirmButtonColor: '#314d2a'
+                    });
+                }
+            } catch (error) {
+                Swal.close();
+                console.error(error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาด',
+                    text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้',
+                    confirmButtonColor: '#314d2a'
+                });
+            }
+        }
+        window.receivePoGoods = receivePoGoods;
 
         async function viewPoDocument(id) {
             try {
@@ -1141,6 +1311,32 @@
             const totalCost = parseFloat(order.total_cost) || 0;
             const totalCostText = thaiBahtText(totalCost);
             
+            const statusVal = parseInt(order.status);
+            const docTitle = statusVal === 1 ? 'ใบสั่งซื้อสินค้า (Purchase Order / PO)' : 'ใบรับเข้าสินค้า (Goods Receipt / GR)';
+            const supplierStatusText = statusVal === 1 ? 'รอดำเนินการ (Pending)' : 'ได้รับสินค้าแล้ว (Received)';
+            const footerNote = statusVal === 1 
+                ? '* เอกสารฉบับนี้พิมพ์ขึ้นโดยระบบคลังสินค้า Hello Pet Shop มีผลผูกพันเป็นหลักฐานในการสั่งซื้อสินค้า *'
+                : '* เอกสารฉบับนี้พิมพ์ขึ้นโดยระบบคลังสินค้า Hello Pet Shop มีผลผูกพันเป็นหลักฐานในการรับของและสต็อกอัตโนมัติ *';
+            
+            let staffDetailsHtml = '';
+            if (statusVal === 1) {
+                staffDetailsHtml = `
+                    <strong style="color: #314d2a; display: block; margin-bottom: 6px;">ผู้สั่งซื้อสินค้า / Creator</strong>
+                    <div style="font-size: 13px;">
+                        <strong>ชื่อพนักงาน:</strong> ${order.employee_name || 'ไม่ระบุ'}<br>
+                        <strong>ตำแหน่ง:</strong> เจ้าหน้าที่จัดซื้อสินค้า<br>
+                    </div>
+                `;
+            } else {
+                staffDetailsHtml = `
+                    <strong style="color: #314d2a; display: block; margin-bottom: 6px;">ข้อมูลเจ้าหน้าที่ / Staff</strong>
+                    <div style="font-size: 13px;">
+                        <strong>ชื่อผู้สั่งซื้อ:</strong> ${order.employee_name || 'ไม่ระบุ'}<br>
+                        <strong>ชื่อผู้รับเข้าคลัง:</strong> ${order.receiver_name || 'ไม่ระบุ'}<br>
+                    </div>
+                `;
+            }
+
             container.innerHTML = `
                 <div style="font-family: 'Sarabun', 'Kanit', sans-serif; font-size: 14px; line-height: 1.6; color: #000;">
                     <!-- Header -->
@@ -1155,7 +1351,7 @@
                             </p>
                         </div>
                         <div style="text-align: right;">
-                            <h2 style="margin: 0 0 5px 0; font-size: 18px; color: #314d2a;">ใบสั่งซื้อสินค้า / ใบรับเข้าสต็อก</h2>
+                            <h2 style="margin: 0 0 5px 0; font-size: 18px; color: #314d2a;">${docTitle}</h2>
                             <p style="margin: 0; font-size: 13px; font-weight: bold; color: #475569;">เลขที่: PO-${String(order.restock_id).padStart(5, '0')}</p>
                             <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">วันที่: ${formattedDate}</p>
                         </div>
@@ -1167,15 +1363,11 @@
                             <strong style="color: #314d2a; display: block; margin-bottom: 6px;">ผู้จัดจำหน่าย / Supplier</strong>
                             <div style="font-size: 13px;">
                                 <strong>ชื่อบริษัท/คู่ค้า:</strong> ${order.supplier_name}<br>
-                                <strong>สถานะการรับของ:</strong> ได้รับสินค้าแล้ว (Received)<br>
+                                <strong>สถานะสั่งซื้อ:</strong> ${supplierStatusText}<br>
                             </div>
                         </div>
                         <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px;">
-                            <strong style="color: #314d2a; display: block; margin-bottom: 6px;">ผู้รับสินค้า / Receiver</strong>
-                            <div style="font-size: 13px;">
-                                <strong>ชื่อพนักงาน:</strong> ${order.employee_name || 'ไม่ระบุ'}<br>
-                                <strong>ตำแหน่ง:</strong> พนักงานจัดการสต็อกคลังสินค้า<br>
-                            </div>
+                            ${staffDetailsHtml}
                         </div>
                     </div>
                     
@@ -1222,7 +1414,7 @@
                     
                     <!-- Terms or footer note -->
                     <div style="margin-top: 50px; border-top: 1px dashed #cbd5e1; padding-top: 10px; font-size: 11px; color: #64748b; text-align: center;">
-                        * เอกสารฉบับนี้พิมพ์ขึ้นโดยระบบคลังสินค้า Hello Pet Shop มีผลผูกพันเป็นหลักฐานในการรับของและสต็อกอัตโนมัติ *
+                        ${footerNote}
                     </div>
                 </div>
             `;
@@ -1362,6 +1554,17 @@
                 btn.classList.add('active');
             }
         });
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.addPoRow = addPoRow;
+        window.removePoRow = removePoRow;
+        window.handleProductSelect = handleProductSelect;
+        window.updateRowTotal = updateRowTotal;
+        window.submitPo = submitPo;
+        window.fetchPoHistory = fetchPoHistory;
+        window.fetchStockHistory = fetchStockHistory;
+        window.handleOcrFileSelect = handleOcrFileSelect;
+
         checkAuth();
         fetchProducts();
     </script>

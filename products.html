@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products - Hello Pet Shop</title>
+    <title>รายการสินค้า - Hello Pet Shop</title>
     <!-- Use Vite to load styles -->
     <script type="module" src="/src/js/main.js"></script>
     <script type="module" src="/src/js/products.js"></script>
@@ -42,11 +42,11 @@
                 
                 <!-- Nav Links -->
                 <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
-                    <a href="/home" class="text-white font-bold pb-1 border-b-2 border-white">Home</a>
-                    <a href="/products" class="hover:text-gray-200 transition-colors hidden">Products</a>
-                    <a href="/my-pets" class="hover:text-gray-200 transition-colors">My Pets</a>
-                    <a href="/order-history" class="hover:text-gray-200 transition-colors">Order History</a>
-                    <a href="/contact" class="hover:text-gray-200 transition-colors">Contact Us</a>
+                    <a href="/home" class="text-white font-bold pb-1 border-b-2 border-white">หน้าแรก</a>
+                    <a href="/products" class="hover:text-gray-200 transition-colors hidden">สินค้า</a>
+                    <a href="/my-pets" class="hover:text-gray-200 transition-colors">สัตว์เลี้ยงของฉัน</a>
+                    <a href="/order-history" class="hover:text-gray-200 transition-colors">ประวัติคำสั่งซื้อ</a>
+                    <a href="/contact" class="hover:text-gray-200 transition-colors">ติดต่อเรา</a>
                 </div>
             </div>
 
@@ -86,22 +86,22 @@
             <div class="max-w-[55rem] mx-auto">
                 <div class="relative">
                     <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-[#88aed4] text-lg pointer-events-none"></i>
-                    <input type="text" id="productSearch" placeholder="Search  for products" 
+                    <input type="text" id="productSearch" placeholder="ค้นหาสินค้า..." 
                         class="w-full pl-12 pr-4 py-3 search-blue rounded-xl outline-none text-[#5c88b5] placeholder-[#88aed4] focus:ring-2 focus:ring-blue-100 transition-all">
                 </div>
                 
                 <!-- Category Filter -->
                 <div class="flex justify-start space-x-4 mt-6">
-                    <button class="category-btn px-5 py-1.5 search-blue text-gray-800 text-sm font-medium rounded-lg hover:bg-blue-200 transition-all" data-category="Dog">Dog</button>
-                    <button class="category-btn px-5 py-1.5 search-blue text-gray-800 text-sm font-medium rounded-lg hover:bg-blue-200 transition-all" data-category="Cat">Cat</button>
-                    <button class="category-btn px-5 py-1.5 search-blue text-gray-800 text-sm font-medium rounded-lg hover:bg-blue-200 transition-all" data-category="Bird">Bird</button>
+                    <button class="category-btn px-5 py-1.5 search-blue text-gray-800 text-sm font-medium rounded-lg hover:bg-blue-200 transition-all" data-category="Dog">สุนัข</button>
+                    <button class="category-btn px-5 py-1.5 search-blue text-gray-800 text-sm font-medium rounded-lg hover:bg-blue-200 transition-all" data-category="Cat">แมว</button>
+                    <button class="category-btn px-5 py-1.5 search-blue text-gray-800 text-sm font-medium rounded-lg hover:bg-blue-200 transition-all" data-category="Bird">นก</button>
                 </div>
             </div>
         </div>
 
         <!-- Featured Products -->
         <section class="mb-12">
-            <h2 class="text-2xl font-bold text-gray-800 mb-8 ml-2">Featured Products</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-8 ml-2">สินค้าแนะนำ</h2>
             
             <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-10">
                 <!-- Product cards will be loaded here via JS -->

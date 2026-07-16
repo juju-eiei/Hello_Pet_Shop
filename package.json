@@ -26,5 +26,8 @@
     "tailwindcss": "^4.2.2",
     "vite": "^8.0.3",
     "vite-plugin-full-reload": "^1.2.0"
+  },
+  "dependencies": {
+    "puppeteer": "^25.2.1"
   }
 }

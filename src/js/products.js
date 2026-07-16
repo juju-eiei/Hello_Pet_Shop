@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 allProducts = result.data;
                 renderProducts();
             } else {
-                showToast("Failed to load products", "error");
+                showToast("โหลดสินค้าไม่สำเร็จ", "error");
             }
         } catch (error) {
             console.error("Error fetching products:", error);
-            showToast("Connection error", "error");
+            showToast("การเชื่อมต่อมีปัญหา", "error");
         }
     }
 
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             productGrid.innerHTML = `
                 <div class="col-span-full py-20 text-center text-gray-500">
                     <i class="fas fa-box-open text-4xl mb-4 block"></i>
-                    No products found.
+                    ไม่พบสินค้า
                 </div>
             `;
             return;
@@ -52,16 +52,17 @@ document.addEventListener('DOMContentLoaded', () => {
         productGrid.innerHTML = filtered.map(p => `
             <div class="product-card group cursor-pointer">
                 <div class="relative aspect-square bg-[#f8f9fa] rounded-3xl overflow-hidden mb-4 shadow-sm group-hover:shadow-md transition-all">
-                    <img src="${p.image_url || 'https://placehold.co/400x400?text=' + encodeURIComponent(p.product_name)}" 
+                    <img src="${p.image_url || '/image/non-image.png'}" 
                         alt="${p.product_name}" 
+                        onerror="this.src='/image/non-image.png'"
                         class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500">
                 </div>
                 <div class="text-center px-1">
                     <h3 class="text-sm font-semibold text-gray-800 mb-1 leading-tight h-10 line-clamp-2">${p.product_name}</h3>
                     <p class="text-blue-500 font-bold text-sm mb-3">฿${parseFloat(p.selling_price).toFixed(2)}</p>
                     <button class="add-to-cart-btn w-full py-2 btn-green text-white rounded-lg text-xs font-semibold shadow-sm active:scale-95 transition-all"
-                        data-id="${p.product_id}" data-name="${p.product_name}" data-price="${p.selling_price}" data-image="${p.image_url || 'https://placehold.co/400x400?text=' + encodeURIComponent(p.product_name)}">
-                        Add to Cart
+                        data-id="${p.product_id}" data-name="${p.product_name}" data-price="${p.selling_price}" data-image="${p.image_url || '/image/non-image.png'}">
+                        หยิบใส่ตะกร้า
                     </button>
                 </div>
             </div>
@@ -90,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         localStorage.setItem('cart', JSON.stringify(cart));
         updateGlobalCartCount();
-        showToast(`Added ${product.name} to cart`, "success");
+        showToast(`เพิ่ม ${product.name} ลงในตะกร้าแล้ว`, "success");
     }
 
     // 4. Listeners

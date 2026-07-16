@@ -5,7 +5,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Product - Hello Pet Shop</title>
+    <title>แก้ไขข้อมูลสินค้า - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -16,6 +16,17 @@
         }
     </script>
 <script type="module" src="/src/js/main.js"></script>
+<style>
+    @keyframes pulseScan {
+        0% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.8; }
+    }
+    .scan-icon-pulse {
+        animation: pulseScan 1.5s infinite ease-in-out;
+        display: inline-block;
+    }
+</style>
 </head>
 <body class="preload">
     <div class="admin-wrapper">
@@ -61,6 +72,11 @@
                             </div>
 
                             <div class="form-group">
+                                <label>Cost Price (฿)</label>
+                                <input type="number" step="0.01" name="cost_price" id="pCostPrice" required value="0">
+                            </div>
+
+                            <div class="form-group">
                                 <label>Price (฿)</label>
                                 <input type="number" step="0.01" name="price" id="pPrice" required>
                             </div>
@@ -71,8 +87,16 @@
                             </div>
                             
                             <div class="form-group">
-                                <label>Weight (e.g. 5kg, 500g)</label>
-                                <input type="text" name="weight" id="pWeight">
+                                <label>Weight / Volume</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="number" step="0.001" min="0" name="weight_value" id="pWeightValue" required style="flex: 2;">
+                                    <select name="weight_unit" id="pWeightUnit" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 14px; color: #1e293b; outline: none; background-color: #fff;">
+                                        <option value="kg">kg (กิโลกรัม)</option>
+                                        <option value="g">g (กรัม)</option>
+                                        <option value="L">L (ลิตร)</option>
+                                        <option value="ml">ml (มิลลิลิตร)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -81,7 +105,7 @@
                             <div class="form-group">
                                 <label>Product Image</label>
                                 <div class="image-preview-container">
-                                    <img id="imgPreview" src="" class="preview-img" onerror="this.src='https://via.placeholder.com/300/f8fafc/718096?text=No+Image'">
+                                    <img id="imgPreview" src="/image/non-image.png" class="preview-img" onerror="this.src='/image/non-image.png'">
                                     <div class="upload-selector">
                                         <button type="button" class="upload-mode-btn active" id="modeUrl" onclick="switchUploadMode('url')">Use URL</button>
                                         <button type="button" class="upload-mode-btn" id="modeFile" onclick="switchUploadMode('file')">Upload File</button>
@@ -94,6 +118,14 @@
                             <div class="form-group">
                                 <label>Barcode</label>
                                 <input type="text" name="barcode" id="pBarcode">
+                                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                    <button type="button" onclick="generateRandomBarcode()" class="action-link" style="flex: 1; padding: 8px 12px; background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 0.2s; outline: none; border-style: solid;">
+                                        <i class="fas fa-random"></i> สุ่มบาร์โค้ด
+                                    </button>
+                                    <button type="button" onclick="startBarcodeScan()" class="action-link" style="flex: 1; padding: 8px 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; font-size: 13px; font-weight: 600; color: #2563eb; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 0.2s; outline: none; border-style: solid;">
+                                        <i class="fas fa-barcode"></i> ยิงบาร์โค้ด
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -124,6 +156,25 @@
                 <button class="modal-btn modal-btn-cancel" onclick="closeModal()">ยกเลิก</button>
                 <button class="modal-btn modal-btn-confirm" id="confirmModalBtn">ตกลง</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal for Barcode Scanning -->
+    <div id="barcodeScanModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="modal-card" style="text-align: center; max-width: 420px; padding: 36px 28px; display: flex; flex-direction: column; align-items: center;">
+            <div style="font-size: 54px; color: #2563eb; margin-bottom: 24px;" class="scan-icon-pulse">
+                <i class="fas fa-barcode"></i>
+            </div>
+            <div class="modal-title" style="margin-bottom: 14px; font-size: 20px; font-weight: 700; color: #1e293b;">พร้อมรับสัญญาณสแกนบาร์โค้ด</div>
+            <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 24px; margin-top: 0;">
+                กรุณานำเครื่องสแกนเนอร์มายิงที่รหัสบาร์โค้ดของสินค้า<br>
+                ระบบจะตรวจจับและนำเข้ารหัสโดยอัตโนมัติทันที
+            </p>
+            <input type="text" id="barcodeScanInput" style="opacity: 0; position: absolute; top: -1000px;" autocomplete="off">
+            <div style="font-size: 12px; color: #10b981; font-weight: 600; background-color: #ecfdf5; padding: 4px 12px; border-radius: 20px; border: 1px solid #a7f3d0; margin-bottom: 20px; display: flex; align-items: center; gap: 6px;" id="scanStatusText">
+                <i class="fas fa-circle" style="font-size: 8px; animation: pulseScan 1s infinite;"></i> ระบบเปิดช่องสัญญาณรอรับข้อมูล...
+            </div>
+            <button type="button" class="modal-btn modal-btn-cancel" onclick="closeBarcodeScanModal()" style="width: 100%; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; padding: 12px; border-radius: 8px; font-weight: 600; transition: all 0.2s;">ยกเลิก</button>
         </div>
     </div>
 
@@ -162,8 +213,10 @@
             document.getElementById('pName').value = p.product_name;
             document.getElementById('pCategory').value = p.category_id;
             document.getElementById('pPrice').value = p.selling_price;
+            document.getElementById('pCostPrice').value = p.cost_price;
             document.getElementById('pStock').value = p.stock_qty;
-            document.getElementById('pWeight').value = p.weight;
+            document.getElementById('pWeightValue').value = p.weight_value !== null ? p.weight_value : '';
+            document.getElementById('pWeightUnit').value = p.weight_unit || 'kg';
             document.getElementById('pBarcode').value = p.barcode;
             document.getElementById('pDesc').value = p.description;
             
@@ -183,12 +236,8 @@
 
         function previewImage(url) {
             const img = document.getElementById('imgPreview');
-            if (url) {
-                img.src = url;
-                img.style.display = 'block';
-            } else {
-                img.style.display = 'none';
-            }
+            img.src = url || '/image/non-image.png';
+            img.style.display = 'block';
         }
 
         function previewFile(input) {
@@ -279,6 +328,17 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             
+            // Calculate kg weight for shipping
+            const val = parseFloat(document.getElementById('pWeightValue').value) || 0;
+            const unit = document.getElementById('pWeightUnit').value;
+            let kgWeight = 0;
+            if (unit === 'kg' || unit === 'L') {
+                kgWeight = val;
+            } else if (unit === 'g' || unit === 'ml') {
+                kgWeight = val / 1000;
+            }
+            formData.set('weight', kgWeight);
+            
             // If in URL mode, make sure file is removed or clarified
             if (uploadMode === 'url') formData.set('image', '');
 
@@ -328,6 +388,92 @@
         });
 
         const lBtn = document.getElementById('logoutBtn'); if (lBtn) lBtn.addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('user'); window.location.href = 'login.html'; });
+
+        // --- Barcode Utilities ---
+        function generateEAN13CheckDigit(digits12) {
+            let sum = 0;
+            for (let i = 0; i < 12; i++) {
+                let digit = parseInt(digits12.charAt(i), 10);
+                if (i % 2 === 0) {
+                    sum += digit;
+                } else {
+                    sum += digit * 3;
+                }
+            }
+            return (10 - (sum % 10)) % 10;
+        }
+
+        function generateRandomBarcode() {
+            let code = "20";
+            for (let i = 0; i < 10; i++) {
+                code += Math.floor(Math.random() * 10);
+            }
+            code += generateEAN13CheckDigit(code);
+            document.getElementById('pBarcode').value = code;
+            showToast("สุ่มรหัสบาร์โค้ดสำเร็จ: " + code, "success");
+        }
+
+        let isScanning = false;
+        let keepFocusInterval = null;
+
+        function startBarcodeScan() {
+            isScanning = true;
+            const modal = document.getElementById('barcodeScanModal');
+            const input = document.getElementById('barcodeScanInput');
+            const statusText = document.getElementById('scanStatusText');
+            
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+            statusText.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; animation: pulseScan 1.5s infinite;"></i> ระบบเปิดช่องสัญญาณรอรับข้อมูล...';
+            input.value = '';
+            
+            setTimeout(() => input.focus(), 100);
+
+            // Constantly keep focusing input
+            keepFocusInterval = setInterval(() => {
+                if (isScanning && document.activeElement !== input) {
+                    input.focus();
+                }
+            }, 100);
+
+            const handleInputKeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const barcode = input.value.trim();
+                    if (barcode) {
+                        document.getElementById('pBarcode').value = barcode;
+                        showToast("สแกนบาร์โค้ดสำเร็จ: " + barcode, "success");
+                        closeBarcodeScanModal();
+                    }
+                }
+            };
+            input.addEventListener('keydown', handleInputKeydown);
+
+            modal.cleanup = () => {
+                if (keepFocusInterval) {
+                    clearInterval(keepFocusInterval);
+                    keepFocusInterval = null;
+                }
+                input.removeEventListener('keydown', handleInputKeydown);
+            };
+        }
+
+        function closeBarcodeScanModal() {
+            isScanning = false;
+            const modal = document.getElementById('barcodeScanModal');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+            if (modal.cleanup) {
+                modal.cleanup();
+            }
+        }
+
+        window.generateRandomBarcode = generateRandomBarcode;
+        window.startBarcodeScan = startBarcodeScan;
+        window.closeBarcodeScanModal = closeBarcodeScanModal;
+        // -------------------------
 
         init();
     </script>
