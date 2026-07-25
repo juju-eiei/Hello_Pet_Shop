@@ -26,8 +26,8 @@
             <span class="text-xl font-bold tracking-tight text-gray-800 whitespace-nowrap sm:hidden">Pet Shop</span>
         </div>
         <div class="flex items-center space-x-3 sm:space-x-6">
-            <a href="/products" class="text-sm sm:text-base text-gray-600 hover:text-primary-600 font-medium transition-colors whitespace-nowrap">สินค้า</a>
-            <a href="/login" class="whitespace-nowrap text-sm sm:text-base px-4 py-2 sm:px-5 sm:py-2.5 bg-primary-600 text-white rounded-lg font-semibold shadow-md hover:shadow-lg hover:bg-primary-700 transition-all">เข้าสู่ระบบ</a>
+            <a href="products.html" class="text-sm sm:text-base text-gray-600 hover:text-primary-600 font-medium transition-colors whitespace-nowrap">สินค้า</a>
+            <a href="login.html" class="whitespace-nowrap text-sm sm:text-base px-4 py-2 sm:px-5 sm:py-2.5 bg-primary-600 text-white rounded-lg font-semibold shadow-md hover:shadow-lg hover:bg-primary-700 transition-all">เข้าสู่ระบบ</a>
         </div>
     </nav>
 
@@ -91,7 +91,7 @@
                 </button>
 
                 <div class="text-center pt-2">
-                    <a href="/login" class="text-gray-500 hover:text-primary-600 transition-colors text-sm">
+                    <a href="login.html" class="text-gray-500 hover:text-primary-600 transition-colors text-sm">
                         มีบัญชีอยู่แล้วใช่หรือไม่? <span class="text-primary-600 font-semibold underline underline-offset-4">เข้าสู่ระบบ</span>
                     </a>
                 </div>
@@ -130,7 +130,7 @@
                 if (response.ok) {
                     showToast("สมัครสมาชิกสำเร็จ! กำลังพาไปหน้า Login...", "success");
                     setTimeout(() => {
-                        window.location.href = '/login';
+                        window.location.href = 'login.html';
                     }, 1500);
                 } else {
                     showToast(result.message || "การสมัครสมาชิกไม่สำเร็จ", "error");

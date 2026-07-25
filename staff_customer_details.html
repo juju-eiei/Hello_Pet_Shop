@@ -388,6 +388,11 @@
                     </div>
                     
                     <div class="form-group full">
+                        <label class="form-label">หมายเหตุ (Notes)</label>
+                        <textarea class="form-control" id="petNotes" rows="2" placeholder="Leave blank if none"></textarea>
+                    </div>
+                    
+                    <div class="form-group full">
                         <label class="form-label">Pet Image</label>
                         <div style="display: flex; align-items: center; gap: 16px;">
                             <div id="petImagePreviewContainer" style="width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
@@ -577,10 +582,11 @@
                     <div class="pet-info">
                         <div><i class="fas fa-weight-hanging" style="width:16px; color:#94a3b8;"></i> ${p.weight ? p.weight + ' kg' : 'Unspecified'}</div>
                         <div><i class="fas fa-birthday-cake" style="width:16px; color:#94a3b8;"></i> ${p.birthdate || 'Unknown'} (${ageStr})</div>
-                        ${p.allergy_info ? 
-                            `<div style="color: #ef4444; margin-top: 8px; padding-top: 12px; border-top: 1px dashed #e2e8f0; font-weight:500;">
-                                <i class="fas fa-exclamation-circle" style="width:16px;"></i> ${p.allergy_info}
-                            </div>` 
+                        ${p.allergy_info || p.notes ? 
+                            `<div style="margin-top: 8px; padding-top: 12px; border-top: 1px dashed #e2e8f0; display: flex; flex-direction: column; gap: 6px;">
+                                ${p.allergy_info ? `<div style="color: #ef4444; font-weight:500;"><i class="fas fa-exclamation-circle" style="width:16px;"></i> ${p.allergy_info}</div>` : ''}
+                                ${p.notes ? `<div style="color: #475569;"><i class="fas fa-sticky-note" style="width:16px; color:#94a3b8;"></i> หมายเหตุ: ${p.notes}</div>` : ''}
+                            </div>`
                             : ''
                         }
                     </div>
@@ -660,6 +666,7 @@
                 document.getElementById('petBirthdate').value = p.birthdate || '';
                 document.getElementById('petWeight').value = p.weight || '';
                 document.getElementById('petAllergy').value = p.allergy_info || '';
+                document.getElementById('petNotes').value = p.notes || '';
                 
                 if (p.image_url) {
                     if (previewEl) {
@@ -672,6 +679,7 @@
             } else {
                 document.getElementById('modalTitle').textContent = 'Add Pet';
                 document.getElementById('petId').value = '0';
+                document.getElementById('petNotes').value = '';
             }
 
             document.getElementById('petModal').classList.add('active');
@@ -693,6 +701,7 @@
             formData.append('birthdate', document.getElementById('petBirthdate').value);
             formData.append('weight', document.getElementById('petWeight').value);
             formData.append('allergy_info', document.getElementById('petAllergy').value);
+            formData.append('notes', document.getElementById('petNotes').value);
             
             if (selectedPetImageFile) {
                 formData.append('pet_image', selectedPetImageFile);

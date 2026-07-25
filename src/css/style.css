@@ -55,3 +55,11 @@ body {
     box-shadow: none !important;
 }
 
+/* Sticky top navbar across all pages */
+header.nav-green, header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+

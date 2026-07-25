@@ -16,11 +16,11 @@ import puppeteer from 'puppeteer';
         
         await page.waitForNavigation();
         await page.goto('http://localhost:5173/admin_staff.html');
-        await page.waitForSelector('.staff-tab');
+        await page.waitForSelector('.filter-btn');
         
         // Click Details tab
         await page.evaluate(() => {
-            const tab = document.querySelector('.staff-tab[data-tab="salary"]');
+            const tab = document.querySelector('.filter-btn[data-tab="salary"]');
             if (tab) tab.click();
         });
         

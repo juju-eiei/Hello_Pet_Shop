@@ -59,4 +59,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // Refresh navbar avatar & cart
     updateNavProfile();
     updateGlobalCartCount();
+
+    // Dynamic Profile Dropdown Toggle
+    const profileBtn = document.getElementById('navProfileMenuBtn');
+    const profileDropdown = document.getElementById('navProfileDropdown');
+    if (profileBtn && profileDropdown) {
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('hidden');
+        });
+        document.addEventListener('click', (e) => {
+            if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Global Logout Handler for Customer pages
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('user');
+            localStorage.removeItem('cart');
+            window.location.href = 'login.html';
+        });
+    }
 });

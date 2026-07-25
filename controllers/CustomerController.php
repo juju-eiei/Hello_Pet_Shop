@@ -133,6 +133,7 @@ class CustomerController {
             $birthdate = !empty($data['birthdate']) ? trim($data['birthdate']) : null;
             $weight = isset($data['weight']) && $data['weight'] !== '' ? (float)$data['weight'] : null;
             $allergy = isset($data['allergy_info']) ? trim($data['allergy_info']) : null;
+            $notes = isset($data['notes']) ? trim($data['notes']) : null;
             $imageUrl = isset($data['image_url']) ? trim($data['image_url']) : null;
 
             // Handle Image Upload
@@ -159,15 +160,15 @@ class CustomerController {
                 }
 
                 // UPDATE
-                $qUpdate = "UPDATE pets SET pet_name=?, pet_type=?, breed=?, birthdate=?, weight=?, allergy_info=?, image_url=? WHERE pet_id=? AND customer_id=?";
+                $qUpdate = "UPDATE pets SET pet_name=?, pet_type=?, breed=?, birthdate=?, weight=?, allergy_info=?, notes=?, image_url=? WHERE pet_id=? AND customer_id=?";
                 $stmt = $this->db->prepare($qUpdate);
-                $stmt->execute([$name, $type, $breed, $birthdate, $weight, $allergy, $imageUrl, $petId, $customerId]);
+                $stmt->execute([$name, $type, $breed, $birthdate, $weight, $allergy, $notes, $imageUrl, $petId, $customerId]);
                 Response::json(200, "Pet updated successfully");
             } else {
                 // INSERT
-                $qInsert = "INSERT INTO pets (customer_id, pet_name, pet_type, breed, birthdate, weight, allergy_info, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                $qInsert = "INSERT INTO pets (customer_id, pet_name, pet_type, breed, birthdate, weight, allergy_info, notes, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $stmt = $this->db->prepare($qInsert);
-                $stmt->execute([$customerId, $name, $type, $breed, $birthdate, $weight, $allergy, $imageUrl]);
+                $stmt->execute([$customerId, $name, $type, $breed, $birthdate, $weight, $allergy, $notes, $imageUrl]);
                 Response::json(201, "Pet added successfully");
             }
 

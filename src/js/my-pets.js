@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const petBreedInput = document.getElementById('petBreed');
     const petBirthDateInput = document.getElementById('petBirthDate');
     const petWeightInput = document.getElementById('petWeight');
+    const petNotesInput = document.getElementById('petNotes');
     const petImageInput = document.getElementById('petImageInput');
     const petImagePreview = document.getElementById('petImagePreview');
     const petImagePlaceholder = document.getElementById('petImagePlaceholder');
@@ -111,6 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="text-sm text-gray-700 font-medium">${pet.weight ? pet.weight + ' กก.' : '-'}</div>
                     </div>
                 </div>
+                ${pet.notes ? `
+                <div class="mt-3 pt-3 border-t border-dashed border-gray-100">
+                    <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">หมายเหตุ</div>
+                    <div class="text-sm text-gray-600 font-medium leading-relaxed">${pet.notes}</div>
+                </div>
+                ` : ''}
             `;
             petsGrid.appendChild(card);
         });
@@ -166,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (pet.breed) petBreedInput.value = pet.breed;
                 if (pet.birthDate) petBirthDateInput.value = pet.birthDate;
                 if (pet.weight) petWeightInput.value = pet.weight;
+                if (pet.notes) petNotesInput.value = pet.notes;
                 
                 if (pet.image) {
                     currentTempImageSrc = pet.image;
@@ -260,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
             breed: petBreedInput.value.trim(),
             birthDate: petBirthDateInput.value,
             weight: petWeightInput.value,
+            notes: petNotesInput.value.trim(),
             image: currentTempImageSrc,
             createdAt: petIdInput.value ? pets.find(p => p.id === petIdInput.value).createdAt : new Date().toISOString()
         };

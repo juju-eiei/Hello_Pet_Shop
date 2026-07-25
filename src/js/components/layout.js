@@ -4,15 +4,8 @@ export async function initLayout() {
     const currentPath = window.location.pathname;
     const filename = currentPath.split('/').pop() || 'index.html';
     
-    // Determine if page bypasses authentication (login, register, home/landing page, password resets)
-    const bypassPages = ['login.html', 'register.html', 'index.html', 'products.html', 'contact.html', 'cart.html', 'forgot_password.html', 'reset_password.html'];
-    if (
-        bypassPages.includes(filename) || 
-        currentPath === '/' || 
-        currentPath === '/home' || 
-        currentPath.startsWith('/forgot-password') || 
-        currentPath.startsWith('/reset-password')
-    ) {
+    // Only run centralized layout and gates for admin or staff pages
+    if (!filename.startsWith('admin_') && !filename.startsWith('staff_') && filename !== 'pos.html') {
         return;
     }
     

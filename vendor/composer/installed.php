@@ -3,7 +3,7 @@
         'name' => 'hello-pet-shop/backend',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '21d54a07897c509a95fa32aaf56cd698c98d25a1',
+        'reference' => '6d8a6ca51be9f4c4c01419974633bb94eefda21a',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -22,7 +22,7 @@
         'hello-pet-shop/backend' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '21d54a07897c509a95fa32aaf56cd698c98d25a1',
+            'reference' => '6d8a6ca51be9f4c4c01419974633bb94eefda21a',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

@@ -12,25 +12,26 @@
     <style>
         body { font-family: 'Outfit', 'Kanit', sans-serif; }
         .nav-green { background-color: #2d5a27; }
-        .search-blue { background-color: #d8eafa; }
+        .btn-green { background-color: #8bb35c; }
+        .btn-green:hover { background-color: #7a9e4f; }
     </style>
 <script type="module" src="/src/js/i18n.js"></script>
 </head>
-<body class="bg-white min-h-screen">
+<body class="bg-gradient-to-br from-gray-50 via-slate-50 to-green-50/30 min-h-screen flex flex-col">
     <!-- Role Check script -->
     <script>
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user || user.role_name.toLowerCase() !== 'customer') {
-            // window.location.href = '/login';
+            // window.location.href = 'login.html';
         }
     </script>
 
     <!-- Header / Navbar -->
-    <header class="nav-green text-white shadow-md">
+    <header class="nav-green text-white shadow-md sticky top-0 z-50">
         <nav class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-6">
                 <!-- Logo -->
-                <a href="/home" class="flex items-center space-x-2 hover:opacity-90 transition-opacity">
+                <a href="products.html" class="flex items-center space-x-2 hover:opacity-90 transition-opacity">
                     <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#2d5a27]">
                         <i class="fas fa-paw text-lg"></i>
                     </div>
@@ -39,16 +40,15 @@
                 
                 <!-- Nav Links -->
                 <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
-                    <a href="/home" class="hover:text-gray-200 transition-colors">หน้าแรก</a>
-                    <a href="/my-pets" class="hover:text-gray-200 transition-colors">สัตว์เลี้ยงของฉัน</a>
-                    <a href="/order-history" class="hover:text-gray-200 transition-colors">ประวัติคำสั่งซื้อ</a>
-                    <a href="/contact" class="hover:text-gray-200 transition-colors">ติดต่อเรา</a>
+                    <a href="products.html" class="hover:text-gray-200 transition-colors">หน้าแรก</a>
+                    <a href="my-pets.html" class="hover:text-gray-200 transition-colors">สัตว์เลี้ยงของฉัน</a>
+                    <a href="order-history.html" class="hover:text-gray-200 transition-colors">ประวัติคำสั่งซื้อ</a>
                 </div>
             </div>
 
             <!-- Right side icons -->
             <div class="flex items-center space-x-8">
-                <a href="/cart" class="relative hover:text-gray-200 transition-colors block">
+                <a href="cart.html" class="relative hover:text-gray-200 transition-colors block">
                     <i class="fas fa-shopping-basket text-xl"></i>
                     <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full hidden">0</span>
                 </a>
@@ -62,7 +62,7 @@
                     
                     <!-- Dropdown Menu -->
                     <div id="navProfileDropdown" class="absolute right-0 mt-3 w-44 bg-white rounded-xl shadow-xl py-2 border border-gray-100 hidden z-50 transform origin-top-right transition-all">
-                        <a href="/profile" class="block px-4 py-2.5 text-[15px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        <a href="profile.html" class="block px-4 py-2.5 text-[15px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                             <i class="fa-regular fa-user mr-2 text-gray-500"></i> ข้อมูลโปรไฟล์
                         </a>
                         <div class="border-t border-gray-100 my-1"></div>
@@ -76,76 +76,288 @@
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-4xl mx-auto px-4 py-8">
-        <!-- Profile Header Central Section -->
-        <div class="flex flex-col items-center">
-            <!-- Profile Image -->
-            <div class="relative w-[120px] h-[120px] rounded-full overflow-hidden bg-gray-100 border border-gray-200 shadow-sm group">
-                <!-- Default grey icon -->
-                <div id="defaultAvatar" class="absolute inset-0 flex items-center justify-center bg-gray-50">
-                    <i class="fas fa-user text-gray-400 text-[60px]"></i>
-                </div>
-                
-                <!-- Uploaded Image -->
-                <img id="profileImage" src="" alt="Profile" class="absolute inset-0 w-full h-full object-cover hidden">
-                
-                <!-- Edit Overlay -->
-                <label id="uploadOverlay" for="profileImageInput" class="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity hidden">
-                    <i class="fas fa-camera text-white text-3xl mb-1"></i>
-                </label>
-                
-                <!-- Hidden File Input -->
-                <input type="file" id="profileImageInput" accept="image/*" class="hidden" disabled>
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8 pb-20 space-y-6">
+        
+        <!-- Profile Header Card -->
+        <div class="bg-white rounded-3xl shadow-lg border border-gray-100/80 overflow-hidden relative">
+            <!-- Decorative Banner Header -->
+            <div class="h-32 sm:h-36 bg-gradient-to-r from-[#2d5a27] via-[#3d7a36] to-[#8bb35c] relative p-6 flex items-start justify-between">
+                <span class="bg-white/20 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center space-x-1.5">
+                    <i class="fas fa-paw"></i>
+                    <span>Hello Pet Member</span>
+                </span>
+                <button id="openEditModalBtn" class="bg-white/90 hover:bg-white text-gray-800 text-sm font-semibold px-4 py-2 rounded-xl shadow-md backdrop-blur-md transition-all duration-300 flex items-center space-x-2 active:scale-95">
+                    <i class="fas fa-[#2d5a27] fa-user-pen"></i>
+                    <span>แก้ไขโปรไฟล์</span>
+                </button>
             </div>
-            
-            <h1 id="displayName" class="text-[26px] font-bold text-[#1f2937] mt-5 tracking-[0.015em]">Sophia Clark</h1>
-            <p class="text-[#6490ba] font-medium text-[15px] mt-0.5"><span>แต้มสะสม</span> : 1200</p>
-            
-            <button id="editProfileBtn" class="mt-4 transition-all focus:outline-none">
-                <i class="fa-regular fa-pen-to-square text-[22px] text-[#1f2937] hover:text-gray-600"></i>
-            </button>
+
+            <!-- Avatar & Header Info Container -->
+            <div class="px-6 pb-6 pt-0 flex flex-col sm:flex-row sm:items-end justify-between gap-6 -mt-14 sm:-mt-16">
+                <!-- Avatar and Title -->
+                <div class="flex flex-col sm:flex-row items-center sm:items-end space-y-3 sm:space-y-0 sm:space-x-5 text-center sm:text-left">
+                    <div class="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-white border-4 border-white shadow-xl group shrink-0">
+                        <div id="defaultAvatar" class="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
+                            <i class="fas fa-user text-4xl sm:text-5xl"></i>
+                        </div>
+                        <img id="profileImage" src="" alt="Profile" class="absolute inset-0 w-full h-full object-cover hidden">
+                    </div>
+
+                    <div class="pt-1 sm:pt-0 sm:pb-1 space-y-1">
+                        <div class="flex items-center justify-center sm:justify-start space-x-2">
+                            <h1 id="displayName" class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Sophia Clark</h1>
+                            <i class="fas fa-circle-check text-green-500 text-lg" title="สมาชิกยืนยันแล้ว"></i>
+                        </div>
+                        <p class="text-xs sm:text-sm text-gray-500 font-medium flex items-center justify-center sm:justify-start space-x-2">
+                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>สมาชิกทั่วไป</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Reward Points Pill -->
+                <div class="flex justify-center sm:justify-end">
+                    <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl px-5 py-2.5 shadow-md flex items-center space-x-3">
+                        <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
+                            <i class="fas fa-coins text-amber-100 text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-[11px] text-amber-100 uppercase tracking-wider font-semibold">แต้มสะสม</div>
+                            <div class="text-xl font-bold leading-none">1,200 <span class="text-xs font-normal opacity-90">คะแนน</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Personal Information Form -->
-        <div class="max-w-[34rem] mx-auto mt-12 pb-16">
-            <h2 class="text-[20px] font-bold text-[#1f2937] mb-6 tracking-wide">ข้อมูลส่วนตัว</h2>
+        <!-- Shopee Style: My Orders Section -->
+        <div class="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
+                <h2 class="text-lg font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-shopping-bag text-[#2d5a27] mr-2"></i> คำสั่งซื้อของฉัน
+                </h2>
+                <a href="order-history.html" class="text-sm font-semibold text-[#2d5a27] hover:underline flex items-center">
+                    ดูประวัติทั้งหมด <i class="fas fa-chevron-right text-xs ml-1"></i>
+                </a>
+            </div>
+
+            <!-- Order Shortcuts -->
+            <div class="grid grid-cols-4 gap-2 text-center py-2">
+                <a href="order-history.html?tab=pending_payment" class="group flex flex-col items-center p-3 rounded-2xl hover:bg-gray-50 transition-all">
+                    <div class="relative w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-credit-card"></i>
+                        <span id="badgePendingPayment" class="absolute -top-2 -right-2 bg-amber-500 text-white text-[11px] font-extrabold min-w-[22px] h-[22px] px-1 flex items-center justify-center rounded-full border-2 border-white shadow-md">0</span>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-700">ที่ต้องชำระ</span>
+                </a>
+                <a href="order-history.html?tab=preparing" class="group flex flex-col items-center p-3 rounded-2xl hover:bg-gray-50 transition-all">
+                    <div class="relative w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-box font-medium"></i>
+                        <span id="badgePreparing" class="absolute -top-2 -right-2 bg-blue-500 text-white text-[11px] font-extrabold min-w-[22px] h-[22px] px-1 flex items-center justify-center rounded-full border-2 border-white shadow-md">0</span>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-700">ที่ต้องจัดส่ง</span>
+                </a>
+                <a href="order-history.html?tab=shipping" class="group flex flex-col items-center p-3 rounded-2xl hover:bg-gray-50 transition-all">
+                    <div class="relative w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-truck"></i>
+                        <span id="badgeShipping" class="absolute -top-2 -right-2 bg-purple-500 text-white text-[11px] font-extrabold min-w-[22px] h-[22px] px-1 flex items-center justify-center rounded-full border-2 border-white shadow-md">0</span>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-700">ที่ต้องได้รับ</span>
+                </a>
+                <a href="order-history.html?tab=completed" class="group flex flex-col items-center p-3 rounded-2xl hover:bg-gray-50 transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-700">สำเร็จแล้ว</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Shopee Style: Account & Menu Cards -->
+        <div class="bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden divide-y divide-gray-100">
             
-            <div class="space-y-5">
+            <!-- Menu Item 1: My Pets -->
+            <a href="my-pets.html" class="px-6 py-4 flex items-center justify-between hover:bg-gray-50/80 transition-colors text-left group">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg group-hover:scale-105 transition-transform">
+                        <i class="fas fa-paw"></i>
+                    </div>
+                    <div>
+                        <div class="text-base font-bold text-gray-900">สัตว์เลี้ยงของฉัน</div>
+                        <div class="text-xs text-gray-400 font-normal">เพิ่มและจัดการข้อมูลสัตว์เลี้ยงน่ารักของคุณ</div>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right text-sm text-gray-400 group-hover:text-gray-700 transition-colors"></i>
+            </a>
+
+            <!-- Menu Item 3: Shopping Cart -->
+            <a href="cart.html" class="px-6 py-4 flex items-center justify-between hover:bg-gray-50/80 transition-colors text-left group">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg group-hover:scale-105 transition-transform">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div>
+                        <div class="text-base font-bold text-gray-900">ตะกร้าสินค้า</div>
+                        <div class="text-xs text-gray-400 font-normal">ดูสินค้าที่คุณเลือกไว้เตรียมชำระเงิน</div>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right text-sm text-gray-400 group-hover:text-gray-700 transition-colors"></i>
+            </a>
+
+            <!-- Menu Item 4: Contact Us -->
+            <a href="contact.html" class="px-6 py-4 flex items-center justify-between hover:bg-gray-50/80 transition-colors text-left group">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-lg group-hover:scale-105 transition-transform">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <div>
+                        <div class="text-base font-bold text-gray-900">ติดต่อศูนย์บริการลูกค้า</div>
+                        <div class="text-xs text-gray-400 font-normal">แจ้งปัญหา สอบถามข้อมูล และติดต่อเจ้าหน้าที่</div>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right text-sm text-gray-400 group-hover:text-gray-700 transition-colors"></i>
+            </a>
+
+            <!-- Menu Item 5: Logout -->
+            <button id="mainLogoutBtn" class="w-full px-6 py-4 flex items-center justify-between hover:bg-red-50/60 transition-colors text-left group">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-lg group-hover:scale-105 transition-transform">
+                        <i class="fas fa-right-from-bracket"></i>
+                    </div>
+                    <div>
+                        <div class="text-base font-bold text-red-600">ออกจากระบบ</div>
+                        <div class="text-xs text-red-400 font-normal">ลงชื่อออกจากบัญชีผู้ใช้ในอุปกรณ์นี้</div>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right text-sm text-red-400"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- Edit Profile Modal (Shopee Style Modal) -->
+    <div id="editProfileModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-6 transform scale-95 transition-transform duration-300 relative border border-gray-100">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-green-50 text-[#2d5a27] flex items-center justify-center text-lg">
+                        <i class="fas fa-user-pen"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">แก้ไขข้อมูลส่วนตัว</h3>
+                        <p class="text-xs text-gray-400">อัปเดตข้อมูลและที่อยู่สำหรับจัดส่งสินค้า</p>
+                    </div>
+                </div>
+                <button id="closeEditModalBtn" aria-label="ปิด" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition-colors">
+                    <i class="fas fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Profile Picture Upload Inside Modal -->
+            <div class="flex flex-col items-center justify-center space-y-3 pt-2">
+                <div class="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 border-2 border-green-500 shadow-md group">
+                    <div id="modalDefaultAvatar" class="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
+                        <i class="fas fa-user text-4xl"></i>
+                    </div>
+                    <img id="modalProfileImage" src="" alt="Profile" class="absolute inset-0 w-full h-full object-cover hidden">
+                    <label for="profileImageInput" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center cursor-pointer opacity-80 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-camera text-white text-xl mb-0.5"></i>
+                        <span class="text-[10px] text-white font-medium">เปลี่ยนรูป</span>
+                    </label>
+                    <input type="file" id="profileImageInput" accept="image/*" class="hidden">
+                </div>
+                <span class="text-xs text-gray-400">คลิกที่รูปเพื่อเปลี่ยนภาพโปรไฟล์</span>
+            </div>
+
+            <!-- Form Inputs -->
+            <div class="space-y-4">
                 <!-- Name -->
                 <div>
-                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">ชื่อ</label>
-                    <input id="inputName" type="text" value="Sophia Clark" readonly 
-                        class="w-full bg-white text-[#7b9ebb] border border-[#d6e3ec] rounded-xl px-4 py-2.5 outline-none font-normal text-[15px] transition-all">
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <i class="fas fa-user text-sm"></i>
+                        </div>
+                        <input id="inputName" type="text" placeholder="ระบุชื่อ-นามสกุล"
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all">
+                    </div>
                 </div>
 
-                <!-- Address -->
+                <!-- Detailed Address -->
                 <div>
-                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">ที่อยู่</label>
-                    <textarea id="inputAddress" readonly rows="4" 
-                        class="w-full bg-white text-[#7b9ebb] border border-[#d6e3ec] rounded-xl px-4 py-3 outline-none font-normal text-[15px] resize-none leading-relaxed transition-all">123 Green Paw Street,
-Petville District,
-Chiang Mai 50200,
-Thailand</textarea>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">ที่อยู่โดยละเอียด (บ้านเลขที่, ซอย, ถนน) <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <div class="absolute top-3 left-3.5 pointer-events-none text-gray-400">
+                            <i class="fas fa-map-marker-alt text-sm"></i>
+                        </div>
+                        <textarea id="inputAddress" rows="2" placeholder="ระบุบ้านเลขที่ ซอย ถนน อาคาร..."
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none resize-none transition-all"></textarea>
+                    </div>
+                </div>
+
+                <!-- Province & Zipcode -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1.5">จังหวัด <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-city text-sm"></i>
+                            </div>
+                            <input id="inputProvince" type="text" placeholder="เช่น กรุงเทพฯ"
+                                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1.5">รหัสไปรษณีย์ <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-mail-bulk text-sm"></i>
+                            </div>
+                            <input id="inputZipcode" type="text" placeholder="เช่น 10110"
+                                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Phone Number -->
                 <div>
-                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">เบอร์โทรศัพท์</label>
-                    <input id="inputPhone" type="text" value="063*******" readonly 
-                        class="w-full bg-white text-[#7b9ebb] border border-[#d6e3ec] rounded-xl px-4 py-2.5 outline-none font-normal text-[15px] transition-all">
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <i class="fas fa-phone text-sm"></i>
+                        </div>
+                        <input id="inputPhone" type="tel" placeholder="08XXXXXXXX"
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all">
+                    </div>
                 </div>
 
                 <!-- Email -->
                 <div>
-                    <label class="block text-[#1f2937] text-[15px] font-medium mb-1.5 pl-0.5">อีเมล</label>
-                    <input id="inputEmail" type="email" value="Sophia@gmail.com" readonly 
-                        class="w-full bg-white text-[#7b9ebb] border border-[#d6e3ec] rounded-xl px-4 py-2.5 outline-none font-normal text-[15px] transition-all">
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">อีเมล</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <i class="fas fa-envelope text-sm"></i>
+                        </div>
+                        <input id="inputEmail" type="email" placeholder="example@mail.com"
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all">
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
 
-    <!-- Toast -->
+            <!-- Footer Modal Buttons -->
+            <div class="flex items-center space-x-3 pt-2">
+                <button id="cancelEditBtn" class="w-1/2 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition-colors">
+                    ยกเลิก
+                </button>
+                <button id="saveProfileModalBtn" class="w-1/2 py-3 bg-[#2d5a27] hover:bg-[#23471f] text-white font-bold rounded-xl text-sm shadow-md active:scale-95 transition-all">
+                    บันทึกข้อมูล
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Component -->
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl transition-all duration-500 opacity-0 translate-y-4 pointer-events-none z-50"></div>
 
 </body>

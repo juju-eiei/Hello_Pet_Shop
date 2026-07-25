@@ -44,14 +44,16 @@ CREATE TABLE employees (
 
 -- 5. pets
 CREATE TABLE pets (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    pet_id INT AUTO_INCREMENT PRIMARY KEY,
     customer_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    species VARCHAR(50) NOT NULL,
+    pet_name VARCHAR(100) NOT NULL,
+    pet_type VARCHAR(50) NOT NULL,
     breed VARCHAR(100),
-    birth_date DATE,
-    weight DECIMAL(5,2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    birthdate DATE,
+    weight DECIMAL(10,2),
+    allergy_info TEXT NULL,
+    notes TEXT NULL,
+    image_url VARCHAR(255) NULL,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 );
 

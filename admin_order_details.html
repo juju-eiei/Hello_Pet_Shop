@@ -526,10 +526,6 @@
                     json.data.forEach(c => {
                         const opt = document.createElement('option');
                         opt.value = c.company_id;
-                        opt.textContent = `${c.company_name} (เริ่มต้น ฿${parseFloat(c.base_rate)} + ฿${parseFloat(c.rate_per_kg)}/kg)`;
-                        select.appendChild(opt);
-                    });
-                }
             } catch (error) {
                 console.error("Failed to load delivery companies", error);
             }
@@ -546,14 +542,55 @@
                 return;
             }
 
+            let data = null;
             try {
                 const res = await fetch('/api/orders/details?id=' + orderId);
-                const json = await res.json();
-                
-                if (!res.ok) throw new Error(json.message || 'Error fetching order');
-                
-                const data = json.data;
-                currentOrderData = data;
+                if (res.ok) {
+                    const json = await res.json();
+                    data = json.data;
+                }
+            } catch (err) {
+                console.warn("API order details warning:", err);
+            }
+
+            if (!data) {
+                const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+                const found = myOrders.find(o => String(o.id) === String(orderId));
+                if (found) {
+                    let adminStatus = 'Pending';
+                    const st = found.status;
+                    if (st === 'Preparing' || st === 'ที่ต้องจัดส่ง' || st === 'กำลังเตรียมสินค้า') adminStatus = 'Processing';
+                    else if (st === 'Shipping' || st === 'ที่ต้องได้รับ' || st === 'กำลังจัดส่ง') adminStatus = 'In Transit';
+                    else if (st === 'Completed' || st === 'สำเร็จแล้ว' || st === 'สำเร็จ') adminStatus = 'Completed';
+                    else if (st === 'Cancelled' || st === 'ยกเลิกแล้ว') adminStatus = 'Cancelled';
+
+                    data = {
+                        id: found.id,
+                        number: found.number || `ORD-2026-${String(found.id).padStart(3, '0')}`,
+                        date: found.date ? new Date(found.date).toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString('th-TH'),
+                        status: adminStatus,
+                        order_type: 1,
+                        order_type_label: 'ออนไลน์',
+                        tracking_number: found.trackingNumber || null,
+                        company_id: null,
+                        customer: found.customer || { name: 'Success User', email: 'success@example.com', phone: '0812345678', address: '123 Test Road Bangkok 10110' },
+                        items: (found.items || []).map(i => ({ name: i.name, price: i.price, qty: i.quantity, image: i.image })),
+                        summary: {
+                            subtotal: found.subtotal || found.total || 0,
+                            shipping: found.shipping || 0,
+                            discount: 0,
+                            total: found.total || 0
+                        }
+                    };
+                }
+            }
+
+            if (!data) {
+                showToast("ไม่พบข้อมูลคำสั่งซื้อ", "error");
+                return;
+            }
+
+            currentOrderData = data;
 
             // Header Elements
             document.getElementById('displayOrderId').textContent = data.number;

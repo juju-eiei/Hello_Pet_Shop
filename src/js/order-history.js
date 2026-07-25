@@ -1,10 +1,25 @@
+import { showToast } from './utils.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const ordersContainer = document.getElementById('ordersContainer');
     const emptyOrders = document.getElementById('emptyOrders');
     const orderDetailModal = document.getElementById('orderDetailModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
+    const pendingBadge = document.getElementById('pendingBadge');
 
-    // Modal fields
+    // Pay Now Modal Elements
+    const payNowModal = document.getElementById('payNowModal');
+    const closePayModalBtn = document.getElementById('closePayModalBtn');
+    const payModalOrderId = document.getElementById('payModalOrderId');
+    const payModalAmount = document.getElementById('payModalAmount');
+    const payModalSlipInput = document.getElementById('payModalSlipInput');
+    const payModalPlaceholder = document.getElementById('payModalPlaceholder');
+    const payModalPreview = document.getElementById('payModalPreview');
+    const payModalFileName = document.getElementById('payModalFileName');
+    const payModalRemoveSlip = document.getElementById('payModalRemoveSlip');
+    const confirmPayNowBtn = document.getElementById('confirmPayNowBtn');
+
+    // Detail Modal fields
     const modalOrderId = document.getElementById('modalOrderId');
     const modalDate = document.getElementById('modalDate');
     const modalStatus = document.getElementById('modalStatus');
@@ -16,6 +31,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalTotal = document.getElementById('modalTotal');
 
     let orders = [];
+    let currentFilterTab = 'all';
+    let currentPayingOrder = null;
+    let attachedSlipData = null;
+
+    // Check URL parameters for tab selection (e.g. ?tab=pending_payment)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab') || urlParams.get('status');
+    if (tabParam) {
+        currentFilterTab = tabParam.toLowerCase();
+    }
 
     function loadOrders() {
         const storedOrders = localStorage.getItem('myOrders');
@@ -29,13 +54,60 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             orders = [];
         }
+
+        updatePendingBadge();
         renderOrders();
+        updateActiveTabUI();
+    }
+
+    function updatePendingBadge() {
+        const pendingCount = orders.filter(o => isPendingPaymentStatus(o.status)).length;
+        if (pendingCount > 0 && pendingBadge) {
+            pendingBadge.textContent = pendingCount;
+            pendingBadge.classList.remove('hidden');
+        } else if (pendingBadge) {
+            pendingBadge.classList.add('hidden');
+        }
+    }
+
+    function isPendingPaymentStatus(status) {
+        return status === 'Pending Payment' || status === 'ที่ต้องชำระ' || status === 'Pending';
+    }
+
+    function isPreparingStatus(status) {
+        return status === 'Preparing' || status === 'กำลังเตรียมสินค้า' || status === 'ที่ต้องจัดส่ง' || status === 'Processing';
+    }
+
+    function isShippingStatus(status) {
+        return status === 'Shipping' || status === 'กำลังจัดส่ง' || status === 'ที่ต้องได้รับ' || status === 'In Transit';
+    }
+
+    function isCompletedStatus(status) {
+        return status === 'Completed' || status === 'สำเร็จ' || status === 'สำเร็จแล้ว';
+    }
+
+    function getFilteredOrders() {
+        if (currentFilterTab === 'all') return orders;
+        if (currentFilterTab === 'pending_payment') {
+            return orders.filter(o => isPendingPaymentStatus(o.status));
+        }
+        if (currentFilterTab === 'preparing') {
+            return orders.filter(o => isPreparingStatus(o.status));
+        }
+        if (currentFilterTab === 'shipping') {
+            return orders.filter(o => isShippingStatus(o.status));
+        }
+        if (currentFilterTab === 'completed') {
+            return orders.filter(o => isCompletedStatus(o.status));
+        }
+        return orders;
     }
 
     function renderOrders() {
         ordersContainer.innerHTML = '';
+        const filteredList = getFilteredOrders();
         
-        if (orders.length === 0) {
+        if (filteredList.length === 0) {
             ordersContainer.classList.add('hidden');
             emptyOrders.classList.remove('hidden');
             return;
@@ -44,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ordersContainer.classList.remove('hidden');
         emptyOrders.classList.add('hidden');
 
-        orders.forEach(order => {
+        filteredList.forEach(order => {
             const date = new Date(order.date).toLocaleDateString('th-TH', {
                 year: 'numeric',
                 month: 'short',
@@ -53,39 +125,177 @@ document.addEventListener('DOMContentLoaded', () => {
                 minute: '2-digit'
             });
 
+            const isPending = isPendingPaymentStatus(order.status);
+            const isPrep = isPreparingStatus(order.status);
+            const isShip = isShippingStatus(order.status);
+            const isDone = isCompletedStatus(order.status);
+
+            let statusLabel = 'สำเร็จแล้ว';
+            let statusBadgeStyle = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+
+            if (isPending) {
+                statusLabel = 'ที่ต้องชำระ (รอชำระเงิน)';
+                statusBadgeStyle = 'bg-amber-100 text-amber-800 border border-amber-200';
+            } else if (isPrep) {
+                statusLabel = 'ที่ต้องจัดส่ง (กำลังเตรียมสินค้า)';
+                statusBadgeStyle = 'bg-blue-100 text-blue-800 border border-blue-200';
+            } else if (isShip) {
+                statusLabel = 'ที่ต้องได้รับ (สินค้ากำลังจัดส่ง)';
+                statusBadgeStyle = 'bg-purple-100 text-purple-800 border border-purple-200';
+            }
+
             const card = document.createElement('div');
             card.className = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow";
             card.innerHTML = `
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
                     <div>
-                        <div class="text-sm font-bold text-[#8bb35c] uppercase tracking-wide">คำสั่งซื้อ #${order.id}</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-[#2d5a27] uppercase tracking-wide">คำสั่งซื้อ #${order.id}</span>
+                            ${order.slipImage ? '<span class="bg-emerald-50 text-emerald-700 text-[10px] px-2 py-0.5 rounded-md font-semibold"><i class="fas fa-paperclip mr-1"></i>มีสลิป</span>' : ''}
+                        </div>
                         <div class="text-xs text-gray-400 mt-0.5">${date}</div>
                     </div>
-                    <div class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${order.status === 'Preparing' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}">
-                        ${order.status === 'Preparing' ? 'กำลังเตรียมสินค้า' : 'สำเร็จ'}
+                    <div class="px-3.5 py-1.5 rounded-full text-xs font-bold ${statusBadgeStyle} flex items-center gap-1.5 shadow-2xs">
+                        <span class="w-2 h-2 rounded-full ${isPending ? 'bg-amber-500 animate-pulse' : isPrep ? 'bg-blue-500 animate-pulse' : isShip ? 'bg-purple-500 animate-pulse' : 'bg-emerald-500'}"></span>
+                        ${statusLabel}
                     </div>
                 </div>
+
+                <!-- Order Items Preview -->
+                <div class="space-y-3 mb-5 bg-gray-50/60 p-3.5 rounded-xl">
+                    ${(order.items || []).slice(0, 2).map(item => `
+                        <div class="flex items-center space-x-3">
+                            <img src="${item.image || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="" class="w-10 h-10 bg-white rounded-lg object-contain p-1 border border-gray-100 shrink-0">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-gray-800 truncate">${item.name}</div>
+                                <div class="text-[11px] text-gray-500">จำนวน: ${item.quantity}</div>
+                            </div>
+                            <div class="text-xs font-semibold text-gray-700">฿${(parseFloat(item.price) * item.quantity).toFixed(2)}</div>
+                        </div>
+                    `).join('')}
+                    ${(order.items || []).length > 2 ? `<div class="text-[11px] text-gray-400 text-center font-medium">+ อีก ${(order.items || []).length - 2} รายการ</div>` : ''}
+                </div>
                 
-                <div class="border-t border-gray-50 pt-4 flex flex-wrap justify-between items-center gap-4">
+                <div class="border-t border-gray-100 pt-4 flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-gray-400">ยอดสุทธิ:</span>
-                        <span class="text-lg font-bold text-gray-800">฿${order.total.toFixed(2)}</span>
+                        <span class="text-lg font-extrabold text-[#2d5a27]">฿${order.total.toFixed(2)}</span>
                     </div>
-                    <button class="view-details-btn px-4 py-2 bg-gray-50 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-100 transition-colors" data-id="${order.id}">
-                        ดูรายละเอียด
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <!-- Stage 1: Pending Payment Action -->
+                        ${isPending ? `
+                            <button class="pay-now-btn px-4 py-2 bg-[#003B6A] text-white text-xs font-bold rounded-xl hover:bg-blue-900 transition-all shadow-sm flex items-center gap-1.5" data-id="${order.id}">
+                                <i class="fas fa-qrcode text-blue-200"></i>
+                                <span>ชำระเงินตอนนี้</span>
+                            </button>
+                        ` : ''}
+
+                        <!-- Stage 2: Preparing Order Simulation Action -->
+                        ${isPrep ? `
+                            <button class="ship-demo-btn px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold rounded-xl transition-all flex items-center gap-1" data-id="${order.id}">
+                                <i class="fas fa-truck-fast"></i>
+                                <span>ร้านค้าจัดส่งสินค้าแล้ว (จำลอง)</span>
+                            </button>
+                        ` : ''}
+
+                        <!-- Stage 3: In Transit Action (Confirm Received) -->
+                        ${isShip ? `
+                            <button class="confirm-receive-btn px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5" data-id="${order.id}">
+                                <i class="fas fa-box-open"></i>
+                                <span>ยืนยันได้รับสินค้าแล้ว</span>
+                            </button>
+                        ` : ''}
+
+                        <!-- Stage 4: Completed -->
+                        ${isDone ? `
+                            <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+                                <i class="fas fa-circle-check mr-1"></i>สั่งซื้อเสร็จสมบูรณ์
+                            </span>
+                        ` : ''}
+
+                        <button class="view-details-btn px-4 py-2 bg-gray-100 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-200 transition-colors" data-id="${order.id}">
+                            ดูรายละเอียด
+                        </button>
+                    </div>
                 </div>
             `;
             ordersContainer.appendChild(card);
         });
 
-        // Add event listeners to buttons
+        // Add event listeners
         document.querySelectorAll('.view-details-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                showOrderDetails(e.target.dataset.id);
+                const id = e.target.closest('button').dataset.id;
+                showOrderDetails(id);
+            });
+        });
+
+        document.querySelectorAll('.pay-now-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.closest('button').dataset.id;
+                openPayNowModal(id);
+            });
+        });
+
+        document.querySelectorAll('.ship-demo-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.closest('button').dataset.id;
+                markAsShipped(id);
+            });
+        });
+
+        document.querySelectorAll('.confirm-receive-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.closest('button').dataset.id;
+                confirmReceived(id);
             });
         });
     }
+
+    function markAsShipped(orderId) {
+        const order = orders.find(o => o.id == orderId);
+        if (!order) return;
+
+        order.status = 'Shipping'; // Move to Stage 3: ที่ต้องได้รับ
+        order.shippedAt = new Date().toISOString();
+        order.trackingNumber = 'TH' + Math.floor(100000000 + Math.random() * 900000000);
+
+        localStorage.setItem('myOrders', JSON.stringify(orders));
+        renderOrders();
+        showToast(`จัดส่งสินค้าสำหรับคำสั่งซื้อ #${order.id} แล้ว! (เลขพัสดุ: ${order.trackingNumber})`, "success");
+    }
+
+    function confirmReceived(orderId) {
+        const order = orders.find(o => o.id == orderId);
+        if (!order) return;
+
+        order.status = 'Completed'; // Move to Stage 4: สำเร็จแล้ว
+        order.completedAt = new Date().toISOString();
+
+        localStorage.setItem('myOrders', JSON.stringify(orders));
+        renderOrders();
+        showToast(`ขอบคุณที่ยืนยันรับสินค้า! คำสั่งซื้อ #${order.id} เสร็จสมบูรณ์แล้ว`, "success");
+    }
+
+    function updateActiveTabUI() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            const tab = btn.dataset.tab;
+            if (tab === currentFilterTab) {
+                btn.className = 'tab-btn px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all whitespace-nowrap bg-[#2d5a27] text-white shadow-sm flex items-center gap-1.5';
+            } else {
+                btn.className = 'tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 flex items-center gap-1.5';
+            }
+        });
+    }
+
+    // Attach Tab Filter Click Listeners
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            currentFilterTab = e.currentTarget.dataset.tab;
+            updateActiveTabUI();
+            renderOrders();
+        });
+    });
 
     function showOrderDetails(orderId) {
         const order = orders.find(o => o.id == orderId);
@@ -96,14 +306,29 @@ document.addEventListener('DOMContentLoaded', () => {
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
         
-        modalStatus.textContent = order.status === 'Preparing' ? 'กำลังเตรียมสินค้า' : 'สำเร็จ';
-        modalStatus.className = `text-sm font-bold uppercase ${order.status === 'Preparing' ? 'text-amber-600' : 'text-green-600'}`;
+        const isPending = isPendingPaymentStatus(order.status);
+        const isPrep = isPreparingStatus(order.status);
+        const isShip = isShippingStatus(order.status);
         
-        modalPayment.textContent = order.paymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนผ่านธนาคาร';
-        modalShipping.textContent = order.deliveryMethod === 'standard' ? 'ส่งธรรมดา' : 'ส่งด่วนพิเศษ';
+        if (isPending) {
+            modalStatus.textContent = 'ที่ต้องชำระ (รอชำระเงิน)';
+            modalStatus.className = 'text-sm font-bold uppercase text-amber-600';
+        } else if (isPrep) {
+            modalStatus.textContent = 'ที่ต้องจัดส่ง (ร้านกำลังเตรียมสินค้า)';
+            modalStatus.className = 'text-sm font-bold uppercase text-blue-600';
+        } else if (isShip) {
+            modalStatus.textContent = `ที่ต้องได้รับ (กำลังจัดส่ง ${order.trackingNumber ? ' - ' + order.trackingNumber : ''})`;
+            modalStatus.className = 'text-sm font-bold uppercase text-purple-600';
+        } else {
+            modalStatus.textContent = 'สำเร็จแล้ว';
+            modalStatus.className = 'text-sm font-bold uppercase text-green-600';
+        }
+
+        modalPayment.textContent = 'โอนผ่านธนาคาร / PromptPay';
+        modalShipping.textContent = order.deliveryMethod === 'standard' ? 'ส่งธรรมดา (3-5 วัน)' : 'ส่งด่วนพิเศษ (1-2 วัน)';
         
         // Render items
-        modalItems.innerHTML = order.items.map(item => `
+        modalItems.innerHTML = (order.items || []).map(item => `
             <div class="flex items-center space-x-4">
                 <div class="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center p-2 shrink-0">
                     <img src="${item.image || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="" class="w-full h-full object-contain">
@@ -128,18 +353,88 @@ document.addEventListener('DOMContentLoaded', () => {
         orderDetailModal.querySelector('div').classList.add('scale-100');
     }
 
-    function closeModal() {
+    // Pay Now Modal Logic
+    function openPayNowModal(orderId) {
+        const order = orders.find(o => o.id == orderId);
+        if (!order) return;
+
+        currentPayingOrder = order;
+        payModalOrderId.textContent = `#${order.id}`;
+        payModalAmount.textContent = `฿${order.total.toFixed(2)}`;
+
+        // Reset slip inputs
+        attachedSlipData = null;
+        if (payModalSlipInput) payModalSlipInput.value = '';
+        if (payModalPreview) payModalPreview.classList.add('hidden');
+        if (payModalPlaceholder) payModalPlaceholder.classList.remove('hidden');
+
+        payNowModal.classList.remove('opacity-0', 'pointer-events-none');
+        payNowModal.querySelector('div').classList.remove('scale-95');
+        payNowModal.querySelector('div').classList.add('scale-100');
+    }
+
+    function closePayNowModal() {
+        payNowModal.classList.add('opacity-0', 'pointer-events-none');
+        payNowModal.querySelector('div').classList.remove('scale-100');
+        payNowModal.querySelector('div').classList.add('scale-95');
+        currentPayingOrder = null;
+    }
+
+    payModalSlipInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                attachedSlipData = event.target.result;
+                payModalFileName.textContent = file.name;
+                payModalPlaceholder.classList.add('hidden');
+                payModalPreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    payModalRemoveSlip?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        payModalSlipInput.value = '';
+        attachedSlipData = null;
+        payModalPreview.classList.add('hidden');
+        payModalPlaceholder.classList.remove('hidden');
+    });
+
+    confirmPayNowBtn?.addEventListener('click', () => {
+        if (!currentPayingOrder) return;
+
+        confirmPayNowBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>กำลังบันทึก...</span>';
+        confirmPayNowBtn.disabled = true;
+
+        setTimeout(() => {
+            currentPayingOrder.status = 'Preparing'; // Change status to Stage 2: 'ที่ต้องจัดส่ง'
+            currentPayingOrder.slipImage = attachedSlipData;
+            currentPayingOrder.paidAt = new Date().toISOString();
+
+            localStorage.setItem('myOrders', JSON.stringify(orders));
+
+            closePayNowModal();
+            confirmPayNowBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>ยืนยันการชำระเงิน</span>';
+            confirmPayNowBtn.disabled = false;
+
+            updatePendingBadge();
+            renderOrders();
+
+            showToast(`ชำระเงินคำสั่งซื้อ #${currentPayingOrder.id} สำเร็จ! ย้ายไปที่สถานะ 'ที่ต้องจัดส่ง'`, "success");
+        }, 1000);
+    });
+
+    closeModalBtn?.addEventListener('click', () => {
         orderDetailModal.classList.add('opacity-0', 'pointer-events-none');
         orderDetailModal.querySelector('div').classList.remove('scale-100');
         orderDetailModal.querySelector('div').classList.add('scale-95');
-    }
-
-    closeModalBtn.addEventListener('click', closeModal);
-    
-    // Close on backdrop click
-    orderDetailModal.addEventListener('click', (e) => {
-        if (e.target === orderDetailModal) closeModal();
     });
+
+    closePayModalBtn?.addEventListener('click', closePayNowModal);
+
+    window.addEventListener('storage', loadOrders);
 
     loadOrders();
 });

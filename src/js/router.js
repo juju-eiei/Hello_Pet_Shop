@@ -13,8 +13,9 @@ export function initRouter() {
             return;
         }
 
-        // Only handle HTML navigation inside app
-        if (href.endsWith('.html') || href.startsWith('/admin/') || href.startsWith('/staff/')) {
+        // Only handle HTML navigation inside app if we are in the admin/staff SPA shell
+        const mainContent = document.querySelector('main.main-content');
+        if (mainContent && (href.endsWith('.html') || href.startsWith('/admin/') || href.startsWith('/staff/'))) {
             e.preventDefault();
             navigateTo(href);
         }
@@ -22,7 +23,10 @@ export function initRouter() {
 
     // Handle browser back / forward buttons
     window.addEventListener('popstate', () => {
-        loadPage(window.location.href, false);
+        const mainContent = document.querySelector('main.main-content');
+        if (mainContent) {
+            loadPage(window.location.href, false);
+        }
     });
 }
 

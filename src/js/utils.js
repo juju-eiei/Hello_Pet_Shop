@@ -31,3 +31,50 @@ export function showToast(message, type = 'info') {
         toast.classList.remove('opacity-100', 'translate-y-0');
     }, 3000);
 }
+
+/**
+ * Get current user profile data with per-user isolation and fallback defaults
+ */
+export function getUserProfileData() {
+    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+    const userKey = userObj.user_id ? `userProfileData_${userObj.user_id}` : (userObj.username ? `userProfileData_${userObj.username}` : 'userProfileData');
+    
+    let userStr = localStorage.getItem(userKey) || localStorage.getItem('userProfileData');
+    
+    let profile = {
+        name: userObj.username || userObj.first_name || 'Sophia Clark',
+        phone: userObj.phone || '0631234567',
+        address: '123 Green Paw Street',
+        province: 'เชียงใหม่',
+        zipcode: '50200',
+        email: userObj.email || 'user@example.com',
+        profileImage: ''
+    };
+
+    if (userStr) {
+        try {
+            const saved = JSON.parse(userStr);
+            if (saved.name) profile.name = saved.name;
+            if (saved.phone) profile.phone = saved.phone;
+            if (saved.address) profile.address = saved.address;
+            if (saved.province) profile.province = saved.province;
+            if (saved.zipcode) profile.zipcode = saved.zipcode;
+            if (saved.email) profile.email = saved.email;
+            if (saved.profileImage) profile.profileImage = saved.profileImage;
+        } catch(e) {}
+    }
+
+    return profile;
+}
+
+/**
+ * Save user profile data with per-user isolation
+ */
+export function saveUserProfileData(data) {
+    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+    const userKey = userObj.user_id ? `userProfileData_${userObj.user_id}` : (userObj.username ? `userProfileData_${userObj.username}` : 'userProfileData');
+    
+    localStorage.setItem(userKey, JSON.stringify(data));
+    localStorage.setItem('userProfileData', JSON.stringify(data));
+}
+

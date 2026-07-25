@@ -274,12 +274,49 @@
             return user;
         }
 
+        function mapCustomerStatusToAdmin(st) {
+            if (st === 'Pending Payment' || st === 'ที่ต้องชำระ') return 'Pending';
+            if (st === 'Preparing' || st === 'ที่ต้องจัดส่ง' || st === 'กำลังเตรียมสินค้า') return 'Processing';
+            if (st === 'Shipping' || st === 'ที่ต้องได้รับ' || st === 'กำลังจัดส่ง') return 'In Transit';
+            if (st === 'Completed' || st === 'สำเร็จแล้ว' || st === 'สำเร็จ') return 'Completed';
+            if (st === 'Cancelled' || st === 'ยกเลิกแล้ว') return 'Cancelled';
+            return st || 'Pending';
+        }
+
         async function fetchOrders() {
             try {
-                const res = await fetch('/api/orders');
-                if (!res.ok) throw new Error('Network error');
-                const json = await res.json();
-                allOrders = json.data || [];
+                let apiOrders = [];
+                try {
+                    const res = await fetch('/api/orders');
+                    if (res.ok) {
+                        const json = await res.json();
+                        apiOrders = json.data || [];
+                    }
+                } catch (e) {
+                    console.warn("API fetch warning:", e);
+                }
+
+                // Load customer frontend orders from localStorage
+                const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+                const localMapped = myOrders.map(o => ({
+                    id: o.id,
+                    date: o.date ? new Date(o.date).toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString('th-TH'),
+                    number: o.number || `ORD-2026-${String(o.id).padStart(3, '0')}`,
+                    status: mapCustomerStatusToAdmin(o.status),
+                    order_type: o.order_type || 1,
+                    order_type_label: o.order_type_label || 'ออนไลน์',
+                    amount: parseFloat(o.total || o.amount || 0),
+                    customer: o.customer || { name: o.shippingAddress?.fullName || 'ลูกค้าออนไลน์', email: 'customer@example.com', phone: o.shippingAddress?.phone || '-', address: o.shippingAddress ? `${o.shippingAddress.address} ${o.shippingAddress.province}` : '-' }
+                }));
+
+                const localIdMap = new Map(localMapped.map(item => [String(item.id), item]));
+                apiOrders.forEach(ao => {
+                    if (!localIdMap.has(String(ao.id))) {
+                        localIdMap.set(String(ao.id), ao);
+                    }
+                });
+
+                allOrders = Array.from(localIdMap.values());
                 currentPage = 1;
                 updateBadges();
                 updateTabUI();
