@@ -101,9 +101,32 @@ class Staff {
             $stmtEmp->bindValue(':position', $data['position'] ?? null);
             $stmtEmp->bindValue(':address', $data['address'] ?? null);
             $stmtEmp->bindValue(':base_salary', $data['base_salary'] ?? 0);
-            $stmtEmp->bindValue(':payment_frequency', $data['payment_frequency'] ?? null);
+            $stmtEmp->bindValue(':payment_frequency', $data['payment_frequency'] ?? 'Monthly');
             $stmtEmp->bindValue(':bank_account_details', $data['bank_account_details'] ?? null);
             $stmtEmp->execute();
+
+            $employeeId = $this->db->lastInsertId();
+            $frequency = $data['payment_frequency'] ?? 'Monthly';
+            $rate = (float)($data['base_salary'] ?? 0);
+
+            $rightStmt = $this->db->prepare("SELECT * FROM pay_right_settings WHERE pay_frequency = :freq");
+            $rightStmt->execute([':freq' => $frequency]);
+            $rightData = $rightStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $leaveDed = (float)($rightData['leave_deduction_per_day'] ?? 0);
+            $absDed = (float)($rightData['absence_deduction_per_day'] ?? 0);
+
+            $stmtPay = $this->db->prepare("INSERT INTO employee_pay_settings 
+                (employee_id, pay_frequency, monthly_salary, weekly_rate, daily_rate, leave_deduction_per_day, absence_deduction_per_day)
+                VALUES (:id, :frequency, :monthly, :weekly, :daily, :leave, :absence)");
+            $stmtPay->execute([
+                ':id' => $employeeId,
+                ':frequency' => $frequency,
+                ':monthly' => $frequency === 'Monthly' ? $rate : 0,
+                ':weekly' => 0,
+                ':daily' => $frequency === 'Daily' ? $rate : 0,
+                ':leave' => $leaveDed,
+                ':absence' => $absDed
+            ]);
 
             $this->db->commit();
             return true;
@@ -130,7 +153,6 @@ class Staff {
             $stmtUser = $this->db->prepare($sqlUser);
             $stmtUser->bindValue(':role_id', $data['role_id']);
             $stmtUser->bindValue(':email', $data['email']);
-            // If username is provided, update it, otherwise keep the old one
             $stmtUser->bindValue(':username', !empty($data['username']) ? $data['username'] : $emp['username']);
             $stmtUser->bindValue(':permissions', json_encode($data['permissions'] ?? []));
             $stmtUser->bindValue(':user_id', $userId);
@@ -158,9 +180,38 @@ class Staff {
             $stmtEmp->bindValue(':position', $data['position'] ?? null);
             $stmtEmp->bindValue(':address', $data['address'] ?? null);
             $stmtEmp->bindValue(':base_salary', $data['base_salary'] ?? 0);
-            $stmtEmp->bindValue(':payment_frequency', $data['payment_frequency'] ?? null);
+            $stmtEmp->bindValue(':payment_frequency', $data['payment_frequency'] ?? 'Monthly');
             $stmtEmp->bindValue(':bank_account_details', $data['bank_account_details'] ?? null);
             $stmtEmp->execute();
+
+            $frequency = $data['payment_frequency'] ?? 'Monthly';
+            $rate = (float)($data['base_salary'] ?? 0);
+
+            $rightStmt = $this->db->prepare("SELECT * FROM pay_right_settings WHERE pay_frequency = :freq");
+            $rightStmt->execute([':freq' => $frequency]);
+            $rightData = $rightStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $leaveDed = (float)($rightData['leave_deduction_per_day'] ?? 0);
+            $absDed = (float)($rightData['absence_deduction_per_day'] ?? 0);
+
+            $stmtPay = $this->db->prepare("INSERT INTO employee_pay_settings 
+                (employee_id, pay_frequency, monthly_salary, weekly_rate, daily_rate, leave_deduction_per_day, absence_deduction_per_day)
+                VALUES (:id, :frequency, :monthly, :weekly, :daily, :leave, :absence)
+                ON DUPLICATE KEY UPDATE 
+                pay_frequency = VALUES(pay_frequency), 
+                monthly_salary = VALUES(monthly_salary), 
+                weekly_rate = VALUES(weekly_rate), 
+                daily_rate = VALUES(daily_rate),
+                leave_deduction_per_day = VALUES(leave_deduction_per_day),
+                absence_deduction_per_day = VALUES(absence_deduction_per_day)");
+            $stmtPay->execute([
+                ':id' => $id,
+                ':frequency' => $frequency,
+                ':monthly' => $frequency === 'Monthly' ? $rate : 0,
+                ':weekly' => 0,
+                ':daily' => $frequency === 'Daily' ? $rate : 0,
+                ':leave' => $leaveDed,
+                ':absence' => $absDed
+            ]);
 
             $this->db->commit();
             return true;
@@ -175,7 +226,6 @@ class Staff {
             $this->db->beginTransaction();
             $emp = $this->getById($id);
             if ($emp) {
-                // Delete user (cascade should handle employees if set, but we will explicitly delete both)
                 $this->db->prepare("DELETE FROM employees WHERE employee_id = :id")->execute([':id' => $id]);
                 $this->db->prepare("DELETE FROM users WHERE user_id = :user_id")->execute([':user_id' => $emp['user_id']]);
             }

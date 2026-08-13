@@ -18,6 +18,9 @@ class AuthMiddleware {
         $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : null);
         
         if ($authHeader) {
+            if (JWT_SECRET === '') {
+                Response::json(401, "Unauthorized: JWT authentication is not configured");
+            }
             $token = str_replace('Bearer ', '', $authHeader);
             try {
                 $decoded = JWT::decode($token, new Key(JWT_SECRET, 'HS256'));
@@ -33,6 +36,29 @@ class AuthMiddleware {
         }
 
         if (isset($_SESSION['user_id'])) {
+            // Check CSRF token for session-based state-modifying requests (POST, PUT, DELETE)
+            $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+            if (in_array(strtoupper($method), ['POST', 'PUT', 'DELETE'])) {
+                $headers = function_exists('apache_request_headers') ? apache_request_headers() : [];
+                $requestToken = isset($headers['X-CSRF-Token']) ? $headers['X-CSRF-Token'] : (isset($_SERVER['HTTP_X_CSRF_TOKEN']) ? $_SERVER['HTTP_X_CSRF_TOKEN'] : null);
+                
+                if (!$requestToken && isset($_POST['csrf_token'])) {
+                    $requestToken = $_POST['csrf_token'];
+                }
+                
+                if (!$requestToken) {
+                    $jsonInput = json_decode(file_get_contents("php://input"), true);
+                    if (isset($jsonInput['csrf_token'])) {
+                        $requestToken = $jsonInput['csrf_token'];
+                    }
+                }
+                
+                $sessionToken = $_SESSION['csrf_token'] ?? null;
+                if (!$sessionToken || !$requestToken || !hash_equals($sessionToken, $requestToken)) {
+                    Response::json(403, "Forbidden: CSRF token validation failed");
+                }
+            }
+
             return [
                 'user_id' => $_SESSION['user_id'],
                 'role' => $_SESSION['role']
@@ -94,6 +120,46 @@ class AuthMiddleware {
         }
         
         return $user;
+    }
+
+    public static function checkAnyPermission($permissions) {
+        $user = self::authenticate();
+        
+        $database = new Database();
+        $db = $database->getConnection();
+        
+        $query = "SELECT u.permissions AS user_permissions, r.role_name, r.permissions AS role_permissions 
+                  FROM users u
+                  JOIN roles r ON u.role_id = r.role_id
+                  WHERE u.user_id = :user_id";
+                  
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':user_id', $user['user_id']);
+        $stmt->execute();
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$data) {
+            Response::json(403, "Forbidden: User record not found");
+        }
+        
+        $roleNameLower = strtolower($data['role_name'] ?? '');
+        
+        if ($roleNameLower === 'admin') {
+            return $user;
+        }
+        
+        $userPerms = json_decode($data['user_permissions'] ?? '[]', true) ?: [];
+        $rolePerms = json_decode($data['role_permissions'] ?? '[]', true) ?: [];
+        $allPerms = array_merge($userPerms, $rolePerms);
+        
+        foreach ($permissions as $permission) {
+            if (in_array($permission, $allPerms)) {
+                return $user;
+            }
+        }
+        
+        $permString = implode(' or ', $permissions);
+        Response::json(403, "Forbidden: Lacking any of required permissions '{$permString}'");
     }
 }
 ?>

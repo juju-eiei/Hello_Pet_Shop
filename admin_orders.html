@@ -20,7 +20,7 @@
             display: inline-block;
         }
         .status-pill.pending { background-color: #fef08a; color: #854d0e; }
-        .status-pill.processing { background-color: #bfdbfe; color: #1e3a8a; }
+        .status-pill.processing { background-color: var(--secondary-berry-border); color: #1e3a8a; }
         .status-pill.intransit { background-color: #fce7f3; color: #9d174d; }
         .status-pill.completed { background-color: #dcfce7; color: #166534; }
         .status-pill.cancelled { background-color: #fecdd3; color: #9f1239; }
@@ -71,9 +71,9 @@
             color: #1e293b;
         }
         .order-tab-btn.active {
-            background: #3b82f6;
+            background: var(--secondary-berry);
             color: #ffffff;
-            border-color: #3b82f6;
+            border-color: var(--secondary-berry);
             box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
         }
         .order-tab-badge {
@@ -120,7 +120,7 @@
             }
             .order-date { grid-column: 1 / -1; color: #94a3b8; font-size: 13px; }
             .order-number { font-weight: 700; color: #1e293b; font-size: 15px; display: flex; align-items: center; justify-content: space-between; grid-column: 1 / -1; }
-            .order-amount { font-weight: 600; color: #3b82f6; text-align: left; }
+            .order-amount { font-weight: 600; color: var(--secondary-berry); text-align: left; }
             .order-status { display: flex; justify-content: flex-end; }
             .order-actions { display: none !important; }
             .stock-table { border: none; box-shadow: none; overflow: visible; background: transparent; }
@@ -185,24 +185,52 @@
                 </button>
             </div>
 
-            <!-- Search -->
-            <div class="search-container">
-                <i class="fas fa-search" style="color: #64748b;"></i>
-                <input type="text" id="searchInput" placeholder="Search orders by ID, status or channel...">
+            <!-- Search & Filter -->
+            <div class="search-container" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: none; box-shadow: none; padding: 0; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; flex: 1.5; min-width: 250px; position: relative;">
+                    <i class="fas fa-search" style="position: absolute; left: 16px; color: #94a3b8; z-index: 10;"></i>
+                    <input type="text" id="searchInput" placeholder="ค้นหาตามรหัสคำสั่งซื้อ, สถานะ หรือช่องทาง..." style="padding-left: 45px; width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; height: 46px; outline: none; font-size: 14px; background: #f8fafc; transition: all 0.2s;">
+                </div>
+                <select id="statusFilterSelect" style="padding: 0 16px; height: 46px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px; font-weight: 500; color: #475569; background-color: #f8fafc; outline: none; min-width: 180px; cursor: pointer; transition: all 0.2s;">
+                    <option value="all">สถานะทั้งหมด (All)</option>
+                    <option value="unfulfilled">📦 ที่ต้องดำเนินการ (Unfulfilled)</option>
+                    <option value="Pending">⏳ Pending (รอดำเนินการ)</option>
+                    <option value="Processing">⚙️ Processing (กำลังแพ็คสินค้า)</option>
+                    <option value="In Transit">🚚 In Transit (กำลังจัดส่ง)</option>
+                    <option value="Completed">✅ Completed (จัดส่งสำเร็จ)</option>
+                    <option value="Cancelled">❌ Cancelled (ยกเลิกแล้ว)</option>
+                </select>
+                <!-- Month Filter -->
+                <select id="monthFilterSelect" style="padding: 0 16px; height: 46px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px; font-weight: 500; color: #475569; background-color: #f8fafc; outline: none; min-width: 180px; cursor: pointer; transition: all 0.2s;">
+                    <option value="all">เดือนทั้งหมด (All Months)</option>
+                </select>
+                <!-- Date Range Filter -->
+                <div style="display: flex; align-items: center; gap: 8px; border: 1px solid #e2e8f0; padding: 0 16px; height: 46px; border-radius: 12px; background-color: #f8fafc;">
+                    <span style="font-size: 14px; font-weight: 500; color: #64748b; white-space: nowrap;">ช่วงวันที่:</span>
+                    <input type="date" id="startDateFilterInput" style="border: none; background: transparent; font-size: 14px; font-weight: 500; color: #475569; outline: none; cursor: pointer; width: 130px; height: 100%;" title="วันเริ่มต้น">
+                    <span style="color: #cbd5e1; font-weight: 300;">ถึง</span>
+                    <input type="date" id="endDateFilterInput" style="border: none; background: transparent; font-size: 14px; font-weight: 500; color: #475569; outline: none; cursor: pointer; width: 130px; height: 100%;" title="วันสิ้นสุด">
+                </div>
+                <button type="button" id="clearAllFiltersBtn" style="border: 1px solid #e2e8f0; background: white; color: #64748b; height: 46px; padding: 0 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; transition: all 0.2s;" title="ล้างตัวกรอง">
+                    <i class="fas fa-undo"></i> ล้างตัวกรอง
+                </button>
             </div>
 
             <!-- Table -->
             <div class="stock-table">
                 <div class="table-header">
-                    <span style="flex: 1.5;">Order Date</span>
-                    <span style="flex: 2;">Order Number</span>
-                    <span style="flex: 1.5;">Channel</span>
-                    <span style="flex: 1.5; text-align: left;">Total Amount</span>
-                    <span style="flex: 1; text-align: center;">Status</span>
-                    <span style="flex: 1; text-align: right;">Actions</span>
+                    <span style="flex: 1.5;">วันที่สั่งซื้อ</span>
+                    <span style="flex: 2;">หมายเลขคำสั่งซื้อ</span>
+                    <span style="flex: 1.5;">ช่องทาง</span>
+                    <span style="flex: 1.5; text-align: left;">ยอดรวม</span>
+                    <span style="flex: 1; text-align: center;">สถานะ</span>
+                    <span style="flex: 1; text-align: right;">จัดการ</span>
                 </div>
                 <div id="ordersContainer">
-                    <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
+                    <div class="loading-container">
+                        <div class="spinner-loader"></div>
+                        <span>กำลังโหลดข้อมูล...</span>
+                    </div>
                 </div>
             </div>
             <!-- Pagination -->
@@ -268,6 +296,27 @@
                 return st || 'Pending';
             }
 
+            function formatOrderDate(dateInput) {
+                if (!dateInput) return '-';
+                let d;
+                if (typeof dateInput === 'string') {
+                    let s = dateInput.trim();
+                    if (s.includes(' ') && !s.includes('T')) {
+                        s = s.replace(' ', 'T');
+                    }
+                    d = new Date(s);
+                } else {
+                    d = new Date(dateInput);
+                }
+                if (isNaN(d.getTime())) return dateInput;
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const year = d.getFullYear() + 543;
+                const hours = String(d.getHours()).padStart(2, '0');
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                return `${day}/${month}/${year} ${hours}:${minutes}`;
+            }
+
             async function fetchOrders() {
                 try {
                     let apiOrders = [];
@@ -283,25 +332,50 @@
 
                     // Load customer frontend orders from localStorage
                     const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-                    const localMapped = myOrders.map(o => ({
-                        id: o.id,
-                        date: o.date ? new Date(o.date).toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString('th-TH'),
-                        number: o.number || `ORD-2026-${String(o.id).padStart(3, '0')}`,
-                        status: mapCustomerStatusToAdmin(o.status),
-                        order_type: o.order_type || 1,
-                        order_type_label: o.order_type_label || 'ออนไลน์',
-                        amount: parseFloat(o.total || o.amount || 0),
-                        customer: o.customer || { name: o.shippingAddress?.fullName || 'ลูกค้าออนไลน์', email: 'customer@example.com', phone: o.shippingAddress?.phone || '-', address: o.shippingAddress ? `${o.shippingAddress.address} ${o.shippingAddress.province}` : '-' }
-                    }));
+                    const localMapped = myOrders.map(o => {
+                        let pDate = o.date;
+                        if (typeof pDate === 'string' && pDate.includes(' ') && !pDate.includes('T')) {
+                            pDate = pDate.replace(' ', 'T');
+                        }
+                        const dateObj = pDate ? new Date(pDate) : new Date();
+                        return {
+                            id: o.id,
+                            date: formatOrderDate(pDate || dateObj),
+                            timestamp: dateObj.getTime(),
+                            rawDate: dateObj,
+                            number: o.number || `ORD-2026-${String(o.id).padStart(3, '0')}`,
+                            status: mapCustomerStatusToAdmin(o.status),
+                            order_type: o.order_type || 1,
+                            order_type_label: o.order_type_label || 'ออนไลน์',
+                            amount: parseFloat(o.total || o.amount || 0),
+                            customer: o.customer || { name: o.shippingAddress?.fullName || 'ลูกค้าออนไลน์', email: 'customer@example.com', phone: o.shippingAddress?.phone || '-', address: o.shippingAddress ? `${o.shippingAddress.address} ${o.shippingAddress.province}` : '-' }
+                        };
+                    });
 
                     const localIdMap = new Map(localMapped.map(item => [String(item.id), item]));
                     apiOrders.forEach(ao => {
                         if (!localIdMap.has(String(ao.id))) {
-                            localIdMap.set(String(ao.id), ao);
+                            let pDate = ao.date;
+                            if (typeof pDate === 'string' && pDate.includes(' ') && !pDate.includes('T')) {
+                                pDate = pDate.replace(' ', 'T');
+                            }
+                            const dateObj = pDate ? new Date(pDate) : new Date();
+                            localIdMap.set(String(ao.id), {
+                                id: ao.id,
+                                date: formatOrderDate(pDate || dateObj),
+                                timestamp: dateObj.getTime(),
+                                rawDate: dateObj,
+                                number: ao.number,
+                                status: ao.status,
+                                order_type: ao.order_type || 1,
+                                order_type_label: ao.order_type_label,
+                                amount: parseFloat(ao.amount)
+                            });
                         }
                     });
 
                     allOrders = Array.from(localIdMap.values());
+                    allOrders.sort((a, b) => b.timestamp - a.timestamp);
                     currentPage = 1;
                     updateBadges();
                     updateTabUI();
@@ -320,8 +394,26 @@
                 }
             }
 
+            function getStatusLabel(status) {
+                if (!status) return 'รอดำเนินการ';
+                const s = status.toString().trim();
+                if (s === 'Pending' || s === 'รอดำเนินการ' || s === 'Pending Payment' || s === 'ที่ต้องชำระ') return 'รอดำเนินการ';
+                if (s === 'Processing' || s === 'กำลังแพ็คสินค้า' || s === 'กำลังดำเนินการ' || s === 'Preparing' || s === 'ที่ต้องจัดส่ง') return 'กำลังแพ็คสินค้า';
+                if (s === 'In Transit' || s === 'กำลังจัดส่ง' || s === 'กำลังนำส่ง' || s === 'Shipping' || s === 'ที่ต้องได้รับ' || s === 'มอบให้ขนส่งแล้ว') return 'กำลังจัดส่ง';
+                if (s === 'Completed' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'สำเร็จแล้ว';
+                if (s === 'Cancelled' || s === 'ยกเลิกแล้ว' || s === 'ยกเลิก') return 'ยกเลิกแล้ว';
+                return status;
+            }
+
             function getStatusClass(status) {
-                return status.toLowerCase().replace(" ", "");
+                if (!status) return 'pending';
+                const s = status.toString().trim();
+                if (s === 'Pending' || s === 'รอดำเนินการ' || s === 'Pending Payment' || s === 'ที่ต้องชำระ') return 'pending';
+                if (s === 'Processing' || s === 'กำลังแพ็คสินค้า' || s === 'กำลังดำเนินการ' || s === 'Preparing' || s === 'ที่ต้องจัดส่ง') return 'processing';
+                if (s === 'In Transit' || s === 'กำลังจัดส่ง' || s === 'กำลังนำส่ง' || s === 'Shipping' || s === 'ที่ต้องได้รับ' || s === 'มอบให้ขนส่งแล้ว') return 'intransit';
+                if (s === 'Completed' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'completed';
+                if (s === 'Cancelled' || s === 'ยกเลิกแล้ว' || s === 'ยกเลิก') return 'cancelled';
+                return s.toLowerCase().replace(/\s+/g, '');
             }
 
             function renderOrders() {
@@ -331,17 +423,50 @@
                 if (!container || !searchInput) return;
                 
                 const keyword = searchInput.value.toLowerCase();
+                const statusFilter = document.getElementById('statusFilterSelect').value;
                 
+                const monthFilter = document.getElementById('monthFilterSelect')?.value || 'all';
+                const startDateFilter = document.getElementById('startDateFilterInput')?.value || '';
+                const endDateFilter = document.getElementById('endDateFilterInput')?.value || '';
+
                 filteredOrders = allOrders.filter(o => {
+                    const statusLabel = getStatusLabel(o.status);
                     const matchesKeyword = o.number.toLowerCase().includes(keyword) || 
                                            o.status.toLowerCase().includes(keyword) ||
+                                           statusLabel.toLowerCase().includes(keyword) ||
                                            (o.order_type_label && o.order_type_label.toLowerCase().includes(keyword)) ||
                                            o.date.includes(keyword);
                     
                     if (!matchesKeyword) return false;
 
-                    if (currentTypeFilter === 'online') return (o.order_type || 1) === 1;
-                    if (currentTypeFilter === 'pos') return o.order_type === 2;
+                    if (currentTypeFilter === 'online' && (o.order_type || 1) !== 1) return false;
+                    if (currentTypeFilter === 'pos' && o.order_type !== 2) return false;
+
+                    if (statusFilter !== 'all') {
+                        if (statusFilter === 'unfulfilled') {
+                            const unfulfilledStatuses = ['Pending', 'Processing', 'In Transit', 'รอดำเนินการ', 'กำลังดำเนินการ', 'กำลังจัดส่ง'];
+                            if (!unfulfilledStatuses.includes(o.status)) return false;
+                        } else {
+                            if (o.status !== statusFilter) return false;
+                        }
+                    }
+
+                    if (monthFilter !== 'all' && o.rawDate) {
+                        const orderYear = o.rawDate.getFullYear();
+                        const orderMonth = String(o.rawDate.getMonth() + 1).padStart(2, '0');
+                        const orderMonthStr = `${orderYear}-${orderMonth}`;
+                        if (orderMonthStr !== monthFilter) return false;
+                    }
+
+                    if (o.rawDate) {
+                        const orderYear = o.rawDate.getFullYear();
+                        const orderMonth = String(o.rawDate.getMonth() + 1).padStart(2, '0');
+                        const orderDay = String(o.rawDate.getDate()).padStart(2, '0');
+                        const orderDateStr = `${orderYear}-${orderMonth}-${orderDay}`;
+                        
+                        if (startDateFilter !== '' && orderDateStr < startDateFilter) return false;
+                        if (endDateFilter !== '' && orderDateStr > endDateFilter) return false;
+                    }
                     return true;
                 });
 
@@ -378,12 +503,12 @@
                                 <i class="fas ${o.order_type === 2 ? 'fa-store' : 'fa-globe'}"></i> ${o.order_type_label}
                             </span>
                         </div>
-                        <div class="order-amount">฿${o.amount.toFixed(2)}</div>
+                        <div class="order-amount">฿${Number(o.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                         <div class="order-status">
-                            <span class="status-pill ${getStatusClass(o.status)}">${o.status}</span>
+                            <span class="status-pill ${getStatusClass(o.status)}">${getStatusLabel(o.status)}</span>
                         </div>
                         <div class="order-actions desktop-action">
-                            <a href="admin_order_details.html?id=${o.id}" class="action-link" style="width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; background-color: #eff6ff; color: #3b82f6; font-size: 16px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="View Order Details">
+                            <a href="admin_order_details.html?id=${o.id}" class="action-link" style="width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; background-color: var(--secondary-berry-light); color: var(--secondary-berry); font-size: 16px; text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="View Order Details">
                                 <i class="fas fa-eye"></i>
                             </a>
                         </div>
@@ -435,6 +560,27 @@
 
             window.changePage = changePage;
 
+            const populateMonthFilter = () => {
+                const select = document.getElementById('monthFilterSelect');
+                if (!select) return;
+
+                const monthsThai = [
+                    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+                ];
+
+                const now = new Date();
+                const currentYear = now.getFullYear();
+
+                let optionsHtml = '<option value="all">เดือนทั้งหมด (All Months)</option>';
+                for (let m = 0; m < 12; m++) {
+                    const value = `${currentYear}-${String(m + 1).padStart(2, '0')}`;
+                    const label = `${monthsThai[m]} ${currentYear + 543}`;
+                    optionsHtml += `<option value="${value}">${label}</option>`;
+                }
+                select.innerHTML = optionsHtml;
+            };
+
             const searchInput = document.getElementById('searchInput');
             if (searchInput) {
                 searchInput.addEventListener('input', () => {
@@ -443,8 +589,52 @@
                 });
             }
 
+            const statusFilterSelect = document.getElementById('statusFilterSelect');
+            if (statusFilterSelect) {
+                statusFilterSelect.addEventListener('change', () => {
+                    currentPage = 1;
+                    renderOrders();
+                });
+            }
+
+            const monthFilterSelect = document.getElementById('monthFilterSelect');
+            if (monthFilterSelect) {
+                monthFilterSelect.addEventListener('change', () => {
+                    currentPage = 1;
+                    renderOrders();
+                });
+            }
+
+            const startDateFilterInput = document.getElementById('startDateFilterInput');
+            if (startDateFilterInput) {
+                startDateFilterInput.addEventListener('change', () => {
+                    currentPage = 1;
+                    renderOrders();
+                });
+            }
+
+            const endDateFilterInput = document.getElementById('endDateFilterInput');
+            if (endDateFilterInput) {
+                endDateFilterInput.addEventListener('change', () => {
+                    currentPage = 1;
+                    renderOrders();
+                });
+            }
+
+            const clearAllFiltersBtn = document.getElementById('clearAllFiltersBtn');
+            if (clearAllFiltersBtn) {
+                clearAllFiltersBtn.addEventListener('click', () => {
+                    if (monthFilterSelect) monthFilterSelect.value = 'all';
+                    if (startDateFilterInput) startDateFilterInput.value = '';
+                    if (endDateFilterInput) endDateFilterInput.value = '';
+                    currentPage = 1;
+                    renderOrders();
+                });
+            }
+
             // Initialize page logic
             checkAuth();
+            populateMonthFilter();
             fetchOrders();
         })();
     </script>

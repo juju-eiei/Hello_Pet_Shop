@@ -1,4 +1,4 @@
-import { showToast } from './utils.js';
+import { showToast, escapeHTML } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const ordersContainer = document.getElementById('ordersContainer');
@@ -117,7 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
         emptyOrders.classList.add('hidden');
 
         filteredList.forEach(order => {
-            const date = new Date(order.date).toLocaleDateString('th-TH', {
+            let orderDateStr = order.date;
+            if (typeof orderDateStr === 'string' && orderDateStr.includes(' ') && !orderDateStr.includes('T')) {
+                orderDateStr = orderDateStr.replace(' ', 'T');
+            }
+            const date = new Date(orderDateStr || Date.now()).toLocaleDateString('th-TH', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
@@ -150,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="text-sm font-bold text-[#2d5a27] uppercase tracking-wide">คำสั่งซื้อ #${order.id}</span>
+                            <span class="text-sm font-bold text-[#16a34a] uppercase tracking-wide">คำสั่งซื้อ #${order.id}</span>
                             ${order.slipImage ? '<span class="bg-emerald-50 text-emerald-700 text-[10px] px-2 py-0.5 rounded-md font-semibold"><i class="fas fa-paperclip mr-1"></i>มีสลิป</span>' : ''}
                         </div>
                         <div class="text-xs text-gray-400 mt-0.5">${date}</div>
@@ -165,12 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="space-y-3 mb-5 bg-gray-50/60 p-3.5 rounded-xl">
                     ${(order.items || []).slice(0, 2).map(item => `
                         <div class="flex items-center space-x-3">
-                            <img src="${item.image || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="" class="w-10 h-10 bg-white rounded-lg object-contain p-1 border border-gray-100 shrink-0">
+                            <img src="${escapeHTML(item.image || '/image/non-image.png')}" onerror="this.src='/image/non-image.png'" alt="" class="w-10 h-10 bg-white rounded-lg object-contain p-1 border border-gray-100 shrink-0">
                             <div class="flex-1 min-w-0">
-                                <div class="text-xs font-bold text-gray-800 truncate">${item.name}</div>
-                                <div class="text-[11px] text-gray-500">จำนวน: ${item.quantity}</div>
+                                <div class="text-xs font-bold text-gray-800 truncate">${escapeHTML(item.name)}</div>
+                                <div class="text-[11px] text-gray-500">จำนวน: ${escapeHTML(item.quantity)}</div>
                             </div>
-                            <div class="text-xs font-semibold text-gray-700">฿${(parseFloat(item.price) * item.quantity).toFixed(2)}</div>
+                            <div class="text-xs font-semibold text-gray-700">฿${(parseFloat(item.price) * item.quantity).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                         </div>
                     `).join('')}
                     ${(order.items || []).length > 2 ? `<div class="text-[11px] text-gray-400 text-center font-medium">+ อีก ${(order.items || []).length - 2} รายการ</div>` : ''}
@@ -179,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="border-t border-gray-100 pt-4 flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-gray-400">ยอดสุทธิ:</span>
-                        <span class="text-lg font-extrabold text-[#2d5a27]">฿${order.total.toFixed(2)}</span>
+                        <span class="text-lg font-extrabold text-[#16a34a]">฿${order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                     </div>
                     <div class="flex items-center space-x-2">
                         <!-- Stage 1: Pending Payment Action -->
@@ -281,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.tab-btn').forEach(btn => {
             const tab = btn.dataset.tab;
             if (tab === currentFilterTab) {
-                btn.className = 'tab-btn px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all whitespace-nowrap bg-[#2d5a27] text-white shadow-sm flex items-center gap-1.5';
+                btn.className = 'tab-btn px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all whitespace-nowrap bg-[#4D7C68] text-white shadow-sm flex items-center gap-1.5';
             } else {
                 btn.className = 'tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 flex items-center gap-1.5';
             }
@@ -302,7 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!order) return;
 
         modalOrderId.textContent = `#${order.id}`;
-        modalDate.textContent = new Date(order.date).toLocaleDateString('th-TH', {
+        let modalDateStr = order.date;
+        if (typeof modalDateStr === 'string' && modalDateStr.includes(' ') && !modalDateStr.includes('T')) {
+            modalDateStr = modalDateStr.replace(' ', 'T');
+        }
+        modalDate.textContent = new Date(modalDateStr || Date.now()).toLocaleDateString('th-TH', {
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
         
@@ -331,21 +339,21 @@ document.addEventListener('DOMContentLoaded', () => {
         modalItems.innerHTML = (order.items || []).map(item => `
             <div class="flex items-center space-x-4">
                 <div class="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center p-2 shrink-0">
-                    <img src="${item.image || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="" class="w-full h-full object-contain">
+                    <img src="${escapeHTML(item.image || '/image/non-image.png')}" onerror="this.src='/image/non-image.png'" alt="" class="w-full h-full object-contain">
                 </div>
                 <div class="flex-1 min-w-0">
-                    <div class="text-sm font-bold text-gray-800 truncate">${item.name}</div>
-                    <div class="text-xs text-gray-500">จำนวน: ${item.quantity} × ฿${parseFloat(item.price).toFixed(2)}</div>
+                    <div class="text-sm font-bold text-gray-800 truncate">${escapeHTML(item.name)}</div>
+                    <div class="text-xs text-gray-500">จำนวน: ${escapeHTML(item.quantity)} × ฿${parseFloat(item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                 </div>
                 <div class="text-sm font-bold text-gray-800">
-                    ฿${(parseFloat(item.price) * item.quantity).toFixed(2)}
+                    ฿${(parseFloat(item.price) * item.quantity).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </div>
             </div>
         `).join('');
 
-        modalSubtotal.textContent = `฿${order.subtotal.toFixed(2)}`;
-        modalShippingFee.textContent = `฿${order.shipping.toFixed(2)}`;
-        modalTotal.textContent = `฿${order.total.toFixed(2)}`;
+        modalSubtotal.textContent = `฿${order.subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        modalShippingFee.textContent = `฿${order.shipping.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        modalTotal.textContent = `฿${order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
         // Open modal
         orderDetailModal.classList.remove('opacity-0', 'pointer-events-none');
@@ -360,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         currentPayingOrder = order;
         payModalOrderId.textContent = `#${order.id}`;
-        payModalAmount.textContent = `฿${order.total.toFixed(2)}`;
+        payModalAmount.textContent = `฿${order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
         // Reset slip inputs
         attachedSlipData = null;

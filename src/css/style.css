@@ -6,24 +6,40 @@
   --color-primary-200: #bbf7d0;
   --color-primary-300: #86efac;
   --color-primary-400: #4ade80;
-  --color-primary-500: #94ad5e;
-  --color-primary-600: #314d2a;
-  --color-primary-700: #1a2a18;
-  --color-primary-800: #166534;
-  --color-primary-900: #14532d;
-  --color-primary-950: #052e16;
+  --color-primary-500: #16a34a;
+  --color-primary-600: #15803d;
+  --color-primary-700: #166534;
+  --color-primary-800: #14532d;
+  --color-primary-900: #0f3e23;
+  --color-primary-950: #062010;
+
+  --color-secondary-50: #f3f7f5;
+  --color-secondary-100: #e2ede8;
+  --color-secondary-200: #c5dbd1;
+  --color-secondary-300: #9fc0b2;
+  --color-secondary-400: #709d89;
+  --color-secondary-500: #578672;
+  --color-secondary-600: #4D7C68;
+  --color-secondary-700: #3D6353;
+  --color-secondary-800: #314f42;
+  --color-secondary-900: #253c32;
+  --color-secondary-950: #121e19;
 }
 
 @layer base {
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
   body {
     @apply antialiased text-gray-900 bg-gray-50;
-    font-family: 'Inter', 'Kanit', sans-serif;
+    font-family: 'Outfit', 'Kanit', sans-serif;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95;
+    @apply px-6 py-3 bg-secondary-600 hover:bg-secondary-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95;
   }
   
   .auth-card {
@@ -62,4 +78,101 @@ header.nav-green, header {
     z-index: 50;
 }
 
+/* Header brand adjustments for Dark Green & Indigo */
+header.nav-green {
+    background-color: #1b4332 !important;
+    color: #ffffff !important;
+}
+header.nav-green a {
+    color: #ffffff !important;
+}
+header.nav-green a:hover {
+    color: #EEF2FF !important;
+}
+header.nav-green .border-white {
+    border-color: #ffffff !important;
+}
+header.nav-green .bg-white {
+    background-color: #ffffff !important;
+    color: #1b4332 !important;
+}
 
+/* Premium SweetAlert2 Custom Styling */
+.swal2-container {
+  z-index: 10000 !important;
+}
+
+.swal2-backdrop-show {
+  backdrop-filter: blur(8px) !important;
+  background: rgba(15, 23, 42, 0.4) !important; /* Slate-900 with 40% opacity */
+}
+
+.swal2-popup {
+  border-radius: 20px !important;
+  font-family: 'Outfit', 'Kanit', 'Inter', sans-serif !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  padding: 2rem 1.5rem !important;
+}
+
+.swal2-title {
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  font-size: 1.25rem !important;
+  margin-top: 0.5rem !important;
+}
+
+.swal2-html-container {
+  color: #64748b !important;
+  font-size: 0.95rem !important;
+  margin-top: 0.75rem !important;
+  line-height: 1.6 !important;
+}
+
+.swal2-actions {
+  margin-top: 1.5rem !important;
+  gap: 12px !important;
+}
+
+.swal2-confirm {
+  background-color: #16a34a !important; /* Standard green */
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 10px 24px !important;
+  font-size: 0.9rem !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2), 0 2px 4px -1px rgba(22, 163, 74, 0.1) !important;
+  border: none !important;
+}
+
+.swal2-confirm:hover {
+  background-color: #15803d !important; /* Standard hover green */
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.3), 0 4px 6px -2px rgba(22, 163, 74, 0.2) !important;
+}
+
+.swal2-confirm:active {
+  transform: translateY(0);
+}
+
+.swal2-cancel {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 10px 24px !important;
+  font-size: 0.9rem !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+}
+
+.swal2-cancel:hover {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+.swal2-icon {
+  margin-top: 0.5rem !important;
+  border-width: 3px !important;
+}

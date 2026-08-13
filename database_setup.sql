@@ -74,7 +74,8 @@ CREATE TABLE addresses (
 CREATE TABLE product_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    description TEXT
+    description TEXT,
+    requires_expiration TINYINT(1) NOT NULL DEFAULT 1
 );
 
 -- 8. products
@@ -215,7 +216,7 @@ CREATE TABLE inventory_logs (
     type ENUM('sale', 'restock', 'adjust', 'cancel') NOT NULL,
     reason VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
     FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL
 );
 
@@ -237,9 +238,25 @@ CREATE TABLE restock_details (
     product_id INT NOT NULL,
     quantity INT NOT NULL,
     unit_cost DECIMAL(10, 2) NOT NULL,
+    lot_number VARCHAR(100) NULL,
+    expiry_date DATE NULL,
     FOREIGN KEY (restock_order_id) REFERENCES restock_orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );
+
+-- 20a. product_lots
+CREATE TABLE product_lots (
+    lot_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    lot_number VARCHAR(100) NULL,
+    quantity INT NOT NULL DEFAULT 0,
+    expiry_date DATE NULL,
+    cost_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
 
 -- 21. financial_records
 CREATE TABLE financial_records (

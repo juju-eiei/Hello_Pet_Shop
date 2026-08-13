@@ -39,12 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let cart = [];
     let checkoutItems = [];
     let subtotal = 0;
-    let shippingFee = 2.00; // Default Standard
+    let deliveryCompanies = [];
+    let selectedCompanyId = null;
+    let shippingFee = 0.00;
     let pendingOrderData = null;
     let attachedSlipData = null;
 
     // Initialization
-    function init() {
+    async function init() {
         // Fetch cart
         cart = JSON.parse(localStorage.getItem('cart') || '[]');
         
@@ -64,8 +66,83 @@ document.addEventListener('DOMContentLoaded', () => {
         if (profile.province) inputProvince.value = profile.province;
         if (profile.zipcode) inputZipcode.value = profile.zipcode;
 
+        await loadDeliveryCompanies();
         renderSummary();
         attachEvents();
+    }
+
+    async function loadDeliveryCompanies() {
+        const container = document.getElementById('deliveryMethodsContainer');
+        if (!container) return;
+
+        try {
+            const res = await fetch('/api/deliveries/companies');
+            const json = await res.json();
+            if (res.ok && json.data && json.data.length > 0) {
+                deliveryCompanies = json.data;
+                renderDeliveryOptions();
+                return;
+            }
+        } catch (err) {
+            console.warn("Failed to fetch delivery companies:", err);
+        }
+
+        // Fallback default options if API has no companies
+        deliveryCompanies = [
+            { company_id: 1, company_name: 'Kerry Express', base_rate: 40 },
+            { company_id: 2, company_name: 'Flash Express', base_rate: 35 },
+            { company_id: 3, company_name: 'J&T Express', base_rate: 30 }
+        ];
+        renderDeliveryOptions();
+    }
+
+    function renderDeliveryOptions() {
+        const container = document.getElementById('deliveryMethodsContainer');
+        if (!container) return;
+
+        container.innerHTML = deliveryCompanies.map((c, idx) => {
+            const fee = parseFloat(c.base_rate) > 0 ? parseFloat(c.base_rate) : 35.00;
+            const isChecked = idx === 0 ? 'checked' : '';
+            return `
+                <label class="option-card block cursor-pointer">
+                    <input type="radio" name="deliveryMethod" value="${c.company_id}" data-fee="${fee}" data-company-name="${c.company_name}" class="hidden" ${isChecked}>
+                    <div class="border-2 border-gray-100 rounded-2xl p-4 md:p-5 flex items-center justify-between hover:border-gray-300 hover:bg-gray-50/80 transition-all duration-200">
+                        <div class="flex items-center space-x-4">
+                            <div class="radio-circle w-5 h-5 rounded-full border-2 border-gray-300 relative flex items-center justify-center transition-all shrink-0">
+                                <div class="radio-dot w-2 h-2 rounded-full bg-white scale-0 opacity-0 transition-all duration-200"></div>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
+                                <i class="fas fa-truck text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-800 flex items-center gap-2">
+                                    ${c.company_name}
+                                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-100/70 text-emerald-700">ขนส่งพันธมิตร</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-0.5">อัตราจัดส่งเริ่มต้น ฿${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (ตั้งค่าโดยผู้ดูแลระบบ)</div>
+                            </div>
+                        </div>
+                        <div class="font-bold text-[#FE7F9C] text-base">+฿${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
+                </label>
+            `;
+        }).join('');
+
+        // Bind radio change listeners
+        container.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                selectedCompanyId = parseInt(e.target.value);
+                shippingFee = parseFloat(e.target.dataset.fee);
+                renderSummary();
+            });
+        });
+
+        // Set initial selected company and fee
+        const firstRadio = container.querySelector('input[name="deliveryMethod"]:checked');
+        if (firstRadio) {
+            selectedCompanyId = parseInt(firstRadio.value);
+            shippingFee = parseFloat(firstRadio.dataset.fee);
+        }
     }
 
     function renderSummary() {
@@ -86,28 +163,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="text-xs text-gray-500">จำนวน: ${item.quantity}</div>
                     </div>
                     <div class="text-sm font-semibold text-gray-800 whitespace-nowrap">
-                        ฿${itemTotal.toFixed(2)}
+                        ฿${itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                     </div>
                 </div>
             `;
         });
 
         // Update Totals
-        summarySubtotal.textContent = `฿${subtotal.toFixed(2)}`;
-        summaryShipping.textContent = `฿${shippingFee.toFixed(2)}`;
-        summaryTotal.textContent = `฿${(subtotal + shippingFee).toFixed(2)}`;
+        summarySubtotal.textContent = `฿${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        summaryShipping.textContent = `฿${shippingFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        summaryTotal.textContent = `฿${(subtotal + shippingFee).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
     function attachEvents() {
-        // Delivery Option Change
-        document.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const feeText = e.target.nextElementSibling.querySelector('.font-bold[data-fee]').dataset.fee;
-                shippingFee = parseFloat(feeText);
-                renderSummary();
-            });
-        });
-
         // Confirm Order Click -> Open QR Modal
         confirmOrderBtn.addEventListener('click', () => {
             // Validate address
@@ -130,7 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 zipcode: inputZipcode.value.trim()
             });
 
-            const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;
+            const checkedDeliveryInput = document.querySelector('input[name="deliveryMethod"]:checked');
+            const deliveryMethod = checkedDeliveryInput ? checkedDeliveryInput.value : 'standard';
+            const companyName = checkedDeliveryInput?.dataset?.companyName || 'ขนส่งเอกชน';
             const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'transfer';
             const fakeId = Math.floor(100000 + Math.random() * 900000);
             const totalAmount = subtotal + shippingFee;
@@ -138,6 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Create Pending Order Draft
             pendingOrderData = {
                 id: fakeId,
+                company_id: selectedCompanyId,
+                company_name: companyName,
                 date: new Date().toISOString(),
                 items: checkoutItems,
                 subtotal: subtotal,
@@ -158,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Display in QR Payment Modal
             qrModalOrderId.textContent = fakeId;
-            qrModalAmount.textContent = `฿${totalAmount.toFixed(2)}`;
+            qrModalAmount.textContent = `฿${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             // Show QR Modal
             openQrModal();
@@ -239,8 +311,73 @@ document.addEventListener('DOMContentLoaded', () => {
         paymentQrModal.querySelector('div').classList.add('scale-95');
     }
 
-    function finalizeOrder(title, message) {
+    async function finalizeOrder(title, message) {
         closeQrModal();
+
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        let customerId = user?.customer_id;
+        let csrfToken = user?.csrf_token;
+
+        if (!customerId) {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result.data) {
+                        customerId = result.data.customer_id;
+                        csrfToken = result.data.csrf_token;
+                        localStorage.setItem('user', JSON.stringify(result.data));
+                    }
+                }
+            } catch (err) {
+                console.error("Error resolving session:", err);
+            }
+        }
+
+        let dbOrderId = pendingOrderData.id;
+        if (customerId) {
+            try {
+                const orderPayload = {
+                    customer_id: customerId,
+                    company_id: pendingOrderData.company_id,
+                    shipping_address: pendingOrderData.shippingAddress,
+                    items: pendingOrderData.items.map(item => ({
+                        product_id: item.id,
+                        quantity: item.quantity
+                    })),
+                    shipping_fee: pendingOrderData.shipping,
+                    discount_amount: 0,
+                    csrf_token: csrfToken
+                };
+
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify(orderPayload)
+                });
+
+                if (res.ok) {
+                    const resJson = await res.json();
+                    if (resJson.data && resJson.data.order_id) {
+                        dbOrderId = resJson.data.order_id;
+                        pendingOrderData.id = dbOrderId;
+                    }
+                } else {
+                    const errRes = await res.json();
+                    console.error("Order creation failed details: " + JSON.stringify(errRes));
+                    showToast(errRes.message || "เกิดข้อผิดพลาดในการบันทึกคำสั่งซื้อลงฐานข้อมูล", "error");
+                    return;
+                }
+            } catch (err) {
+                console.error("Error creating order:", err);
+                showToast("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อบันทึกคำสั่งซื้อได้", "error");
+                return;
+            }
+        }
 
         // Save order to localStorage 'myOrders'
         const orders = JSON.parse(localStorage.getItem('myOrders') || '[]');
@@ -253,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateGlobalCartCount();
 
         // Update Success Modal Content
-        mockOrderId.textContent = pendingOrderData.id;
+        mockOrderId.textContent = dbOrderId;
         if (successModalTitle) successModalTitle.textContent = title;
         if (successModalMessage) successModalMessage.innerHTML = message;
 

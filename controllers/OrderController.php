@@ -104,6 +104,25 @@ class OrderController {
             $promo_id = !empty($data['promo_id']) ? $data['promo_id'] : null;
             $stmtOrder->execute([$data['customer_id'], $data['address_id'], $promo_id, $subtotal, $discount, $shipping_fee, $net_total, $freeGift, $pointsEarned]);
             $order_id = (int)$this->db->lastInsertId();
+
+            // Insert into deliveries table
+            $company_id = !empty($data['company_id']) ? (int)$data['company_id'] : (!empty($data['delivery_company_id']) ? (int)$data['delivery_company_id'] : null);
+            if (!$company_id) {
+                try {
+                    $stmtFirstComp = $this->db->query("SELECT company_id FROM delivery_companies ORDER BY company_id ASC LIMIT 1");
+                    $firstComp = $stmtFirstComp->fetch(PDO::FETCH_ASSOC);
+                    if ($firstComp) {
+                        $company_id = (int)$firstComp['company_id'];
+                    }
+                } catch(Exception $exComp) {}
+            }
+
+            if ($company_id) {
+                try {
+                    $stmtDel = $this->db->prepare("INSERT INTO deliveries (order_id, company_id, tracking_number, status) VALUES (?, ?, ?, 1)");
+                    $stmtDel->execute([$order_id, $company_id, $data['tracking_number'] ?? null]);
+                } catch(Exception $exDel) {}
+            }
             
             $stmtDetail = $this->db->prepare("INSERT INTO order_details (order_id, product_id, quantity, unit_cost, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)");
             $stmtUpdateStock = $this->db->prepare("UPDATE products SET stock_qty = stock_qty - ? WHERE product_id = ? AND stock_qty >= ?");
@@ -404,7 +423,7 @@ class OrderController {
                 $order['amount'] = (float)$order['amount'];
                 $sId = (int)$order['status'];
                 $order['status'] = isset($statusMap[$sId]) ? $statusMap[$sId] : 'Pending';
-                $order['date'] = date('Y-m-d', strtotime($order['date']));
+                $order['date'] = date('Y-m-d H:i:s', strtotime($order['date']));
                 $order['order_type'] = (int)($order['order_type'] ?? 1);
                 $order['order_type_label'] = ($order['order_type'] == 2) ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์';
             }
@@ -456,16 +475,31 @@ class OrderController {
             // Fetch delivery details
             $tracking_number = null; 
             $company_id = null;
+            $company_name = null;
             try {
-                $qDel = "SELECT tracking_number, company_id FROM deliveries WHERE order_id = ?";
+                $qDel = "SELECT d.tracking_number, d.company_id, dc.company_name 
+                         FROM deliveries d 
+                         LEFT JOIN delivery_companies dc ON d.company_id = dc.company_id 
+                         WHERE d.order_id = ?";
                 $stmtD = $this->db->prepare($qDel);
                 $stmtD->execute([$orderId]);
                 $d = $stmtD->fetch(PDO::FETCH_ASSOC);
                 if ($d) {
                     $tracking_number = $d['tracking_number'];
                     $company_id = $d['company_id'];
+                    $company_name = $d['company_name'];
                 }
             } catch(Exception $ex) {}
+
+            if (!$company_name && (int)($order['order_type'] ?? 1) === 1) {
+                try {
+                    $stmtFirstComp = $this->db->query("SELECT company_name FROM delivery_companies ORDER BY company_id ASC LIMIT 1");
+                    $firstComp = $stmtFirstComp->fetch(PDO::FETCH_ASSOC);
+                    $company_name = $firstComp ? $firstComp['company_name'] : 'ขนส่งเอกชน';
+                } catch(Exception $exComp) {
+                    $company_name = 'ขนส่งเอกชน';
+                }
+            }
 
             // Fetch payment method
             $payment_method = 'transfer';
@@ -495,13 +529,15 @@ class OrderController {
 
             $data = [
                 'id' => $order['order_id'],
-                'date' => date('Y-m-d H:i', strtotime($order['order_date'])),
+                'date' => date('Y-m-d H:i:s', strtotime($order['order_date'])),
                 'number' => $order['number'],
                 'status' => $statusStr,
                 'order_type' => (int)($order['order_type'] ?? 1),
                 'order_type_label' => ((int)($order['order_type'] ?? 1) == 2) ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์',
                 'tracking_number' => $tracking_number,
                 'company_id' => $company_id,
+                'company_name' => $company_name,
+                'shipping_provider' => $company_name,
                 'payment_method' => $payment_method,
                 'free_gift' => $order['free_gift'],
                 'points_earned' => (int)($order['points_earned'] ?? 0),
@@ -552,11 +588,52 @@ class OrderController {
 
             $sId = isset($map[$statusStr]) ? $map[$statusStr] : 1;
 
-            $stmt = $this->db->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
-            if ($stmt->execute([$sId, $orderId])) {
-                
+            $updatedShippingFee = null;
+            $updatedNetTotal = null;
+            $updatedCompanyName = null;
+
+            if ($companyIdReq !== null) {
+                $compStmt = $this->db->prepare("SELECT * FROM delivery_companies WHERE company_id = ?");
+                $compStmt->execute([$companyIdReq]);
+                $comp = $compStmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($comp) {
+                    $updatedCompanyName = $comp['company_name'];
+                    $baseRate = (float)($comp['base_rate'] ?? 0);
+                    $ratePerKg = (float)($comp['rate_per_kg'] ?? 0);
+
+                    $wStmt = $this->db->prepare("SELECT SUM(od.quantity * COALESCE(p.weight, 0)) as total_weight FROM order_details od JOIN products p ON od.product_id = p.product_id WHERE od.order_id = ?");
+                    $wStmt->execute([$orderId]);
+                    $wRow = $wStmt->fetch(PDO::FETCH_ASSOC);
+                    $totalWeight = (float)($wRow['total_weight'] ?? 0);
+
+                    $calcShippingFee = $baseRate + ceil($totalWeight) * $ratePerKg;
+                    if ($calcShippingFee <= 0) {
+                        $calcShippingFee = $baseRate > 0 ? $baseRate : 40.00;
+                    }
+                    $updatedShippingFee = $calcShippingFee;
+
+                    $oStmt = $this->db->prepare("SELECT subtotal, discount_amount FROM orders WHERE order_id = ?");
+                    $oStmt->execute([$orderId]);
+                    $oRow = $oStmt->fetch(PDO::FETCH_ASSOC);
+                    $subtotal = (float)($oRow['subtotal'] ?? 0);
+                    $discount = (float)($oRow['discount_amount'] ?? 0);
+
+                    $updatedNetTotal = max(0, $subtotal + $updatedShippingFee - $discount);
+                }
+            }
+
+            if ($updatedShippingFee !== null && $updatedNetTotal !== null) {
+                $stmt = $this->db->prepare("UPDATE orders SET status = ?, shipping_fee = ?, net_total = ? WHERE order_id = ?");
+                $executed = $stmt->execute([$sId, $updatedShippingFee, $updatedNetTotal, $orderId]);
+            } else {
+                $stmt = $this->db->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
+                $executed = $stmt->execute([$sId, $orderId]);
+            }
+
+            if ($executed) {
                 // Allow delivery table insertion even if tracking is blank
-                if ($sId == 3 || $sId == 4) {
+                if ($sId == 3 || $sId == 4 || $companyIdReq !== null) {
                     $cStmt = $this->db->prepare("SELECT delivery_id FROM deliveries WHERE order_id = ?");
                     $cStmt->execute([$orderId]);
                     if ($cStmt->rowCount() > 0) {
@@ -593,7 +670,12 @@ class OrderController {
                     }
                 }
 
-                Response::json(200, "Order status updated");
+                Response::json(200, "Order status updated", [
+                    "company_id" => $companyIdReq,
+                    "company_name" => $updatedCompanyName,
+                    "shipping_fee" => $updatedShippingFee,
+                    "net_total" => $updatedNetTotal
+                ]);
             } else {
                 Response::json(500, "Failed to update status");
             }

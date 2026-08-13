@@ -113,4 +113,102 @@ class AttendanceController {
             Response::json(500, "Error fetching attendance: " . $e->getMessage());
         }
     }
+
+    public function adminOverview() {
+        $period = $_GET['period'] ?? date('Y-m');
+        try {
+            $sql = "SELECT e.employee_id, e.first_name, e.last_name, e.position,
+                    COUNT(DISTINCT dates.work_date) AS scheduled_days,
+                    COALESCE(SUM(av.attendance_status = 'present'), 0) AS present_days,
+                    COALESCE(SUM(av.attendance_status = 'leave'), 0) AS leave_days,
+                    COALESCE(SUM(av.attendance_status = 'absent'), 0) AS absent_days,
+                    COUNT(DISTINCT dates.work_date) - COUNT(DISTINCT av.work_date) AS pending_days
+                    FROM employees e
+                    LEFT JOIN (
+                        SELECT employee_id, work_date FROM work_schedules WHERE booking_status = 'approved' AND DATE_FORMAT(work_date, '%Y-%m') = :period1
+                        UNION
+                        SELECT employee_id, work_date FROM attendance_logs WHERE DATE_FORMAT(work_date, '%Y-%m') = :period2
+                    ) dates ON dates.employee_id = e.employee_id
+                    LEFT JOIN attendance_verifications av ON av.employee_id = e.employee_id
+                        AND av.work_date = dates.work_date
+                    GROUP BY e.employee_id, e.first_name, e.last_name, e.position
+                    ORDER BY e.first_name, e.last_name";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':period1' => $period, ':period2' => $period]);
+            Response::json(200, 'Success', ['period' => $period, 'employees' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        } catch (Exception $e) {
+            Response::json(500, 'Error fetching attendance overview: ' . $e->getMessage());
+        }
+    }
+
+    public function adminDetails() {
+        $employeeId = (int)($_GET['employee_id'] ?? 0);
+        $period = $_GET['period'] ?? date('Y-m');
+        if (!$employeeId) { Response::json(400, 'Employee ID is required'); return; }
+        try {
+            $employeeStmt = $this->db->prepare('SELECT employee_id, first_name, last_name, position FROM employees WHERE employee_id = :id');
+            $employeeStmt->execute([':id' => $employeeId]);
+            $employee = $employeeStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$employee) { Response::json(404, 'Employee not found'); return; }
+            $stmt = $this->db->prepare("SELECT dates.work_date, av.attendance_status, av.notes
+                FROM (
+                    SELECT work_date FROM work_schedules WHERE employee_id = :id1 AND booking_status = 'approved' AND DATE_FORMAT(work_date, '%Y-%m') = :period1
+                    UNION
+                    SELECT work_date FROM attendance_logs WHERE employee_id = :id2 AND DATE_FORMAT(work_date, '%Y-%m') = :period2
+                ) dates
+                LEFT JOIN attendance_verifications av ON av.employee_id = :id3 AND av.work_date = dates.work_date
+                ORDER BY dates.work_date ASC");
+            $stmt->execute([
+                ':id1' => $employeeId,
+                ':period1' => $period,
+                ':id2' => $employeeId,
+                ':period2' => $period,
+                ':id3' => $employeeId
+            ]);
+            Response::json(200, 'Success', ['employee' => $employee, 'dates' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        } catch (Exception $e) {
+            Response::json(500, 'Error fetching attendance details: ' . $e->getMessage());
+        }
+    }
+
+    public function adminEmployeeDetails() {
+        $this->adminDetails();
+    }
+
+    public function verify() {
+        $this->verifyAttendance();
+    }
+
+    public function verifyAttendance() {
+        $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $employeeId = (int)($data['employee_id'] ?? 0);
+        $workDate = $data['work_date'] ?? '';
+        $status = $data['attendance_status'] ?? '';
+        $notes = trim($data['notes'] ?? '');
+        if (!$employeeId || !$workDate || !in_array($status, ['present', 'leave', 'absent'], true)) {
+            Response::json(400, 'Employee, date and a valid attendance status are required'); return;
+        }
+        try {
+            $scheduled = $this->db->prepare("
+                SELECT 1 FROM work_schedules WHERE employee_id = :id1 AND work_date = :date1 AND booking_status = 'approved'
+                UNION
+                SELECT 1 FROM attendance_logs WHERE employee_id = :id2 AND work_date = :date2
+            ");
+            $scheduled->execute([':id1' => $employeeId, ':date1' => $workDate, ':id2' => $employeeId, ':date2' => $workDate]);
+            if (!$scheduled->fetchColumn()) { Response::json(400, 'This date is not in the employee work schedule'); return; }
+            
+            if (session_status() === PHP_SESSION_NONE) session_start();
+
+            $logStmt = $this->db->prepare("INSERT INTO attendance_logs (employee_id, work_date) VALUES (:id, :date) ON DUPLICATE KEY UPDATE employee_id = employee_id");
+            $logStmt->execute([':id' => $employeeId, ':date' => $workDate]);
+
+            $stmt = $this->db->prepare("INSERT INTO attendance_verifications (employee_id, work_date, attendance_status, notes, verified_by)
+                VALUES (:id, :date, :status, :notes, :by)
+                ON DUPLICATE KEY UPDATE attendance_status = VALUES(attendance_status), notes = VALUES(notes), verified_by = VALUES(verified_by)");
+            $stmt->execute([':id' => $employeeId, ':date' => $workDate, ':status' => $status, ':notes' => $notes ?: null, ':by' => $_SESSION['user_id'] ?? null]);
+            Response::json(200, 'Attendance verified successfully');
+        } catch (Exception $e) {
+            Response::json(500, 'Error verifying attendance: ' . $e->getMessage());
+        }
+    }
 }

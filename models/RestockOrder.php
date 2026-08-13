@@ -50,9 +50,10 @@ class RestockOrder {
         if (!$order) return null;
 
         // Get details
-        $queryDetails = "SELECT rd.*, p.product_name, p.barcode
+        $queryDetails = "SELECT rd.*, p.product_name, p.barcode, pc.requires_expiration
                          FROM restock_details rd
                          JOIN products p ON rd.product_id = p.product_id
+                         LEFT JOIN product_categories pc ON p.category_id = pc.category_id
                          WHERE rd.restock_id = :id";
         $stmtDetails = $this->conn->prepare($queryDetails);
         $stmtDetails->execute([':id' => $id]);
@@ -96,8 +97,7 @@ class RestockOrder {
             $restock_id = $this->conn->lastInsertId();
 
             // Prepared statements for details, stock, and logs
-            $stmtDetail = $this->conn->prepare("INSERT INTO restock_details (restock_id, product_id, quantity, unit_cost) VALUES (?, ?, ?, ?)");
-            $stmtUpdateStock = $this->conn->prepare("UPDATE products SET stock_qty = stock_qty + ?, cost_price = ? WHERE product_id = ?");
+            $stmtDetail = $this->conn->prepare("INSERT INTO restock_details (restock_id, product_id, quantity, unit_cost, lot_number, expiry_date) VALUES (?, ?, ?, ?, ?, ?)");
             $stmtLog = $this->conn->prepare("INSERT INTO inventory_logs (product_id, employee_id, reference_id, quantity, movement_type, unit_cost) VALUES (?, ?, ?, ?, 1, ?)");
             $stmtGetProduct = $this->conn->prepare("SELECT stock_qty, cost_price FROM products WHERE product_id = ? FOR UPDATE");
 
@@ -106,11 +106,27 @@ class RestockOrder {
                 $qty = (int)$item['quantity'];
                 $cost = (float)$item['unit_cost'];
                 $p_id = (int)$item['product_id'];
+                $lot_number = !empty($item['lot_number']) ? trim($item['lot_number']) : null;
+                $expiry_date = !empty($item['expiry_date']) ? $item['expiry_date'] : null;
 
                 // Insert detail row
-                $stmtDetail->execute([$restock_id, $p_id, $qty, $cost]);
+                $stmtDetail->execute([$restock_id, $p_id, $qty, $cost, $lot_number, $expiry_date]);
 
                 if ($status === 2) {
+                    // Find or create lot
+                    $stmtFindLot = $this->conn->prepare("SELECT lot_id, quantity FROM product_lots WHERE product_id = ? AND (lot_number = ? OR (lot_number IS NULL AND ? IS NULL)) AND (expiry_date = ? OR (expiry_date IS NULL AND ? IS NULL))");
+                    $stmtFindLot->execute([$p_id, $lot_number, $lot_number, $expiry_date, $expiry_date]);
+                    $existingLot = $stmtFindLot->fetch(PDO::FETCH_ASSOC);
+
+                    if ($existingLot) {
+                        $newLotQty = (int)$existingLot['quantity'] + $qty;
+                        $stmtUpdateLot = $this->conn->prepare("UPDATE product_lots SET quantity = ? WHERE lot_id = ?");
+                        $stmtUpdateLot->execute([$newLotQty, $existingLot['lot_id']]);
+                    } else {
+                        $stmtInsertLot = $this->conn->prepare("INSERT INTO product_lots (product_id, lot_number, quantity, expiry_date, cost_price) VALUES (?, ?, ?, ?, ?)");
+                        $stmtInsertLot->execute([$p_id, $lot_number, $qty, $expiry_date, $cost]);
+                    }
+
                     // Fetch current stock and cost for WAC calculation
                     $stmtGetProduct->execute([$p_id]);
                     $product = $stmtGetProduct->fetch(PDO::FETCH_ASSOC);
@@ -126,7 +142,12 @@ class RestockOrder {
                     }
 
                     // Update products stock and average cost price
-                    $stmtUpdateStock->execute([$qty, $newCost, $p_id]);
+                    $stmtTotalQty = $this->conn->prepare("SELECT COALESCE(SUM(quantity), 0) FROM product_lots WHERE product_id = ?");
+                    $stmtTotalQty->execute([$p_id]);
+                    $newQtyFromLots = (int)$stmtTotalQty->fetchColumn();
+
+                    $stmtUpdateStock = $this->conn->prepare("UPDATE products SET stock_qty = ?, cost_price = ? WHERE product_id = ?");
+                    $stmtUpdateStock->execute([$newQtyFromLots, $newCost, $p_id]);
 
                     // Log movement
                     $stmtLog->execute([$p_id, $employee_id, $restock_id, $qty, $cost]);
@@ -142,7 +163,7 @@ class RestockOrder {
         }
     }
 
-    public function receive($id, $employee_id) {
+    public function receive($id, $employee_id, $receivedItems = []) {
         try {
             $this->conn->beginTransaction();
 
@@ -159,21 +180,50 @@ class RestockOrder {
                 throw new Exception("Restock order is not in Pending status");
             }
 
+            // Map received items by product_id
+            $receivedMap = [];
+            foreach ($receivedItems as $ri) {
+                $receivedMap[(int)$ri['product_id']] = [
+                    'lot_number' => !empty($ri['lot_number']) ? trim($ri['lot_number']) : null,
+                    'expiry_date' => !empty($ri['expiry_date']) ? $ri['expiry_date'] : null
+                ];
+            }
+
             // 2. Fetch items for this order
             $queryDetails = "SELECT * FROM restock_details WHERE restock_id = :id";
             $stmtDetails = $this->conn->prepare($queryDetails);
             $stmtDetails->execute([':id' => $id]);
             $items = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
 
-            $stmtUpdateStock = $this->conn->prepare("UPDATE products SET stock_qty = stock_qty + ?, cost_price = ? WHERE product_id = ?");
             $stmtLog = $this->conn->prepare("INSERT INTO inventory_logs (product_id, employee_id, reference_id, quantity, movement_type, unit_cost) VALUES (?, ?, ?, ?, 1, ?)");
             $stmtGetProduct = $this->conn->prepare("SELECT stock_qty, cost_price FROM products WHERE product_id = ? FOR UPDATE");
+            $stmtUpdateDetail = $this->conn->prepare("UPDATE restock_details SET lot_number = ?, expiry_date = ? WHERE restock_id = ? AND product_id = ?");
 
             // 3. Update stock, calculate WAC, and log movement for each item
             foreach ($items as $item) {
                 $qty = (int)$item['quantity'];
                 $cost = (float)$item['unit_cost'];
                 $p_id = (int)$item['product_id'];
+
+                $lot_number = $receivedMap[$p_id]['lot_number'] ?? null;
+                $expiry_date = $receivedMap[$p_id]['expiry_date'] ?? null;
+
+                // Update restock_details
+                $stmtUpdateDetail->execute([$lot_number, $expiry_date, $id, $p_id]);
+
+                // Find or insert lot
+                $stmtFindLot = $this->conn->prepare("SELECT lot_id, quantity FROM product_lots WHERE product_id = ? AND (lot_number = ? OR (lot_number IS NULL AND ? IS NULL)) AND (expiry_date = ? OR (expiry_date IS NULL AND ? IS NULL))");
+                $stmtFindLot->execute([$p_id, $lot_number, $lot_number, $expiry_date, $expiry_date]);
+                $existingLot = $stmtFindLot->fetch(PDO::FETCH_ASSOC);
+
+                if ($existingLot) {
+                    $newLotQty = (int)$existingLot['quantity'] + $qty;
+                    $stmtUpdateLot = $this->conn->prepare("UPDATE product_lots SET quantity = ? WHERE lot_id = ?");
+                    $stmtUpdateLot->execute([$newLotQty, $existingLot['lot_id']]);
+                } else {
+                    $stmtInsertLot = $this->conn->prepare("INSERT INTO product_lots (product_id, lot_number, quantity, expiry_date, cost_price) VALUES (?, ?, ?, ?, ?)");
+                    $stmtInsertLot->execute([$p_id, $lot_number, $qty, $expiry_date, $cost]);
+                }
 
                 // Fetch current stock and cost for WAC calculation
                 $stmtGetProduct->execute([$p_id]);
@@ -189,8 +239,13 @@ class RestockOrder {
                     $newCost = $cost;
                 }
 
-                // Update products stock and average cost price
-                $stmtUpdateStock->execute([$qty, $newCost, $p_id]);
+                // Sync products.stock_qty from sum of active lots
+                $stmtTotalQty = $this->conn->prepare("SELECT COALESCE(SUM(quantity), 0) FROM product_lots WHERE product_id = ?");
+                $stmtTotalQty->execute([$p_id]);
+                $newQtyFromLots = (int)$stmtTotalQty->fetchColumn();
+
+                $stmtUpdateStock = $this->conn->prepare("UPDATE products SET stock_qty = ?, cost_price = ? WHERE product_id = ?");
+                $stmtUpdateStock->execute([$newQtyFromLots, $newCost, $p_id]);
 
                 // Log movement
                 $stmtLog->execute([$p_id, $employee_id, $id, $qty, $cost]);

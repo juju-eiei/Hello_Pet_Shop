@@ -27,10 +27,16 @@
         <main class="main-content">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h1>หมวดหมู่สินค้า</h1>
-                <button onclick="openAddCategoryModal()" class="save-btn" style="padding: 10px 24px; font-size: 14px; border: none; cursor: pointer;">
-                    <i class="fas fa-plus" style="margin-right: 8px;"></i>
-                    เพิ่มหมวดหมู่สินค้า
-                </button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="deleteSelectedCategoriesBtn" style="padding: 10px 20px; font-size: 14px; background-color: #ef4444; border: 1px solid #ef4444; border-radius: 12px; font-weight: 600; color: white; display: none; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; outline: none; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); height: 42px; white-space: nowrap; width: auto; font-family: inherit;">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>ลบรายการที่เลือก</span>
+                    </button>
+                    <button onclick="openAddCategoryModal()" class="save-btn" style="padding: 10px 24px; font-size: 14px; border: none; cursor: pointer; display: inline-flex; align-items: center; height: 42px;">
+                        <i class="fas fa-plus" style="margin-right: 8px;"></i>
+                        เพิ่มหมวดหมู่สินค้า
+                    </button>
+                </div>
             </div>
 
             <div class="search-container">
@@ -39,13 +45,20 @@
             </div>
 
             <div class="stock-table">
-                <div class="table-header">
+                <div class="table-header" style="display: flex; align-items: center; width: 100%;">
+                    <div style="width: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <input type="checkbox" id="selectAllCategoriesCheckbox" style="transform: scale(1.2); cursor: pointer;">
+                    </div>
                     <span style="flex: 1;">รหัส</span>
                     <span style="flex: 3;">ชื่อหมวดหมู่</span>
-                    <span style="flex: 1; text-align: right;">การจัดการ</span>
+                    <span style="flex: 2; text-align: center;">วันหมดอายุของล็อต</span>
+                    <span style="flex: 1.2; text-align: right;">การจัดการ</span>
                 </div>
                 <div id="categoryContainer">
-                    <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
+                    <div class="loading-container">
+                        <div class="spinner-loader"></div>
+                        <span>กำลังโหลดข้อมูล...</span>
+                    </div>
                 </div>
             </div>
             <!-- Pagination -->
@@ -98,13 +111,37 @@
     <div id="addCategoryModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-title">เพิ่มประเภทสินค้าใหม่</div>
-            <div class="form-group" style="margin-top: 15px; margin-bottom: 20px;">
+            <div class="form-group" style="margin-top: 15px; margin-bottom: 15px;">
                 <label for="categoryName" style="display: block; margin-bottom: 8px; font-weight: 500;">Category Name <span style="color: red;">*</span></label>
                 <input type="text" id="categoryName" class="form-control" placeholder="Enter category name" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
             </div>
+            <div class="form-group" style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="categoryRequiresExpiration" style="width: 18px; height: 18px; cursor: pointer;" checked>
+                <label for="categoryRequiresExpiration" style="font-weight: 500; cursor: pointer; user-select: none;">ต้องการใส่วันหมดอายุของล็อตสินค้า</label>
+            </div>
             <div class="modal-btns">
                 <button class="modal-btn modal-btn-cancel" onclick="closeAddCategoryModal()">ยกเลิก</button>
-                <button class="modal-btn" style="background-color: #3b82f6; color: white;" onclick="addCategory()">บันทึก</button>
+                <button class="modal-btn" style="background-color: var(--secondary-berry); color: white;" onclick="addCategory()">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Category Modal -->
+    <div id="editCategoryModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title">แก้ไขประเภทสินค้า</div>
+            <input type="hidden" id="editCategoryId">
+            <div class="form-group" style="margin-top: 15px; margin-bottom: 15px;">
+                <label for="editCategoryName" style="display: block; margin-bottom: 8px; font-weight: 500;">ชื่อประเภทสินค้า <span style="color: red;">*</span></label>
+                <input type="text" id="editCategoryName" class="form-control" placeholder="Enter category name" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="editCategoryRequiresExpiration" style="width: 18px; height: 18px; cursor: pointer;">
+                <label for="editCategoryRequiresExpiration" style="font-weight: 500; cursor: pointer; user-select: none;">ต้องการใส่วันหมดอายุของล็อตสินค้า</label>
+            </div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeEditCategoryModal()">ยกเลิก</button>
+                <button class="modal-btn" style="background-color: var(--secondary-berry); color: white;" onclick="updateCategory()">บันทึก</button>
             </div>
         </div>
     </div>
@@ -143,10 +180,24 @@
             }
         }
 
+        function updateDeleteSelectedCategoriesVisibility() {
+            const deleteBtn = document.getElementById('deleteSelectedCategoriesBtn');
+            if (!deleteBtn) return;
+            const checkedCount = document.querySelectorAll('.category-select-checkbox:checked').length;
+            if (checkedCount > 0) {
+                deleteBtn.style.display = 'inline-flex';
+            } else {
+                deleteBtn.style.display = 'none';
+            }
+        }
+
         function renderCategories() {
             const container = document.getElementById('categoryContainer');
             const paginationContainer = document.getElementById('paginationContainer');
             
+            const selectAllChk = document.getElementById('selectAllCategoriesCheckbox');
+            if (selectAllChk) selectAllChk.checked = false;
+
             const filtered = allCategories.filter(c => 
                 c.category_name.toLowerCase().includes(currentKeyword.toLowerCase())
             );
@@ -154,6 +205,7 @@
             if (filtered.length === 0) {
                 container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบประเภทสินค้า</div>';
                 if (paginationContainer) paginationContainer.innerHTML = '';
+                updateDeleteSelectedCategoriesVisibility();
                 return;
             }
 
@@ -172,17 +224,36 @@
 
             container.innerHTML = paginatedCategories.map(c => `
                 <div class="product-row" style="display: flex; align-items: center; width: 100%;">
+                    <div style="width: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <input type="checkbox" class="category-select-checkbox" data-category-id="${c.category_id}" style="transform: scale(1.2); cursor: pointer;" onclick="event.stopPropagation();">
+                    </div>
                     <div style="flex: 1; color: #64748b;">#${c.category_id}</div>
                     <div class="product-details" style="flex: 3; margin-right: 20px;">
                         <div class="product-name">${c.category_name}</div>
                     </div>
-                    <div class="stock-actions" style="flex: 1; text-align: right; justify-content: flex-end;">
-                        <a href="#" onclick="deleteCategory(${c.category_id}, '${c.category_name.replace(/'/g, "\\'")}')" class="action-link delete-link" title="Delete Category">
+                    <div style="flex: 2; text-align: center;">
+                        <span class="status-badge" 
+                              style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; 
+                                     background-color: ${c.requires_expiration == 1 ? '#e6f4ea' : '#f1f5f9'}; 
+                                     color: ${c.requires_expiration == 1 ? '#137333' : '#475569'};">
+                            ${c.requires_expiration == 1 ? 'จำเป็น' : 'ไม่จำเป็น'}
+                        </span>
+                    </div>
+                    <div class="stock-actions" style="flex: 1.2; text-align: right; justify-content: flex-end; display: flex; gap: 12px;">
+                        <a href="#" onclick="openEditCategoryModal(${c.category_id}, '${c.category_name.replace(/'/g, "\\'")}', ${c.requires_expiration}); event.preventDefault();" class="action-link edit-link" title="Edit Category" style="color: #475569; margin-right: 8px;">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="#" onclick="deleteCategory(${c.category_id}, '${c.category_name.replace(/'/g, "\\'")}'); event.preventDefault();" class="action-link delete-link" title="Delete Category">
                             <i class="fas fa-trash-alt"></i>
                         </a>
                     </div>
                 </div>
             `).join('');
+
+            document.querySelectorAll('.category-select-checkbox').forEach(cb => {
+                cb.addEventListener('change', updateDeleteSelectedCategoriesVisibility);
+            });
+            updateDeleteSelectedCategoriesVisibility();
 
             renderPagination(filtered.length);
         }
@@ -232,6 +303,9 @@
 
         function openAddCategoryModal() {
             document.getElementById('categoryName').value = '';
+            if (document.getElementById('categoryRequiresExpiration')) {
+                document.getElementById('categoryRequiresExpiration').checked = true;
+            }
             document.getElementById('addCategoryModal').style.display = 'flex';
             setTimeout(() => document.getElementById('addCategoryModal').classList.add('show'), 10);
         }
@@ -242,18 +316,63 @@
             setTimeout(() => modal.style.display = 'none', 300);
         }
 
+        function openEditCategoryModal(id, name, requiresExpiration) {
+            document.getElementById('editCategoryId').value = id;
+            document.getElementById('editCategoryName').value = name;
+            document.getElementById('editCategoryRequiresExpiration').checked = requiresExpiration == 1;
+            
+            document.getElementById('editCategoryModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('editCategoryModal').classList.add('show'), 10);
+        }
+
+        function closeEditCategoryModal() {
+            const modal = document.getElementById('editCategoryModal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        async function updateCategory() {
+            const id = document.getElementById('editCategoryId').value;
+            const name = document.getElementById('editCategoryName').value.trim();
+            if (!name) {
+                showToast("กรุณากรอกชื่อประเภทสินค้า", "error");
+                return;
+            }
+            const requiresExpiration = document.getElementById('editCategoryRequiresExpiration').checked ? 1 : 0;
+
+            try {
+                const response = await fetch('/api/categories/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, name: name, requires_expiration: requiresExpiration })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    showToast("แก้ไขประเภทสินค้าเรียบร้อย", "success");
+                    closeEditCategoryModal();
+                    fetchCategories();
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาด", "error");
+                }
+            } catch (error) {
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
         async function addCategory() {
             const name = document.getElementById('categoryName').value.trim();
             if (!name) {
                 showToast("กรุณากรอกชื่อประเภทสินค้า", "error");
                 return;
             }
+            const requiresExpiration = document.getElementById('categoryRequiresExpiration').checked ? 1 : 0;
 
             try {
                 const response = await fetch('/api/categories', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name })
+                    body: JSON.stringify({ name: name, requires_expiration: requiresExpiration })
                 });
                 
                 const result = await response.json();
@@ -362,6 +481,62 @@
                 else if (isOpen === 'false') menuGroup.classList.remove('open');
             }
         });
+
+        // Select All Handler
+        const selectAllCategoriesChk = document.getElementById('selectAllCategoriesCheckbox');
+        if (selectAllCategoriesChk) {
+            selectAllCategoriesChk.addEventListener('change', (e) => {
+                const checked = e.target.checked;
+                document.querySelectorAll('.category-select-checkbox').forEach(cb => {
+                    cb.checked = checked;
+                });
+                updateDeleteSelectedCategoriesVisibility();
+            });
+        }
+
+        // Delete Selected Handler
+        const deleteSelectedCategoriesBtn = document.getElementById('deleteSelectedCategoriesBtn');
+        if (deleteSelectedCategoriesBtn) {
+            deleteSelectedCategoriesBtn.addEventListener('click', async () => {
+                const checkedCheckboxes = document.querySelectorAll('.category-select-checkbox:checked');
+                const ids = Array.from(checkedCheckboxes).map(cb => parseInt(cb.getAttribute('data-category-id')));
+                if (ids.length === 0) return;
+
+                const confirmed = await showConfirmModal("ยืนยันการลบหลายประเภทสินค้า", `คุณต้องการลบประเภทสินค้าที่เลือกจำนวน ${ids.length} รายการ ใช่หรือไม่?`);
+                if (!confirmed) return;
+
+                try {
+                    Swal.fire({
+                        title: 'กำลังลบประเภทสินค้า...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+
+                    const response = await fetch('/api/categories/delete-bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: ids })
+                    });
+                    
+                    Swal.close();
+                    const result = await response.json();
+                    if (response.ok) {
+                        showToast(result.message || "ลบประเภทสินค้าที่เลือกเรียบร้อยแล้ว", "success");
+                        fetchCategories();
+                    } else {
+                        if (response.status === 401 || response.status === 403) {
+                            localStorage.removeItem('user');
+                            window.location.href = 'login.html';
+                            return;
+                        }
+                        showToast(result.message || "ลบไม่สำเร็จ", "error");
+                    }
+                } catch (error) {
+                    Swal.close();
+                    showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+                }
+            });
+        }
 
         checkAuth();
         fetchCategories();

@@ -30,8 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let htmlSnippet = `
             <div class="flex items-center mb-6 pb-5 border-b border-gray-200/60">
                 <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" id="selectAllCheckbox" class="w-[18px] h-[18px] rounded border-gray-300 text-[#8bb35c] focus:ring-[#8bb35c] cursor-pointer cursor-pointer transition-all" ${allSelected ? 'checked' : ''}>
-                    <span class="ml-3 text-[#1f2937] font-medium group-hover:text-[#8bb35c] transition-colors">เลือกสินค้าทั้งหมด</span>
+                    <input type="checkbox" id="selectAllCheckbox" class="w-[18px] h-[18px] rounded border-gray-300 text-[#16a34a] focus:ring-[#16a34a] cursor-pointer cursor-pointer transition-all" ${allSelected ? 'checked' : ''}>
+                    <span class="ml-3 text-[#1f2937] font-medium group-hover:text-[#16a34a] transition-colors">เลือกสินค้าทั้งหมด</span>
                 </label>
             </div>
         `;
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 pb-8 border-b border-[#e2e8f0] last:border-0 last:pb-0 last:mb-0 relative py-2 transition-opacity ${!isSelected ? 'opacity-60' : ''}">
                 <div class="flex items-center space-x-5">
                     <!-- Checkbox -->
-                    <input type="checkbox" class="item-checkbox w-[18px] h-[18px] rounded border-gray-300 text-[#8bb35c] focus:ring-[#8bb35c] cursor-pointer" data-id="${item.id}" ${isSelected ? 'checked' : ''}>
+                    <input type="checkbox" class="item-checkbox w-[18px] h-[18px] rounded border-gray-300 text-[#16a34a] focus:ring-[#16a34a] cursor-pointer" data-id="${item.id}" ${isSelected ? 'checked' : ''}>
                     
                     <!-- Product Image -->
                     <div class="w-24 h-24 bg-white rounded-2xl flex-shrink-0 flex items-center justify-center p-3 shadow-sm ${!isSelected ? 'grayscale-[30%]' : ''}">
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 <div class="flex items-center justify-between sm:w-auto w-full mt-6 sm:mt-0 px-2 sm:px-0 sm:ml-0 ml-10 sm:space-x-24">
                     <!-- Price -->
-                    <span class="text-[#1f2937] font-medium text-[17px]">฿${itemTotal.toFixed(2)}</span>
+                    <span class="text-[#1f2937] font-medium text-[17px]">฿${itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                     
                     <!-- Internal Quantity Adjuster -->
                     <div class="flex items-center space-x-6">
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         cartItemsContainer.innerHTML = htmlSnippet;
         
-        cartSubtotal.textContent = `฿${total.toFixed(2)}`;
+        cartSubtotal.textContent = `฿${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
         // Attach events
         document.querySelectorAll('.cart-minus').forEach(btn => {

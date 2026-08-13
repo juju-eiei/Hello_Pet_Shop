@@ -48,7 +48,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background-color: #3b82f6;
+            background-color: var(--secondary-berry);
             color: white;
             border: none;
             padding: 10px 18px;
@@ -59,7 +59,7 @@
             transition: all 0.2s;
         }
         .premium-btn:hover {
-            background-color: #2563eb;
+            background-color: var(--secondary-berry-hover);
             transform: translateY(-1px);
         }
     </style>
@@ -99,6 +99,28 @@
                         </div>
                     </div>
                 </div>
+
+                <div style="margin-top: 20px;">
+                    <div class="premium-card" style="width: 100%; max-width: 100%;">
+                        <div class="card-header">
+                            <h2><i class="fab fa-line" style="color: #06c755;"></i> ตั้งค่า LINE Official Account (Messaging API)</h2>
+                        </div>
+                        <div>
+                            <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">กรอกข้อมูลเพื่อเชื่อมต่อระบบแจ้งเตือนเข้าแชทส่วนตัวหรือกลุ่ม LINE ด้วยไลน์ร้านตัวหลักของคุณ</p>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label for="lineOaToken" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #475569;">LINE Channel Access Token</label>
+                                <input type="text" id="lineOaToken" class="form-control" placeholder="ใส่รหัส Channel Access Token สีแดงยาวๆ จาก LINE Developers" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="lineTargetId" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #475569;">LINE Target User ID / Group ID</label>
+                                <input type="text" id="lineTargetId" class="form-control" placeholder="ใส่รหัส User ID (ขึ้นต้นด้วยตัว U) หรือ Group ID ที่ต้องการรับข้อความ" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px;">
+                            </div>
+                            <button onclick="saveRewardSettings()" class="premium-btn" style="width: 100%; justify-content: center; padding: 12px; background: linear-gradient(135deg, #06c755, #05b04b); border-color: #06c755;">
+                                <i class="fas fa-save"></i> บันทึกการตั้งค่า LINE
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -126,6 +148,8 @@
                 if (response.ok) {
                     document.getElementById('pointEarningBaht').value = parseFloat(result.data.point_earning_baht || 100);
                     document.getElementById('pointEarningQty').value = parseInt(result.data.point_earning_qty || 1);
+                    document.getElementById('lineOaToken').value = result.data.line_oa_token || '';
+                    document.getElementById('lineTargetId').value = result.data.line_target_id || '';
                 } else {
                     showToast(result.message || "เกิดข้อผิดพลาดในการโหลดตั้งค่าแต้ม", "error");
                 }
@@ -138,8 +162,12 @@
         async function saveRewardSettings() {
             const bahtInput = document.getElementById('pointEarningBaht');
             const qtyInput = document.getElementById('pointEarningQty');
+            const tokenInput = document.getElementById('lineOaToken');
+            const targetInput = document.getElementById('lineTargetId');
             const baht = parseFloat(bahtInput.value);
             const qty = parseInt(qtyInput.value);
+            const lineToken = tokenInput.value.trim();
+            const lineTarget = targetInput.value.trim();
 
             if (isNaN(baht) || baht <= 0) {
                 showToast("กรุณาระบุจำนวนยอดซื้อขั้นต่ำในอัตราแต้มที่ถูกต้อง (> 0)", "error");
@@ -155,7 +183,9 @@
             const payload = {
                 point_earning_baht: baht,
                 point_earning_qty: qty,
-                point_redemption_rate: 1.00 // Default 1 Pts = 1 Baht
+                point_redemption_rate: 1.00, // Default 1 Pts = 1 Baht
+                line_oa_token: lineToken,
+                line_target_id: lineTarget
             };
 
             try {
@@ -166,7 +196,7 @@
                 });
                 const result = await response.json();
                 if (response.ok) {
-                    showToast("บันทึกอัตราแต้มสะสมสำเร็จแล้ว", "success");
+                    showToast("บันทึกการตั้งค่าสำเร็จแล้ว", "success");
                 } else {
                     showToast(result.message || "เกิดข้อผิดพลาดในการบันทึกการตั้งค่า", "error");
                 }

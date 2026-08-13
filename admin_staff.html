@@ -8,6 +8,7 @@
     <title>จัดการพนักงาน - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* Calendar Styles */
         .calendar-header-day {
@@ -39,13 +40,32 @@
             z-index: 2000;
             display: none;
             opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
             transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
             align-items: center;
             justify-content: center;
         }
         .drawer-overlay.show {
-            display: flex;
-            opacity: 1;
+            display: flex !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+        }
+
+        /* This page has no desktop sidebar backdrop. Keep an accidentally retained
+           sidebar overlay from covering the whole staff-management screen. */
+        #sidebarOverlay {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+
+        /* The global mobile stylesheet previously disabled pointer events for all
+           table rows. This page contains its edit/delete controls inside rows. */
+        html.mobile-device #staffContainer .product-row,
+        html.mobile-device #staffContainer .product-row .action-link {
+            pointer-events: auto !important;
         }
         
         .drawer {
@@ -77,7 +97,6 @@
             padding: 30px 40px 10px 40px;
         }
 
-        /* Custom Scrollbar for Drawer Body */
         .drawer-body::-webkit-scrollbar {
             width: 8px;
         }
@@ -137,7 +156,6 @@
             gap: 8px;
         }
         
-        /* Grid form group layouts */
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -251,20 +269,20 @@
         }
 
         .attendance-link {
-            color: #2563eb;
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
+            color: var(--secondary-berry-hover);
+            background: var(--secondary-berry-light);
+            border: 1px solid var(--secondary-berry-border);
         }
         .attendance-link:hover {
-            background: #2563eb;
+            background: var(--secondary-berry-hover);
             color: white;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
         }
         .btn-attendance {
-            background-color: #eff6ff;
-            color: #2563eb;
-            border: 1px solid #bfdbfe;
+            background-color: var(--secondary-berry-light);
+            color: var(--secondary-berry-hover);
+            border: 1px solid var(--secondary-berry-border);
             width: 100%;
             display: flex;
             align-items: center;
@@ -277,12 +295,24 @@
             transition: all 0.2s;
         }
         .btn-attendance:hover {
-            background-color: #dbeafe;
+            background-color: var(--secondary-berry-border);
             transform: translateY(-1px);
         }
+
+        .badge-right {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 12px;
+        }
+        .badge-monthly { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .badge-weekly { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .badge-daily { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
     </style>
 
-    <!-- Mobile User-Agent Check -->
     <script>
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
             document.documentElement.classList.add('mobile-device');
@@ -300,21 +330,21 @@
 
         <main class="main-content">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h1 data-i18n="title.staff_mgmt">Staff Management</h1>
+                <h1 data-i18n="title.staff_mgmt">จัดการพนักงานและสิทธิ์การจ้าง</h1>
                 <button class="save-btn" id="addStaffBtn" style="padding: 10px 24px; font-size: 14px;">
                     <i class="fas fa-plus" style="margin-right: 8px;"></i>
-                    <span data-i18n="btn.add_staff">Add New Staff</span>
+                    <span>เพิ่มพนักงานใหม่</span>
                 </button>
             </div>
 
             <div class="search-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search staff" data-i18n-placeholder="label.search_placeholder">
+                <input type="text" id="searchInput" placeholder="ค้นหาตามชื่อ นามสกุล หรืออีเมลพนักงาน..." data-i18n-placeholder="label.search_placeholder">
             </div>
 
             <div class="filter-tabs">
-                <button type="button" class="filter-btn active" data-tab="info" data-i18n="tab.employee_info">Employee Information</button>
-                <button type="button" class="filter-btn" data-tab="salary" data-i18n="tab.salary_details">Salary Details</button>
+                <button type="button" class="filter-btn active" data-tab="info">ข้อมูลพนักงานทั่วไป</button>
+                <button type="button" class="filter-btn" data-tab="salary">สิทธิ์การจ้างและอัตราเงินเดือน</button>
             </div>
 
             <div class="stock-table">
@@ -322,7 +352,7 @@
                     <!-- Dynamic Headers rendering via JS -->
                 </div>
                 <div id="staffContainer">
-                    <div style="padding: 50px; text-align: center; color: #718096;">Loading data...</div>
+                    <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูลพนักงาน...</div>
                 </div>
             </div>
             <!-- Pagination -->
@@ -330,117 +360,123 @@
         </main>
     </div>
 
-    <!-- Center Modal for Form -->
+    <!-- Center Modal / Drawer for Form -->
     <div class="drawer-overlay" id="drawerOverlay">
         <div class="drawer" id="staffDrawer">
-            <div class="drawer-header" id="drawerHeader">ส่วนงานจัดการพนักงาน - Add New Staff</div>
+            <div class="drawer-header" id="drawerHeader">
+                <i class="fas fa-user-cog" style="margin-right: 12px; font-size: 22px;"></i>
+                <span>เพิ่มพนักงานใหม่</span>
+            </div>
             <form id="staffForm" style="display: flex; flex-direction: column; overflow: hidden; flex: 1;">
-            <input type="hidden" id="employee_id" name="id">
-            
-            <div class="drawer-body">
-                <div class="form-section-card">
-                    <div class="section-title"><i class="fas fa-id-card"></i> <span>Employee Information</span></div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>First Name</label>
-                            <input type="text" id="first_name" name="first_name" placeholder="Enter first name" required>
-                        </div>
+                <input type="hidden" id="employee_id" name="id">
+                
+                <div class="drawer-body">
+                    <!-- Form Section 1: ข้อมูลทั่วไป -->
+                    <div class="form-section-card" id="sectionEmployeeInfo">
+                        <div class="section-title"><i class="fas fa-id-card"></i> <span>ข้อมูลส่วนตัว (Employee Information)</span></div>
                         
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>ชื่อ (First Name) <span style="color:red;">*</span></label>
+                                <input type="text" id="first_name" name="first_name" placeholder="ระบุชื่อจริง" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>นามสกุล (Last Name)</label>
+                                <input type="text" id="last_name" name="last_name" placeholder="ระบุนามสกุล">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>ชื่อผู้ใช้งาน (Username) <span style="color:red;">*</span></label>
+                                <input type="text" id="username" name="username" placeholder="สำหรับใช้ล็อกอินเข้าระบบ" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>อีเมลติดต่อ (Email) <span style="color:red;">*</span></label>
+                                <input type="email" id="email" name="email" placeholder="ระบุอีเมลติดต่อ" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>รหัสผ่าน (Password)</label>
+                                <input type="password" id="password" name="password" placeholder="รหัสผ่าน (เว้นว่างหากไม่ต้องการเปลี่ยน)">
+                            </div>
+
+                            <div class="form-group">
+                                <label>เบอร์โทรศัพท์ (Phone)</label>
+                                <input type="text" id="phone" name="phone" placeholder="ระบุเบอร์โทรศัพท์">
+                            </div>
+                        </div>
+
                         <div class="form-group">
-                            <label>Last Name</label>
-                            <input type="text" id="last_name" name="last_name" placeholder="Enter last name">
+                            <label>ที่อยู่ (Address)</label>
+                            <input type="text" id="address" name="address" placeholder="ระบุที่อยู่">
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Username (for Login)</label>
-                            <input type="text" id="username" name="username" placeholder="Enter login username" required>
+                    <!-- Form Section 2: สิทธิ์การจ้างและเงินเดือน -->
+                    <div class="form-section-card" id="sectionSalaryPayRights">
+                        <div class="section-title"><i class="fas fa-wallet"></i> <span>สิทธิ์การจ้างและอัตราเงินเดือน (Salary & Pay Rights)</span></div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>สิทธิ์การจ่ายเงิน / ประเภทการจ้าง <span style="color:red;">*</span></label>
+                                <select id="payment_frequency" name="payment_frequency" required>
+                                    <option value="Monthly">สิทธิ์รายเดือน (Monthly)</option>
+                                    <option value="Daily">สิทธิ์รายวัน (Daily)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label id="baseSalaryLabel">เงินเดือน / อัตราค่าจ้าง (บาท) <span style="color:red;">*</span></label>
+                                <input type="number" step="0.01" min="0" id="base_salary" name="base_salary" placeholder="อัตราค่าจ้างตามสิทธิ์" readonly style="background: #f1f5f9; cursor: not-allowed; color: #475569; font-weight: 700;">
+                                <small id="baseSalaryHint" style="color:#64748b;display:block;margin-top:5px;">อัตราค่าจ้างถูกกำหนดจากหน้ากำหนดอัตราค่าจ้างตามสิทธิ์</small>
+                            </div>
                         </div>
 
                         <div class="form-group">
-                            <label>Contact Email</label>
-                            <input type="email" id="email" name="email" placeholder="Enter contact email" required>
+                            <label>ข้อมูลบัญชีธนาคาร (Bank Account Details)</label>
+                            <input type="text" id="bank_account_details" name="bank_account_details" placeholder="เช่น ธนาคารกสิกรไทย 123-4-56789-0">
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Password (for Login)</label>
-                            <input type="password" id="password" name="password" placeholder="Enter new password (leave blank to keep current)">
-                        </div>
+                    <!-- Form Section 3: สิทธิ์ในระบบ -->
+                    <div class="form-section-card" id="sectionSystemRole">
+                        <div class="section-title"><i class="fas fa-user-shield"></i> <span>สิทธิ์และบทบาทในระบบ (System Role)</span></div>
 
                         <div class="form-group">
-                            <label>Phone Number</label>
-                            <input type="text" id="phone" name="phone" placeholder="Enter phone number">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Address</label>
-                        <input type="text" id="address" name="address" placeholder="Enter address">
-                    </div>
-                </div>
-
-                <div class="form-section-card">
-                    <div class="section-title"><i class="fas fa-wallet"></i> <span data-i18n="title.salary_details">Salary Details</span></div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label data-i18n="label.base_salary">Base Salary</label>
-                            <input type="number" step="100" id="base_salary" name="base_salary" placeholder="Enter base salary" data-i18n-placeholder="placeholder.enter_base_salary">
-                        </div>
-
-                        <div class="form-group">
-                            <label data-i18n="label.payment_frequency">Payment Frequency</label>
-                            <select id="payment_frequency" name="payment_frequency">
-                                <option value="Monthly" data-i18n="label.monthly">Monthly</option>
-                                <option value="Weekly" data-i18n="label.weekly">Weekly</option>
-                                <option value="Daily" data-i18n="label.daily">Daily</option>
+                            <label>บทบาทหน้าที่ (Role) <span style="color:red;">*</span></label>
+                            <select id="role_id" name="role_id" required>
+                                <!-- Populated by JS -->
                             </select>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label data-i18n="label.bank_account_details">Bank Account Details</label>
-                        <input type="text" id="bank_account_details" name="bank_account_details" placeholder="Enter bank account details" data-i18n-placeholder="placeholder.enter_bank_details">
-                    </div>
-                </div>
-
-                <div class="form-section-card">
-                    <div class="section-title"><i class="fas fa-user-shield"></i> <span data-i18n="title.system_role">System Role</span></div>
-
-                    <div class="form-group">
-                        <label data-i18n="label.role">Role</label>
-                        <select id="role_id" name="role_id" required>
-                            <!-- Populated by JS -->
-                        </select>
-                    </div>
-
-                    <div id="editModalAttendanceSection" style="display: none; border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px;">
-                        <div class="section-title" data-i18n="title.attendance_history" style="font-size: 14px; margin-bottom: 12px;"><i class="far fa-calendar-alt"></i> <span>Attendance History</span></div>
-                        <button type="button" class="btn-attendance" onclick="openAttendanceFromEdit()">
-                            <i class="far fa-calendar-check"></i>
-                            <span data-i18n="btn.view_attendance">View Attendance Calendar</span>
-                        </button>
+                        <div id="editModalAttendanceSection" style="display: none; border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px;">
+                            <div class="section-title" style="font-size: 14px; margin-bottom: 12px;"><i class="far fa-calendar-alt"></i> <span>ประวัติการเข้างาน</span></div>
+                            <button type="button" class="btn-attendance" onclick="openAttendanceFromEdit()">
+                                <i class="far fa-calendar-check"></i>
+                                <span>ดูปฏิทินการเข้างาน (Attendance)</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="drawer-footer">
-                <button type="button" class="btn-cancel" onclick="closeDrawer()">Cancel</button>
-                <button type="button" class="btn-save" id="saveStaffBtn">Save Staff Member</button>
-            </div>
-        </form>
-    </div>
+                <div class="drawer-footer">
+                    <button type="button" class="btn-cancel" onclick="closeDrawer()">ยกเลิก</button>
+                    <button type="button" class="btn-save" id="saveStaffBtn">บันทึกข้อมูลพนักงาน</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Attendance Calendar Modal -->
     <div class="drawer-overlay" id="attendanceOverlay" onclick="if(event.target === this) closeAttendanceModal();">
         <div class="drawer" id="attendanceDrawer" style="max-width: 450px; padding: 24px;">
             <div class="drawer-header" style="font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #0f172a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
-                <span id="attendanceHeaderTitle" data-i18n="title.attendance">Attendance Calendar</span>
+                <span id="attendanceHeaderTitle">ปฏิทินการเข้างาน</span>
                 <i class="fas fa-times" onclick="closeAttendanceModal()" style="cursor: pointer; color: #94a3b8; font-size: 20px;"></i>
             </div>
             
@@ -450,14 +486,13 @@
                 <button type="button" class="action-btn" onclick="changeAttendanceMonth(1)" style="padding: 6px 12px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; cursor: pointer; transition: background 0.2s;"><i class="fas fa-chevron-right"></i></button>
             </div>
 
-            <!-- Calendar Grid -->
             <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 20px;">
                 <!-- Dynamically generated calendar days -->
             </div>
 
             <div style="font-size: 13px; color: #64748b; margin-top: 12px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
-                <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
-                <span data-i18n="label.attendance_days">Days Worked</span>
+                <i class="fas fa-info-circle" style="color: var(--secondary-berry);"></i>
+                <span>จำนวนวันที่เข้าทำงานในเดือนนี้</span>
             </div>
         </div>
     </div>
@@ -470,6 +505,7 @@
         const itemsPerPage = 20;
         let currentStaff = [];
         let rolesList = [];
+        let payRightsList = [];
         let activeTab = 'info';
 
         function checkAuth() {
@@ -480,8 +516,20 @@
         }
 
         async function init() {
+            // A sidebar backdrop may retain an `active` class after navigating from
+            // another admin page. It is a full-screen transparent layer and blocks
+            // every button, so always reset it when this page opens.
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.remove('active', 'show');
+                sidebarOverlay.style.display = 'none';
+                sidebarOverlay.style.pointerEvents = 'none';
+                sidebarOverlay.style.visibility = 'hidden';
+            }
+
             checkAuth();
             await fetchRoles();
+            await fetchPayRights();
             await fetchStaff();
             renderHeaders();
         }
@@ -491,11 +539,28 @@
                 const res = await fetch('/api/staff/roles');
                 const result = await res.json();
                 if (res.ok) {
-                    rolesList = result.data;
+                    rolesList = result.data || [];
                     const select = document.getElementById('role_id');
                     select.innerHTML = rolesList.map(r => `<option value="${r.role_id}">${r.role_name}</option>`).join('');
                 }
             } catch (error) { console.error("Error fetching roles", error); }
+        }
+
+        async function fetchPayRights() {
+            try {
+                const res = await fetch('/api/payroll/rights');
+                const json = await res.json();
+                if (res.ok) {
+                    // The API can return either an array or a keyed object. Always
+                    // normalise it because the form relies on Array.prototype.find.
+                    payRightsList = Array.isArray(json.data)
+                        ? json.data
+                        : Object.values(json.data || {});
+                }
+            } catch (err) {
+                console.error("Error fetching pay rights:", err);
+                payRightsList = [];
+            }
         }
 
         async function fetchStaff() {
@@ -521,14 +586,13 @@
 
         function renderHeaders() {
             const header = document.getElementById('tableHeader');
-            const getT = (key, defaultVal) => window.i18n ? window.i18n.t(key, defaultVal) : defaultVal;
             
             if (activeTab === 'info') {
-                header.innerHTML = `<span style="flex: 2;">${getT('label.name', 'Name')}</span><span style="flex: 2;">${getT('label.role', 'Role')}</span><span style="flex: 2;">${getT('label.contact', 'Contact Information')}</span><span style="flex: 1; text-align: right;">${getT('label.action', 'Actions')}</span>`;
+                header.innerHTML = `<span style="flex: 2;">ชื่อ-นามสกุล</span><span style="flex: 2;">บทบาท / ตำแหน่ง</span><span style="flex: 2;">อีเมลติดต่อ</span><span style="flex: 1; text-align: right;">การจัดการ</span>`;
             } else if (activeTab === 'salary') {
-                header.innerHTML = `<span style="flex: 2;">${getT('label.name', 'Name')}</span><span style="flex: 1;">${getT('label.base_salary', 'Base Salary')}</span><span style="flex: 1;">${getT('label.payment_frequency', 'Frequency')}</span><span style="flex: 2;">${getT('label.bank_account_details', 'Bank Account')}</span><span style="flex: 1; text-align: right;">${getT('label.action', 'Actions')}</span>`;
+                header.innerHTML = `<span style="flex: 2;">ชื่อ-นามสกุล</span><span style="flex: 1.5;">อัตราค่าจ้าง</span><span style="flex: 1.5;">สิทธิ์การจ่ายเงิน</span><span style="flex: 2;">บัญชีธนาคาร</span><span style="flex: 1; text-align: right;">การจัดการ</span>`;
             } else {
-                header.innerHTML = `<span style="flex: 2;">${getT('label.name', 'Name')}</span><span style="flex: 1;">${getT('label.role', 'Role')}</span><span style="flex: 2;">${getT('label.attendance_days', 'Days Worked')}</span><span style="flex: 1; text-align: right;">${getT('label.action', 'Actions')}</span>`;
+                header.innerHTML = `<span style="flex: 2;">ชื่อ-นามสกุล</span><span style="flex: 1;">บทบาท</span><span style="flex: 2;">เข้างาน (วัน)</span><span style="flex: 1; text-align: right;">การจัดการ</span>`;
             }
             renderStaff();
         }
@@ -536,21 +600,16 @@
         function renderStaff() {
             const container = document.getElementById('staffContainer');
             const paginationContainer = document.getElementById('paginationContainer');
-            const getT = (key, defaultVal) => window.i18n ? window.i18n.t(key, defaultVal) : defaultVal;
+
             if (currentStaff.length === 0) {
-                container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบพนักงาน</div>';
+                container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบข้อมูลพนักงาน</div>';
                 if (paginationContainer) paginationContainer.innerHTML = '';
                 return;
             }
 
-            // Pagination boundaries check
             const totalPages = Math.ceil(currentStaff.length / itemsPerPage);
-            if (currentPage > totalPages) {
-                currentPage = totalPages;
-            }
-            if (currentPage < 1) {
-                currentPage = 1;
-            }
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
 
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
@@ -564,31 +623,35 @@
 
                 if (activeTab === 'info') {
                     rowHtml += `<div style="flex: 2; color: #64748b;">${s.role_name || 'N/A'}</div>`;
-                    rowHtml += `<div style="flex: 2; color: #3b82f6;">${s.email}</div>`;
+                    rowHtml += `<div style="flex: 2; color: var(--secondary-berry);">${s.email}</div>`;
                 } else if (activeTab === 'salary') {
-                    rowHtml += `<div style="flex: 1; color: #64748b;">฿${parseFloat(s.base_salary || 0).toLocaleString()}</div>`;
-                    const freqKey = s.payment_frequency ? 'label.' + s.payment_frequency.toLowerCase().replace('-', '_') : '';
-                    let freqText = freqKey && window.i18n ? window.i18n.t(freqKey, s.payment_frequency) : (s.payment_frequency || '-');
-                    if (s.payment_frequency === 'Daily' || s.payment_frequency === 'Weekly') {
-                        freqText += ` (${s.days_worked || 0} ${getT('label.days', 'วัน')})`;
+                    const freq = s.payment_frequency || 'Monthly';
+                    const rateSuffix = freq === 'Daily' ? '/ วัน' : '/ เดือน';
+                    const formattedSalary = parseFloat(s.base_salary || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    
+                    rowHtml += `<div style="flex: 1.5; color: #1e293b; font-weight: 700;">฿${formattedSalary} ${rateSuffix}</div>`;
+                    
+                    let rightBadge = '';
+                    if (freq === 'Daily') {
+                        rightBadge = `<span class="badge-right badge-daily"><i class="fas fa-calendar-day"></i> สิทธิ์รายวัน</span>`;
+                    } else {
+                        rightBadge = `<span class="badge-right badge-monthly"><i class="fas fa-calendar-alt"></i> สิทธิ์รายเดือน</span>`;
                     }
-                    rowHtml += `<div style="flex: 1; color: #64748b;">${freqText}</div>`;
+                    rowHtml += `<div style="flex: 1.5;">${rightBadge}</div>`;
                     rowHtml += `<div style="flex: 2; color: #64748b;">${s.bank_account_details || '-'}</div>`;
                 } else {
                     rowHtml += `<div style="flex: 1; color: #64748b;">${s.role_name || 'N/A'}</div>`;
-                    const daysVal = (s.payment_frequency === 'Daily' || s.payment_frequency === 'Weekly') ? `${s.days_worked || 0} ${getT('label.days', 'days')}` : '-';
+                    const daysVal = `${s.days_worked || 0} วัน`;
                     rowHtml += `<div style="flex: 2; color: #64748b;">${daysVal}</div>`;
                 }
 
-                const showCalendar = activeTab === 'salary';
-                const calendarBtn = showCalendar ? `<button type="button" onclick="openAttendanceModal(${s.employee_id})" class="action-link attendance-link" title="Attendance"><i class="far fa-calendar-check"></i></button>` : '';
+                const employeeId = s.employee_id ?? s.id;
 
                 rowHtml += `<div style="flex: 1; justify-content: flex-end; display: flex; gap: 8px;">
-                    ${calendarBtn}
-                    <button type="button" onclick="editStaff(${s.employee_id})" class="action-link edit-link" title="Edit">
+                    <button type="button" data-action="edit" data-employee-id="${employeeId}" class="action-link edit-link" title="แก้ไข">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button type="button" onclick="deleteStaff(${s.employee_id})" class="action-link delete-link" title="Delete">
+                    <button type="button" data-action="delete" data-employee-id="${employeeId}" class="action-link delete-link" title="ลบ">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </div></div>`;
@@ -597,6 +660,20 @@
 
             renderPagination(currentStaff.length);
         }
+
+        // The rows are re-rendered after every search, tab change, and pagination.
+        // Delegate their actions once from the stable container so edit always works.
+        document.getElementById('staffContainer').addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-action][data-employee-id]');
+            if (!button) return;
+
+            const employeeId = button.dataset.employeeId;
+            if (!employeeId) return;
+
+            if (button.dataset.action === 'edit') editStaff(employeeId);
+            if (button.dataset.action === 'delete') deleteStaff(employeeId);
+            if (button.dataset.action === 'attendance') openAttendanceModal(employeeId);
+        });
 
         function renderPagination(totalItems) {
             const paginationContainer = document.getElementById('paginationContainer');
@@ -608,12 +685,8 @@
                 return;
             }
 
-            let html = '';
-            
-            // Previous button
-            html += `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="window.changePage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            let html = `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="window.changePage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
 
-            // Page numbers
             const maxVisiblePages = 5;
             let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
             let endPage = startPage + maxVisiblePages - 1;
@@ -627,7 +700,6 @@
                 html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="window.changePage(${i})">${i}</button>`;
             }
 
-            // Next button
             html += `<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="window.changePage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
 
             paginationContainer.innerHTML = html;
@@ -637,59 +709,107 @@
             currentPage = page;
             renderStaff();
         }
-
         window.changePage = changePage;
 
+        // Filter tabs logic
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                activeTab = e.target.dataset.tab;
+                renderHeaders();
+            });
+        });
+
+        // Search listener
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentKeyword = e.target.value;
+            currentPage = 1;
+            fetchStaff();
+        });
 
         // Drawer logic
-        const drawer = document.getElementById('staffDrawer');
-        const overlay = document.getElementById('drawerOverlay');
-        const dHeader = document.getElementById('drawerHeader');
-        
         document.getElementById('addStaffBtn').addEventListener('click', () => {
             document.getElementById('staffForm').reset();
             document.getElementById('employee_id').value = '';
             document.getElementById('password').setAttribute('required', 'true');
+            document.getElementById('payment_frequency').value = 'Monthly';
+            
+            // Show all sections when adding a new staff
+            const secInfo = document.getElementById('sectionEmployeeInfo');
+            const secSalary = document.getElementById('sectionSalaryPayRights');
+            const secRole = document.getElementById('sectionSystemRole');
+            if (secInfo) secInfo.style.display = 'block';
+            if (secSalary) secSalary.style.display = 'block';
+            if (secRole) secRole.style.display = 'block';
+
             const attSection = document.getElementById('editModalAttendanceSection');
             if (attSection) attSection.style.display = 'none';
-            openDrawer("ส่วนงานจัดการพนักงาน - Add New Staff");
+            updatePayRateLabel(true);
+            openDrawer("เพิ่มพนักงานใหม่");
         });
 
         function editStaff(id) {
-            const s = currentStaff.find(x => x.employee_id == id);
+            const s = currentStaff.find(x => (x.employee_id == id || x.id == id));
             if (!s) return;
             document.getElementById('staffForm').reset();
-            document.getElementById('employee_id').value = s.employee_id;
-            document.getElementById('first_name').value = s.first_name;
-            document.getElementById('last_name').value = s.last_name;
+            document.getElementById('employee_id').value = s.employee_id || s.id || id;
+            document.getElementById('first_name').value = s.first_name || '';
+            document.getElementById('last_name').value = s.last_name || '';
             document.getElementById('username').value = s.username || '';
-            document.getElementById('email').value = s.email;
-            document.getElementById('password').removeAttribute('required'); // Optional on edit
+            document.getElementById('email').value = s.email || '';
+            document.getElementById('password').removeAttribute('required');
             document.getElementById('phone').value = s.phone || '';
             document.getElementById('address').value = s.address || '';
-            document.getElementById('base_salary').value = parseFloat(s.base_salary || 0);
             document.getElementById('payment_frequency').value = s.payment_frequency || 'Monthly';
             document.getElementById('bank_account_details').value = s.bank_account_details || '';
-            document.getElementById('role_id').value = s.role_id;
+            if (s.role_id) document.getElementById('role_id').value = s.role_id;
 
-            const attSection = document.getElementById('editModalAttendanceSection');
-            if (attSection) {
-                attSection.style.display = 'block';
+            updatePayRateLabel(true);
+
+            // Control section visibility based on activeTab:
+            // In tab 'info' (ข้อมูลพนักงานทั่วไป): show Employee Info, hide Salary & Pay Rights and System Role.
+            // In tab 'salary' (สิทธิ์การจ้างและอัตราเงินเดือน): hide Employee Info, show Salary & Pay Rights and System Role only.
+            const secInfo = document.getElementById('sectionEmployeeInfo');
+            const secSalary = document.getElementById('sectionSalaryPayRights');
+            const secRole = document.getElementById('sectionSystemRole');
+
+            if (activeTab === 'info') {
+                if (secInfo) secInfo.style.display = 'block';
+                if (secSalary) secSalary.style.display = 'none';
+                if (secRole) secRole.style.display = 'none';
+            } else {
+                if (secInfo) secInfo.style.display = 'none';
+                if (secSalary) secSalary.style.display = 'block';
+                if (secRole) secRole.style.display = 'block';
             }
 
-            openDrawer("ส่วนงานจัดการพนักงาน - Edit Staff");
+            const attSection = document.getElementById('editModalAttendanceSection');
+            if (attSection) attSection.style.display = 'none';
+
+            openDrawer(`แก้ไขพนักงาน: ${s.first_name} ${s.last_name || ''}`);
         }
 
-        function openDrawer(titleCode) {
+        window.editStaff = editStaff;
+
+        function openDrawer(titleText) {
             const drawer = document.getElementById('staffDrawer');
             const overlay = document.getElementById('drawerOverlay');
             const dHeader = document.getElementById('drawerHeader');
             if (drawer && overlay && dHeader) {
-                dHeader.innerHTML = `<i class="fas fa-user-cog" style="margin-right: 12px; font-size: 22px;"></i><span>${titleCode}</span>`;
+                dHeader.innerHTML = `<i class="fas fa-user-cog" style="margin-right: 12px; font-size: 22px;"></i><span>${titleText}</span>`;
+
+                // Do not rely only on the shared .drawer-overlay rules. Other page
+                // overlays use the same class, so explicitly bring this one forward.
+                overlay.style.display = 'flex';
+                overlay.style.opacity = '1';
+                overlay.style.visibility = 'visible';
+                overlay.style.pointerEvents = 'auto';
+                overlay.style.zIndex = '10000';
+                drawer.style.opacity = '1';
+                drawer.style.transform = 'translateY(0)';
                 overlay.classList.add('show');
-                setTimeout(() => {
-                    drawer.classList.add('open');
-                }, 10);
+                drawer.classList.add('open');
             }
         }
 
@@ -698,9 +818,14 @@
             const overlay = document.getElementById('drawerOverlay');
             if (drawer && overlay) {
                 drawer.classList.remove('open');
-                setTimeout(() => {
-                    overlay.classList.remove('show');
-                }, 300);
+                drawer.style.opacity = '';
+                drawer.style.transform = '';
+                overlay.classList.remove('show');
+                overlay.style.display = '';
+                overlay.style.opacity = '';
+                overlay.style.visibility = '';
+                overlay.style.pointerEvents = '';
+                overlay.style.zIndex = '';
             }
         }
         document.addEventListener('click', (e) => {
@@ -708,25 +833,42 @@
             if (overlay && e.target === overlay) closeDrawer();
         });
 
-        document.getElementById('payment_frequency').addEventListener('change', (e) => {
-            const attSection = document.getElementById('editModalAttendanceSection');
-            if (attSection) {
-                const employeeId = document.getElementById('employee_id').value;
-                if (employeeId) {
-                    attSection.style.display = 'block';
-                } else {
-                    attSection.style.display = 'none';
-                }
-            }
+        function updatePayRateLabel(isUserChange = false) {
+            const freq = document.getElementById('payment_frequency').value;
+            const salaryInput = document.getElementById('base_salary');
+            
+            const labels = {
+                Monthly: 'เงินเดือน (บาท / เดือน)',
+                Daily: 'ค่าจ้าง (บาท / วัน)'
+            };
+
+            const rightNames = {
+                Monthly: 'สิทธิ์รายเดือน',
+                Daily: 'สิทธิ์รายวัน'
+            };
+
+            // Pay-right settings are optional. They must never prevent the add/edit
+            // drawer from opening when their endpoint returns an unexpected shape.
+            const rights = Array.isArray(payRightsList)
+                ? payRightsList
+                : Object.values(payRightsList || {});
+            const rightObj = rights.find(r => r && r.pay_frequency === freq) || {};
+            const defaultRateVal = rightObj.default_rate !== undefined ? parseFloat(rightObj.default_rate) : (freq === 'Monthly' ? 15000 : 300);
+
+            document.getElementById('baseSalaryLabel').innerHTML = `${labels[freq] || labels.Monthly} <span style="color:red;">*</span>`;
+            document.getElementById('baseSalaryHint').innerHTML = `<i class="fas fa-lock" style="color: #64748b;"></i> อัตราค่าจ้างถูกกำหนดจากหน้า <a href="admin_pay_settings.html" style="color: #4D7C68; font-weight: 700; text-decoration: underline;">กำหนดอัตราค่าจ้างและเวลาทำงานตามสิทธิ์</a> (ไม่สามารถแก้ไขในหน้านี้ได้)`;
+
+            salaryInput.value = defaultRateVal;
+        }
+
+        document.getElementById('payment_frequency').addEventListener('change', () => {
+            updatePayRateLabel(true);
         });
 
         // Form Submit
         document.getElementById('saveStaffBtn').addEventListener('click', async () => {
             const form = document.getElementById('staffForm');
-            console.log("saveStaffBtn clicked. Form validity:", form.checkValidity());
             if(!form.checkValidity()) {
-                const invalidFields = Array.from(form.querySelectorAll(':invalid')).map(el => ({ name: el.name, id: el.id, value: el.value }));
-                console.warn("Form validation failed. Invalid fields: " + JSON.stringify(invalidFields));
                 form.reportValidity();
                 return;
             }
@@ -737,8 +879,6 @@
             const isUpdate = !!data.id;
             const url = isUpdate ? `/api/staff/update?id=${data.id}` : `/api/staff/create`;
 
-            console.log("saveStaffBtn start: " + JSON.stringify({ url, data }));
-
             try {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -746,382 +886,171 @@
                     body: JSON.stringify(data)
                 });
                 
-                console.log("saveStaffBtn response status:", response.status);
-                
                 if (response.ok) {
-                    console.log("saveStaffBtn success!");
-                    showToast(isUpdate ? "อัปเดตพนักงานสำเร็จ" : "เพิ่มพนักงานสำเร็จ", "success");
+                    showToast(isUpdate ? "อัปเดตข้อมูลพนักงานสำเร็จ" : "เพิ่มพนักงานสำเร็จ", "success");
                     closeDrawer();
                     fetchStaff();
                 } else {
                     const res = await response.json();
-                    console.error("saveStaffBtn failed:", res);
-                    showToast(res.message || "เกิดข้อผิดพลาด", "error");
+                    showToast(res.message || "เกิดข้อผิดพลาดในการบันทึก", "error");
                 }
             } catch (error) { 
                 console.error("saveStaffBtn error:", error);
-                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error"); 
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ", "error"); 
             }
         });
 
         async function deleteStaff(id) {
-            if(!confirm("ยืนยันการลบพนักงาน?")) return;
+            const confirmResult = await Swal.fire({
+                title: 'ยืนยันการลบพนักงาน?',
+                text: 'ข้อมูลพนักงานคนนี้จะถูกลบออกจากระบบอย่างถาวรและไม่สามารถกู้คืนได้',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'ยืนยันการลบ',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (!confirmResult.isConfirmed) return;
+
             try {
                 const response = await fetch(`/api/staff/delete?id=${id}`, { method: 'DELETE' });
                 if (response.ok) {
-                    showToast("ลบพนักงานสำเร็จ", "success");
+                    showToast("ลบข้อมูลพนักงานสำเร็จ", "success");
                     fetchStaff();
-                }
-            } catch (error) { showToast("เกิดข้อผิดพลาด", "error"); }
-        }
-
-        // Attendance Calendar Logic
-        let currentEmployeeIdForAttendance = null;
-        let currentEmployeeNameForAttendance = '';
-        let currentEmployeeFrequencyForAttendance = 'Monthly';
-        let attendanceCurrentMonthDate = new Date();
-        let checkedInDates = [];
-
-        function openAttendanceModal(employeeId, employeeName) {
-            try {
-                console.log("openAttendanceModal called with:", { employeeId, employeeName });
-                const s = currentStaff.find(x => x.employee_id == employeeId);
-                if (!employeeName) {
-                    employeeName = s ? `${s.first_name} ${s.last_name}` : '';
-                }
-                currentEmployeeIdForAttendance = employeeId;
-                currentEmployeeNameForAttendance = employeeName;
-                currentEmployeeFrequencyForAttendance = s && s.payment_frequency ? s.payment_frequency : 'Monthly';
-                currentEmployeeNameForAttendance = employeeName;
-                attendanceCurrentMonthDate = new Date();
-                
-                const overlay = document.getElementById('attendanceOverlay');
-                const drawer = document.getElementById('attendanceDrawer');
-                
-                if (overlay && drawer) {
-                    overlay.classList.add('show');
-                    setTimeout(() => {
-                        drawer.classList.add('open');
-                    }, 10);
-                    
-                    fetchAndRenderCalendar();
                 } else {
-                    console.error("Attendance modal overlay or drawer elements not found in DOM!", { overlay, drawer });
-                    showToast("ไม่พบองค์ประกอบประวัติเวลาทำงานในหน้านี้", "error");
+                    const res = await response.json();
+                    showToast(res.message || "ลบไม่สำเร็จ", "error");
                 }
-            } catch (err) {
-                console.error("Exception in openAttendanceModal:", err);
-                showToast("เกิดข้อผิดพลาดในการเปิดระบบเวลาทำงาน: " + err.message, "error");
-            }
-        }
-
-        function closeAttendanceModal() {
-            const overlay = document.getElementById('attendanceOverlay');
-            const drawer = document.getElementById('attendanceDrawer');
-            if (overlay && drawer) {
-                drawer.classList.remove('open');
-                setTimeout(() => {
-                    overlay.classList.remove('show');
-                }, 300);
-            }
-        }
-
-        function changeAttendanceMonth(direction) {
-            if (currentEmployeeFrequencyForAttendance === 'Monthly') {
-                attendanceCurrentMonthDate.setFullYear(attendanceCurrentMonthDate.getFullYear() + direction);
-            } else {
-                attendanceCurrentMonthDate.setMonth(attendanceCurrentMonthDate.getMonth() + direction);
-            }
-            fetchAndRenderCalendar();
-        }
-
-        async function fetchAndRenderCalendar() {
-            if (!currentEmployeeIdForAttendance) return;
-
-            const year = attendanceCurrentMonthDate.getFullYear();
-            let monthStr = '';
-            
-            if (currentEmployeeFrequencyForAttendance === 'Monthly') {
-                monthStr = `${year}`;
-            } else {
-                const month = String(attendanceCurrentMonthDate.getMonth() + 1).padStart(2, '0');
-                monthStr = `${year}-${month}`;
-            }
-
-            // Fetch checked in dates
-            try {
-                const response = await fetch(`/api/attendance?employee_id=${currentEmployeeIdForAttendance}&month=${monthStr}`);
-                const result = await response.json();
-                if (response.ok) {
-                    checkedInDates = result.data.dates || [];
-                } else {
-                    checkedInDates = [];
-                    console.error("Error fetching attendance logs:", result.message);
-                }
-            } catch (err) {
-                checkedInDates = [];
-                console.error("Connection error fetching attendance logs:", err);
-            }
-
-            renderCalendarGrid();
-        }
-
-        function renderCalendarGrid() {
-            const grid = document.getElementById('calendarGrid');
-            const label = document.getElementById('attendanceMonthLabel');
-            
-            // Format month year label depending on current language
-            const lang = window.i18n ? window.i18n.getLanguage() : 'th';
-            const options = { month: 'long', year: 'numeric' };
-            const locale = lang === 'th' ? 'th-TH' : 'en-US';
-            label.textContent = attendanceCurrentMonthDate.toLocaleDateString(locale, options);
-
-            const freq = currentEmployeeFrequencyForAttendance;
-            if (freq === 'Monthly') {
-                const yearOptions = { year: 'numeric' };
-                label.textContent = attendanceCurrentMonthDate.toLocaleDateString(locale, yearOptions);
-
-                grid.style.display = 'grid';
-                grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-                grid.style.gap = '12px';
-                grid.style.padding = '0';
-                grid.innerHTML = '';
-
-                const monthNames = lang === 'th'
-                    ? ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
-                    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-                const year = attendanceCurrentMonthDate.getFullYear();
-
-                for (let m = 0; m < 12; m++) {
-                    const monthPrefix = `${year}-${String(m + 1).padStart(2, '0')}`;
-                    const isMonthCheckedIn = checkedInDates.some(date => date.startsWith(monthPrefix));
-
-                    const cell = document.createElement('div');
-                    cell.className = `calendar-day${isMonthCheckedIn ? ' checked-in' : ''}`;
-                    cell.style.aspectRatio = 'auto';
-                    cell.style.padding = '12px 6px';
-                    cell.style.display = 'flex';
-                    cell.style.alignItems = 'center';
-                    cell.style.justifyContent = 'center';
-                    cell.style.fontWeight = '600';
-                    cell.style.fontSize = '14px';
-                    cell.style.borderRadius = '8px';
-                    cell.style.cursor = 'pointer';
-                    cell.style.transition = 'all 0.2s';
-                    cell.textContent = monthNames[m];
-
-                    const firstDayStr = `${monthPrefix}-01`;
-                    cell.addEventListener('click', () => toggleAttendanceDate(firstDayStr, isMonthCheckedIn, m));
-                    grid.appendChild(cell);
-                }
-                return;
-            }
-
-            // Restore defaults for Weekly/Daily
-            grid.style.display = 'grid';
-            grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
-            grid.style.gap = '8px';
-            grid.style.padding = '0';
-
-            grid.innerHTML = '';
-
-            // Render day of week headers (Sun - Sat)
-            const thHeaders = lang === 'th' 
-                ? ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'] 
-                : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-                
-            thHeaders.forEach(day => {
-                const dayEl = document.createElement('div');
-                dayEl.className = 'calendar-header-day';
-                dayEl.textContent = day;
-                grid.appendChild(dayEl);
-            });
-
-            const year = attendanceCurrentMonthDate.getFullYear();
-            const month = attendanceCurrentMonthDate.getMonth();
-
-            // First day of the month
-            const firstDay = new Date(year, month, 1).getDay();
-            // Total days in the month
-            const totalDays = new Date(year, month + 1, 0).getDate();
-
-            // Render empty cells before the first day of the month
-            for (let i = 0; i < firstDay; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = 'calendar-day empty';
-                grid.appendChild(emptyCell);
-            }
-
-            // Render days of the month
-            for (let day = 1; day <= totalDays; day++) {
-                const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const isCheckedIn = checkedInDates.includes(dayStr);
-                
-                const cell = document.createElement('div');
-                cell.className = `calendar-day${isCheckedIn ? ' checked-in' : ''}`;
-                cell.textContent = day;
-                
-                if (isCheckedIn) {
-                    cell.title = `${currentEmployeeNameForAttendance} - Checked In`;
-                }
-
-                cell.addEventListener('click', () => toggleAttendanceDate(dayStr, isCheckedIn));
-                grid.appendChild(cell);
-            }
-        }
-
-        async function toggleAttendanceDate(dateStr, isCurrentlyCheckedIn, targetMonthIndex) {
-            const url = isCurrentlyCheckedIn ? '/api/attendance/checkout' : '/api/attendance/checkin';
-            
-            // Calculate batch dates based on frequency
-            let dates = [];
-            const parts = dateStr.split('-');
-            const year = parseInt(parts[0], 10);
-            
-            const freq = currentEmployeeFrequencyForAttendance;
-            
-            if (freq === 'Monthly') {
-                const month = targetMonthIndex !== undefined ? targetMonthIndex : (parseInt(parts[1], 10) - 1);
-                // Get all dates in this month
-                const totalDays = new Date(year, month + 1, 0).getDate();
-                for (let d = 1; d <= totalDays; d++) {
-                    dates.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
-                }
-            } else if (freq === 'Weekly') {
-                const month = parseInt(parts[1], 10) - 1; // 0-indexed
-                const day = parseInt(parts[2], 10);
-                // Get 7 consecutive days starting from clicked date
-                for (let i = 0; i < 7; i++) {
-                    const nextDate = new Date(year, month, day + i);
-                    const y = nextDate.getFullYear();
-                    const m = String(nextDate.getMonth() + 1).padStart(2, '0');
-                    const d = String(nextDate.getDate()).padStart(2, '0');
-                    dates.push(`${y}-${m}-${d}`);
-                }
-            } else {
-                // Daily or others: just the single clicked date
-                dates.push(dateStr);
-            }
-
-            console.log("toggleAttendanceDate start: " + JSON.stringify({ url, dates, freq, isCurrentlyCheckedIn }));
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        employee_id: currentEmployeeIdForAttendance,
-                        work_date: dates
-                    })
-                });
-                
-                console.log("toggleAttendanceDate HTTP response status:", response.status);
-                
-                if (response.ok) {
-                    let successMsg = '';
-                    if (isCurrentlyCheckedIn) {
-                        successMsg = freq === 'Monthly' ? "ยกเลิกการจองตารางงานรายเดือนสำเร็จ" : (freq === 'Weekly' ? "ยกเลิกการจองตารางงานรายสัปดาห์สำเร็จ" : "บันทึกเอาวันทำงานออกสำเร็จ");
-                    } else {
-                        successMsg = freq === 'Monthly' ? "จองตารางงานรายเดือนสำเร็จ" : (freq === 'Weekly' ? "จองตารางงานรายสัปดาห์สำเร็จ" : "บันทึกวันทำงานสำเร็จ");
-                    }
-                    showToast(successMsg, "success");
-                    fetchAndRenderCalendar();
-                } else {
-                    const result = await response.json();
-                    console.error("toggleAttendanceDate failed with API response:", result);
-                    showToast(result.message || "เกิดข้อผิดพลาด", "error");
-                }
-            } catch (err) {
-                console.error("toggleAttendanceDate fetch error:", err);
+            } catch (error) {
                 showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
             }
         }
 
+        window.deleteStaff = deleteStaff;
+        window.closeDrawer = closeDrawer;
+
+        // Attendance Modal logic
+        let selectedEmpIdForAttendance = null;
+        let attendanceCurrentDate = new Date();
+
+        function openAttendanceModal(employeeId) {
+            selectedEmpIdForAttendance = employeeId;
+            attendanceCurrentDate = new Date();
+            const emp = currentStaff.find(e => (e.employee_id == employeeId || e.id == employeeId));
+            const empName = emp ? `${emp.first_name} ${emp.last_name || ''}` : '';
+            document.getElementById('attendanceHeaderTitle').textContent = `ปฏิทินเข้างาน: ${empName}`;
+            
+            const overlay = document.getElementById('attendanceOverlay');
+            const drawer = document.getElementById('attendanceDrawer');
+            if (overlay && drawer) {
+                overlay.classList.add('show');
+                setTimeout(() => drawer.classList.add('open'), 10);
+            }
+            renderAttendanceCalendar();
+        }
+
         function openAttendanceFromEdit() {
+            const empId = document.getElementById('employee_id').value;
+            if (empId) {
+                closeDrawer();
+                setTimeout(() => openAttendanceModal(empId), 300);
+            }
+        }
+
+        function closeAttendanceModal() {
+            const drawer = document.getElementById('attendanceDrawer');
+            const overlay = document.getElementById('attendanceOverlay');
+            if (drawer && overlay) {
+                drawer.classList.remove('open');
+                setTimeout(() => overlay.classList.remove('show'), 300);
+            }
+        }
+
+        function changeAttendanceMonth(delta) {
+            attendanceCurrentDate.setMonth(attendanceCurrentDate.getMonth() + delta);
+            renderAttendanceCalendar();
+        }
+
+        window.openAttendanceModal = openAttendanceModal;
+        window.openAttendanceFromEdit = openAttendanceFromEdit;
+        window.closeAttendanceModal = closeAttendanceModal;
+        window.changeAttendanceMonth = changeAttendanceMonth;
+
+        async function renderAttendanceCalendar() {
+            if (!selectedEmpIdForAttendance) return;
+            const year = attendanceCurrentDate.getFullYear();
+            const month = attendanceCurrentDate.getMonth();
+            
+            const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            document.getElementById('attendanceMonthLabel').textContent = `${monthNames[month]} ${year + 543}`;
+
+            const periodStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+            let logs = [];
             try {
-                const employeeIdEl = document.getElementById('employee_id');
-                const firstNameEl = document.getElementById('first_name');
-                const lastNameEl = document.getElementById('last_name');
-                
-                if (!employeeIdEl) {
-                    console.error("openAttendanceFromEdit: Hidden input element #employee_id not found in DOM!");
-                    showToast("เกิดข้อผิดพลาด: ไม่พบฟิลด์ ID พนักงาน", "error");
-                    return;
+                const res = await fetch(`/api/attendance/employee?employee_id=${selectedEmpIdForAttendance}&period=${periodStr}`);
+                if (res.ok) {
+                    const json = await res.json();
+                    logs = json.data || [];
                 }
-                
-                const employeeId = employeeIdEl.value;
-                const firstName = firstNameEl ? firstNameEl.value : '';
-                const lastName = lastNameEl ? lastNameEl.value : '';
-                const name = `${firstName} ${lastName}`.trim();
-                
-                console.log("openAttendanceFromEdit called. Values read:", { employeeId, name });
-                
-                if (employeeId) {
-                    closeDrawer();
-                    setTimeout(() => {
-                        openAttendanceModal(employeeId, name);
-                    }, 350);
-                } else {
-                    console.warn("openAttendanceFromEdit: employeeId value is empty!");
-                    showToast("ไม่พบข้อมูลรหัสพนักงานในแบบฟอร์มแก้ไข", "error");
-                }
-            } catch (err) {
-                console.error("Exception in openAttendanceFromEdit:", err);
-                showToast("เกิดข้อผิดพลาด: " + err.message, "error");
-            }
-        }
+            } catch (e) { console.error("Error loading attendance:", e); }
 
-        // Tabs
-        document.querySelectorAll('.filter-btn').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(t => t.classList.remove('active'));
-                e.target.classList.add('active');
-                activeTab = e.target.getAttribute('data-tab');
-                currentPage = 1;
-                renderHeaders();
+            const loggedDates = new Set(logs.map(l => l.work_date));
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+
+            const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+            dayNames.forEach(d => {
+                const dayHead = document.createElement('div');
+                dayHead.className = 'calendar-header-day';
+                dayHead.textContent = d;
+                calendarGrid.appendChild(dayHead);
             });
-        });
 
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            currentKeyword = e.target.value;
-            currentPage = 1;
-            fetchStaff();
-        });
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        function toggleSidebar() { const sidebar = document.querySelector('.sidebar'); const overlay = document.getElementById('sidebarOverlay'); if (sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } }
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-day empty';
+                calendarGrid.appendChild(emptyCell);
+            }
 
-        const hBtn = document.getElementById('hamburgerBtn'); if (hBtn) hBtn.addEventListener('click', toggleSidebar);
-        const sOverlay = document.getElementById('sidebarOverlay'); if (sOverlay) sOverlay.addEventListener('click', toggleSidebar);
-
-        function toggleSubmenu(el) {
-            const group = el.closest('.menu-group');
-            if (group) {
-                group.classList.toggle('open');
-                localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                dayCell.className = 'calendar-day';
+                if (loggedDates.has(dateStr)) {
+                    dayCell.classList.add('checked-in');
+                    dayCell.title = `เข้างานแล้วเมื่อ ${dateStr}`;
+                }
+                dayCell.textContent = day;
+                calendarGrid.appendChild(dayCell);
             }
         }
 
-        // Restore submenu state
-        document.addEventListener('DOMContentLoaded', () => {
-            const menuGroup = document.querySelector('.menu-group');
-            if (menuGroup) {
-                const isOpen = localStorage.getItem('productsMenuOpen');
-                if (isOpen === 'true') menuGroup.classList.add('open');
-                else if (isOpen === 'false') menuGroup.classList.remove('open');
-            }
-        });
-
-        function showToast(message, type) {
+        function showToast(msg, type = "info") {
             const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            setTimeout(() => toast.className = 'toast', 3000);
+            if (!toast) return;
+            toast.textContent = msg;
+            toast.style.background = type === "error" ? "#ef4444" : type === "success" ? "#10b981" : "#3b82f6";
+            toast.style.color = "#ffffff";
+            toast.style.padding = "12px 24px";
+            toast.style.borderRadius = "12px";
+            toast.style.position = "fixed";
+            toast.style.bottom = "20px";
+            toast.style.right = "20px";
+            toast.style.zIndex = "99999";
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; }, 3000);
         }
 
-        const lBtn = document.getElementById('logoutBtn'); if (lBtn) lBtn.addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('user'); window.location.href = 'login.html'; });
-
-        init();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     </script>
 </body>
 </html>

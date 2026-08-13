@@ -10,9 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Outfit', 'Kanit', sans-serif; }
-        .nav-green { background-color: #2d5a27; }
-        .btn-green { background-color: #8bb35c; }
-        .btn-green:hover { background-color: #7a9e4f; }
+        .nav-green { background-color: #1b4332; }
+        .btn-green { background-color: #16a34a; }
+        .btn-green:hover { background-color: #15803d; }
         .contact-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
     </style>
 <script type="module" src="/src/js/i18n.js"></script>
@@ -23,7 +23,7 @@
             <div class="flex items-center space-x-6">
                 <!-- Logo -->
                 <a href="products.html" class="flex items-center space-x-2 hover:opacity-90 transition-opacity">
-                    <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#2d5a27]">
+                    <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#1b4332]">
                         <i class="fas fa-paw text-lg"></i>
                     </div>
                     <span class="text-xl font-bold tracking-tight">Hello Pet Shop</span>
@@ -108,13 +108,39 @@
                     </div>
                 </div>
 
+                <!-- LINE Official Account -->
+                <div class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center space-y-4">
+                    <div class="flex items-center space-x-3 self-start">
+                        <div class="w-12 h-12 bg-[#E8F8EE] text-[#06C755] rounded-2xl flex items-center justify-center shrink-0">
+                            <i class="fab fa-line text-2xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="text-lg font-bold text-gray-800">LINE Official</h3>
+                            <p class="text-gray-500 text-sm">@036rxbxa</p>
+                        </div>
+                    </div>
+                    
+                    <!-- QR Code container with beautiful shadow/hover effect -->
+                    <div class="w-36 h-36 bg-gray-50 border border-gray-100 rounded-2xl p-2 flex items-center justify-center shadow-inner hover:scale-105 transition-transform duration-300">
+                        <img src="/image/line_qr.png" alt="LINE QR Code" class="w-full h-full object-contain rounded-xl">
+                    </div>
+                    
+                    <p class="text-xs text-gray-400">สแกน QR Code หรือกดปุ่มด้านล่างเพื่อแอดไลน์</p>
+                    
+                    <a href="https://lin.ee/XxKOiGF" target="_blank" rel="noopener noreferrer" 
+                       class="w-full bg-[#06C755] hover:bg-[#05b34c] text-white py-3 rounded-2xl font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center space-x-2">
+                        <i class="fab fa-line text-lg"></i>
+                        <span>เพิ่มเพื่อนบน LINE</span>
+                    </a>
+                </div>
+
                 <!-- Socials -->
-                <div class="bg-[#2d5a27] rounded-3xl p-8 shadow-lg text-white flex flex-col items-center justify-center text-center">
+                <div class="bg-[#FE7F9C] rounded-3xl p-8 shadow-lg text-white flex flex-col items-center justify-center text-center">
                     <h3 class="text-lg font-bold mb-4">ติดตามโซเชียลมีเดียของเรา</h3>
                     <div class="flex space-x-4">
                         <a href="#" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/40 transition-all"><i class="fab fa-facebook-f"></i></a>
                         <a href="#" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/40 transition-all"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/40 transition-all"><i class="fab fa-line text-lg"></i></a>
+                        <a href="https://lin.ee/XxKOiGF" target="_blank" rel="noopener noreferrer" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-[#06C755] hover:text-white transition-all" title="LINE"><i class="fab fa-line text-lg"></i></a>
                     </div>
                 </div>
             </div>
@@ -124,7 +150,7 @@
                 <div class="bg-white rounded-[2rem] p-8 md:p-12 shadow-xl border border-gray-50 relative overflow-hidden">
                     <!-- Subtle background decoration -->
                     <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-50/50 rounded-full blur-3xl"></div>
-                    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-green-50/50 rounded-full blur-3xl"></div>
+                    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-pink-50/50 rounded-full blur-3xl"></div>
 
                     <h2 class="text-2xl font-bold text-gray-800 mb-8">ส่งข้อความถึงเรา</h2>
                     
@@ -133,28 +159,28 @@
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อของคุณ</label>
                                 <input type="text" id="contactName" required placeholder="ชื่อของคุณ" 
-                                    class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all shadow-sm">
+                                    class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-[#FE7F9C] focus:border-transparent outline-none transition-all shadow-sm">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">ที่อยู่อีเมล</label>
                                 <input type="email" id="contactEmail" required placeholder="email@example.com" 
-                                    class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all shadow-sm">
+                                    class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-[#FE7F9C] focus:border-transparent outline-none transition-all shadow-sm">
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">หัวข้อ</label>
                             <input type="text" id="contactSubject" required placeholder="เราสามารถช่วยเหลือคุณได้อย่างไร?" 
-                                class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all shadow-sm">
+                                class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-2 focus:ring-[#FE7F9C] focus:border-transparent outline-none transition-all shadow-sm">
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">ข้อความ</label>
                             <textarea id="contactMessage" required rows="5" placeholder="เขียนข้อความของคุณที่นี่..." 
-                                class="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-3xl focus:bg-white focus:ring-2 focus:ring-[#8bb35c] focus:border-transparent outline-none transition-all shadow-sm resize-none"></textarea>
+                                class="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-3xl focus:bg-white focus:ring-2 focus:ring-[#FE7F9C] focus:border-transparent outline-none transition-all shadow-sm resize-none"></textarea>
                         </div>
 
-                        <button type="submit" class="w-full btn-green text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-green-200 transition-all active:scale-[0.98] flex items-center justify-center space-x-3">
+                        <button type="submit" class="w-full btn-green text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] flex items-center justify-center space-x-3">
                             <span>ส่งข้อความ</span>
                             <i class="fas fa-paper-plane text-sm"></i>
                         </button>
@@ -167,12 +193,25 @@
                         </div>
                         <h3 class="text-3xl font-bold text-gray-800 mb-3">ส่งข้อความสำเร็จ!</h3>
                         <p class="text-gray-500 text-lg">ขอบคุณสำหรับการติดต่อเรา เราจะติดต่อกลับภายใน 24 ชั่วโมง</p>
-                        <button id="resetFormBtn" class="mt-8 text-[#8bb35c] font-bold hover:underline">ส่งข้อความอื่นเพิ่มเติม</button>
+                        <button id="resetFormBtn" class="mt-8 text-[#FE7F9C] font-bold hover:underline">ส่งข้อความอื่นเพิ่มเติม</button>
                     </div>
                 </div>
             </div>
         </div>
     </main>
+
+    <!-- Floating LINE Button -->
+    <a href="https://lin.ee/XxKOiGF" target="_blank" rel="noopener noreferrer" 
+       class="fixed bottom-6 right-6 z-40 flex items-center justify-center w-14 h-14 bg-[#06C755] text-white rounded-full shadow-2xl hover:bg-[#05b34c] hover:scale-110 active:scale-95 transition-all duration-300 group"
+       title="ติดต่อเราผ่าน LINE">
+        <i class="fab fa-line text-3xl"></i>
+        <!-- Ripple effect / Pulse animation rings -->
+        <span class="absolute inset-0 rounded-full bg-[#06C755] opacity-40 animate-ping -z-10 group-hover:opacity-0 transition-opacity"></span>
+        <!-- Tooltip -->
+        <span class="absolute right-16 bg-gray-900 text-white text-xs font-semibold px-3 py-2 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap shadow-md">
+            คุยกับเราผ่าน LINE
+        </span>
+    </a>
 
     <!-- Toast -->
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl transition-all duration-500 opacity-0 translate-y-4 pointer-events-none z-50"></div>

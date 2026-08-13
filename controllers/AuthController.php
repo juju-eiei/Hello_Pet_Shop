@@ -27,10 +27,34 @@ class AuthController {
             // Remove password from response
             unset($user['password']);
             
-            // In a real app, you'd start a session or generate a JWT here
-            session_start();
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            session_regenerate_id(true); // Regenerate session ID to prevent Session Fixation
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['role'] = $user['role_name'];
+
+            // Generate CSRF Token on successful login
+            if (empty($_SESSION['csrf_token'])) {
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            }
+            $user['csrf_token'] = $_SESSION['csrf_token'];
+
+            if (strtolower($user['role_name']) === 'customer') {
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$user['user_id']]);
+                $cust = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                if ($cust) {
+                    $user['customer_id'] = $cust['customer_id'];
+                }
+            } elseif (in_array(strtolower($user['role_name']), ['admin', 'employee'])) {
+                $stmtEmp = $this->db->prepare("SELECT employee_id FROM employees WHERE user_id = ?");
+                $stmtEmp->execute([$user['user_id']]);
+                $emp = $stmtEmp->fetch(PDO::FETCH_ASSOC);
+                if ($emp) {
+                    $user['employee_id'] = $emp['employee_id'];
+                }
+            }
 
             Response::json(200, "เข้าสู่ระบบสำเร็จ", $user);
         } else {
@@ -95,6 +119,11 @@ class AuthController {
             return;
         }
 
+        // Generate CSRF Token if not exists
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+
         $userPerms = json_decode($user['user_permissions'] ?? '[]', true) ?: [];
         $rolePerms = json_decode($user['role_permissions'] ?? '[]', true) ?: [];
         
@@ -115,12 +144,33 @@ class AuthController {
             $allPerms = array_unique(array_merge($userPerms, $rolePerms));
         }
 
+        $customerId = null;
+        $employeeId = null;
+        if ($roleNameLower === 'customer') {
+            $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+            $stmtCust->execute([$user['user_id']]);
+            $cust = $stmtCust->fetch(PDO::FETCH_ASSOC);
+            if ($cust) {
+                $customerId = $cust['customer_id'];
+            }
+        } else {
+            $stmtEmp = $this->db->prepare("SELECT employee_id FROM employees WHERE user_id = ?");
+            $stmtEmp->execute([$user['user_id']]);
+            $emp = $stmtEmp->fetch(PDO::FETCH_ASSOC);
+            if ($emp) {
+                $employeeId = $emp['employee_id'];
+            }
+        }
+
         $response_data = [
             "user_id" => $user['user_id'],
             "username" => $user['username'],
             "email" => $user['email'],
             "role_name" => $user['role_name'],
-            "permissions" => array_values($allPerms)
+            "customer_id" => $customerId,
+            "employee_id" => $employeeId,
+            "permissions" => array_values($allPerms),
+            "csrf_token" => $_SESSION['csrf_token']
         ];
 
         Response::json(200, "Successfully retrieved user state", $response_data);

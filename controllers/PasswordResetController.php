@@ -52,7 +52,16 @@ class PasswordResetController {
 
         // Construct reset link
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'];
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        if (!empty($_SERVER['HTTP_REFERER'])) {
+            $refParts = parse_url($_SERVER['HTTP_REFERER']);
+            if (!empty($refParts['host'])) {
+                $host = $refParts['host'] . (!empty($refParts['port']) ? ':' . $refParts['port'] : '');
+                if (!empty($refParts['scheme'])) {
+                    $protocol = $refParts['scheme'];
+                }
+            }
+        }
         $resetLink = $protocol . "://" . $host . "/reset-password?token=" . $token;
 
         $subject = "รีเซ็ทรหัสผ่าน - Hello Pet Shop";
@@ -65,16 +74,16 @@ class PasswordResetController {
         <body style='font-family: Arial, sans-serif; background-color: #f3f4f6; padding: 20px;'>
             <div style='max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
                 <div style='text-align: center; margin-bottom: 20px;'>
-                    <h2 style='color: #4f46e5;'>Hello Pet Shop</h2>
+                    <h2 style='color: #166534;'>Hello Pet Shop</h2>
                 </div>
                 <p>สวัสดีครับ/ค่ะ,</p>
                 <p>คุณได้รับอีเมลนี้เนื่องจากมีการร้องขอรีเซ็ทรหัสผ่านสำหรับบัญชีผู้ใช้ของคุณในระบบ Hello Pet Shop</p>
                 <p>กรุณาคลิกที่ปุ่มด้านล่างเพื่อทำการตั้งรหัสผ่านใหม่ ลิงก์นี้จะหมดอายุภายใน 1 ชั่วโมง:</p>
                 <div style='text-align: center; margin: 30px 0;'>
-                    <a href='{$resetLink}' style='background-color: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;'>รีเซ็ทรหัสผ่านใหม่</a>
+                    <a href='{$resetLink}' style='background-color: #16a34a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;'>รีเซ็ทรหัสผ่านใหม่</a>
                 </div>
                 <p>หรือคัดลอกลิงก์ด้านล่างนี้ไปวางในเบราว์เซอร์ของคุณ:</p>
-                <p style='word-break: break-all; color: #4f46e5;'><a href='{$resetLink}'>{$resetLink}</a></p>
+                <p style='word-break: break-all; color: #166534;'><a href='{$resetLink}'>{$resetLink}</a></p>
                 <hr style='border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;'>
                 <p style='font-size: 12px; color: #6b7280;'>หากคุณไม่ได้เป็นผู้ร้องขอการรีเซ็ทรหัสผ่านนี้ คุณไม่จำเป็นต้องดำเนินการใดๆ</p>
             </div>
@@ -190,7 +199,7 @@ class PasswordResetController {
         $email = $record['email'];
 
         // Get user_id by email
-        $userStmt = $this->db->prepare("SELECT user_id FROM users WHERE email = :email LIMIT 1");
+        $userStmt = $this->db->prepare("SELECT user_id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1");
         $userStmt->execute([':email' => $email]);
         $user = $userStmt->fetch(PDO::FETCH_ASSOC);
 

@@ -13,32 +13,31 @@ class DashboardController {
     public function getFinancials() {
         try {
             $period = $_GET['period'] ?? 'monthly'; // 'daily', 'monthly', 'yearly'
+            $selectedMonth = $_GET['month'] ?? date('Y-m'); // format YYYY-MM, defaults to current month
             
             // 1. Fetch all orders (excluding cancelled/status = 5)
             $qOrders = "SELECT order_id, net_total, order_date, status FROM orders WHERE status != 5";
             $stmtOrders = $this->db->query($qOrders);
             $orders = $stmtOrders->fetchAll(PDO::FETCH_ASSOC);
-
+ 
             // 2. Fetch all restock orders
             $qRestocks = "SELECT total_cost, order_date FROM restock_orders";
             $stmtRestocks = $this->db->query($qRestocks);
             $restocks = $stmtRestocks->fetchAll(PDO::FETCH_ASSOC);
-
+ 
             // 3. Fetch COGS (Cost of Goods Sold) per order from order_details
             $qCogs = "SELECT order_id, SUM(quantity * unit_cost) as total_cogs FROM order_details GROUP BY order_id";
             $stmtCogs = $this->db->query($qCogs);
             $orderCogs = $stmtCogs->fetchAll(PDO::FETCH_KEY_PAIR); // returns [order_id => total_cogs]
-
+ 
             // 4. Fetch all active employees
             $employees = $this->db->query("SELECT employee_id, base_salary, payment_frequency FROM employees")->fetchAll(PDO::FETCH_ASSOC);
-
-            // Calculate this month's financials
-            $thisMonthStr = date('Y-m');
-            
+ 
+            // Calculate selected month's financials
             $thisMonthSales = 0;
             $thisMonthCogs = 0;
             foreach ($orders as $o) {
-                if (strpos($o['order_date'], $thisMonthStr) === 0) {
+                if (strpos($o['order_date'], $selectedMonth) === 0) {
                     $thisMonthSales += (float)$o['net_total'];
                     $oId = (int)$o['order_id'];
                     $thisMonthCogs += (float)($orderCogs[$oId] ?? 0);
@@ -47,22 +46,27 @@ class DashboardController {
             
             $thisMonthRestocks = 0;
             foreach ($restocks as $r) {
-                if (strpos($r['order_date'], $thisMonthStr) === 0) {
+                if (strpos($r['order_date'], $selectedMonth) === 0) {
                     $thisMonthRestocks += (float)$r['total_cost'];
                 }
             }
             
-            $thisMonthSalaries = $this->getSalaryExpenseForMonth($thisMonthStr, $employees);
+            $thisMonthSalaries = $this->getSalaryExpenseForMonth($selectedMonth, $employees);
             $thisMonthGrossProfit = $thisMonthSales - $thisMonthCogs;
             $thisMonthProfit = $thisMonthGrossProfit - $thisMonthSalaries; // Net Profit
-
+ 
             // Generate chart data based on period
             $chartData = [];
             
             if ($period === 'daily') {
-                // Last 30 days
-                for ($i = 29; $i >= 0; $i--) {
-                    $d = date('Y-m-d', strtotime("-$i days"));
+                // Loop through all days of $selectedMonth
+                $selectedMonthDate = strtotime("$selectedMonth-01");
+                $numDays = (int)date('t', $selectedMonthDate);
+                $isCurrentMonth = ($selectedMonth === date('Y-m'));
+                $maxDay = $isCurrentMonth ? (int)date('d') : $numDays;
+                
+                for ($day = 1; $day <= $maxDay; $day++) {
+                    $d = sprintf('%s-%02d', $selectedMonth, $day);
                     $sales = 0;
                     $cogs = 0;
                     foreach ($orders as $o) {
@@ -97,10 +101,10 @@ class DashboardController {
                     ];
                 }
             } elseif ($period === 'yearly') {
-                // Last 5 years
-                $currentYear = (int)date('Y');
+                // 5 years ending at the year of $selectedMonth
+                $selectedYear = (int)date('Y', strtotime("$selectedMonth-01"));
                 for ($i = 4; $i >= 0; $i--) {
-                    $yr = $currentYear - $i;
+                    $yr = $selectedYear - $i;
                     $sales = 0;
                     $cogs = 0;
                     foreach ($orders as $o) {
@@ -132,10 +136,10 @@ class DashboardController {
                     ];
                 }
             } else {
-                // Monthly: last 12 months
-                $firstDayOfThisMonth = date('Y-m-01');
+                // Monthly: last 12 months ending at $selectedMonth
+                $firstDayOfSelectedMonth = "$selectedMonth-01";
                 for ($i = 11; $i >= 0; $i--) {
-                    $m = date('Y-m', strtotime("-$i months", strtotime($firstDayOfThisMonth)));
+                    $m = date('Y-m', strtotime("-$i months", strtotime($firstDayOfSelectedMonth)));
                     $sales = 0;
                     $cogs = 0;
                     foreach ($orders as $o) {
@@ -169,7 +173,7 @@ class DashboardController {
                     ];
                 }
             }
- 
+  
             $response = [
                 'this_month' => [
                     'sales' => $thisMonthSales,
@@ -181,7 +185,7 @@ class DashboardController {
                 ],
                 'chart' => $chartData
             ];
- 
+  
             Response::json(200, "Success", $response);
         } catch (Exception $e) {
             Response::json(500, "Error fetching financial data", ["error" => $e->getMessage()]);
@@ -201,8 +205,6 @@ class DashboardController {
             if ($freq === 'Daily') {
                 $days = (int)($attendance[$e['employee_id']] ?? 0);
                 $totalSalary += $base * $days;
-            } elseif ($freq === 'Weekly') {
-                $totalSalary += $base * 4;
             } else {
                 $totalSalary += $base;
             }
@@ -225,8 +227,6 @@ class DashboardController {
                 if (isset($workedSet[$e['employee_id']])) {
                     $totalSalary += $base;
                 }
-            } elseif ($freq === 'Weekly') {
-                $totalSalary += ($base * 4) / 30.0;
             } else {
                 $totalSalary += $base / 30.0;
             }

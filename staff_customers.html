@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/css/staff_mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', 'Noto Sans Thai', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Outfit', 'Kanit', sans-serif; background-color: #f8fafc; }
         
         .search-container-staff {
             background-color: #ffffff;
@@ -307,7 +307,7 @@
                         </div>
                         <div class="mobile-stats-row">
                             <div class="col-points">
-                                <i class="fas fa-star"></i> ${c.points} Pts
+                                <i class="fas fa-star"></i> ${Number(c.points || 0).toLocaleString()} Pts
                             </div>
                             <div class="col-pets">
                                 <i class="fas fa-paw" style="color: #2f5d3a;"></i> ${petsLabel}

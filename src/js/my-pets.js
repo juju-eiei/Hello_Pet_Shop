@@ -1,4 +1,4 @@
-import { showToast } from './utils.js';
+import { showToast, escapeHTML } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
@@ -42,17 +42,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // =============== Core Functions ===============
 
-    function loadPets() {
-        const petsStr = localStorage.getItem('myPetsData');
-        if (petsStr) {
+    async function loadPets() {
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        let customerId = user?.customer_id;
+        
+        if (!customerId) {
             try {
-                pets = JSON.parse(petsStr);
-            } catch (e) {
-                console.error("Error parsing pets data", e);
-                pets = [];
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result.data) {
+                        customerId = result.data.customer_id;
+                        localStorage.setItem('user', JSON.stringify(result.data));
+                    }
+                }
+            } catch (err) {
+                console.error("Error resolving session:", err);
+            }
+        }
+        
+        if (customerId) {
+            try {
+                const res = await fetch(`/api/customers/details?id=${customerId}`);
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result.data && result.data.pets) {
+                        pets = result.data.pets.map(p => ({
+                            id: String(p.pet_id),
+                            name: p.pet_name,
+                            species: p.pet_type,
+                            breed: p.breed || '',
+                            birthDate: p.birthdate || '',
+                            weight: p.weight || '',
+                            notes: p.notes || '',
+                            image: p.image_url || '',
+                            createdAt: p.created_at || ''
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading pets from DB:", err);
             }
         } else {
-            pets = [];
+            const petsStr = localStorage.getItem('myPetsData');
+            pets = petsStr ? JSON.parse(petsStr) : [];
         }
         renderPets();
     }
@@ -76,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pets.forEach(pet => {
             const ageDisplay = calculateAge(pet.birthDate);
             const imageHtml = pet.image 
-                ? `<img src="${pet.image}" onerror="this.src='/image/non-image.png'" alt="${pet.name}" class="w-full h-full object-cover">`
+                ? `<img src="${escapeHTML(pet.image)}" onerror="this.src='/image/non-image.png'" alt="${escapeHTML(pet.name)}" class="w-full h-full object-cover">`
                 : `<i class="fas fa-paw text-gray-300 text-4xl"></i>`;
 
             const card = document.createElement('div');
@@ -84,10 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
             card.innerHTML = `
                 <!-- Action Buttons (Hidden by default, shown on hover/focus) -->
                 <div class="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button class="edit-pet-btn w-8 h-8 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100 flex items-center justify-center transition-colors" data-id="${pet.id}" title="Edit Pet">
+                    <button class="edit-pet-btn w-8 h-8 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100 flex items-center justify-center transition-colors" data-id="${escapeHTML(pet.id)}" title="Edit Pet">
                         <i class="fas fa-pen text-xs"></i>
                     </button>
-                    <button class="delete-pet-btn w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors" data-id="${pet.id}" title="Delete Pet">
+                    <button class="delete-pet-btn w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors" data-id="${escapeHTML(pet.id)}" title="Delete Pet">
                         <i class="fas fa-trash text-xs"></i>
                     </button>
                 </div>
@@ -97,25 +131,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${imageHtml}
                     </div>
                     <div>
-                        <h3 class="text-xl font-bold text-gray-800 leading-tight">${pet.name}</h3>
-                        <p class="text-sm font-medium text-[#8bb35c] mt-0.5">${pet.species} ${pet.breed ? `<span class="text-gray-400 font-normal ml-1">· ${pet.breed}</span>` : ''}</p>
+                        <h3 class="text-xl font-bold text-gray-800 leading-tight">${escapeHTML(pet.name)}</h3>
+                        <p class="text-sm font-medium text-[#16a34a] mt-0.5">${escapeHTML(pet.species)} ${pet.breed ? `<span class="text-gray-400 font-normal ml-1">· ${escapeHTML(pet.breed)}</span>` : ''}</p>
                     </div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-y-3 gap-x-4 bg-gray-50/50 rounded-xl p-4 border border-gray-50">
                     <div>
                         <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">อายุ</div>
-                        <div class="text-sm text-gray-700 font-medium">${ageDisplay || '-'}</div>
+                        <div class="text-sm text-gray-700 font-medium">${escapeHTML(ageDisplay) || '-'}</div>
                     </div>
                     <div>
                         <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">น้ำหนัก</div>
-                        <div class="text-sm text-gray-700 font-medium">${pet.weight ? pet.weight + ' กก.' : '-'}</div>
+                        <div class="text-sm text-gray-700 font-medium">${pet.weight ? escapeHTML(pet.weight) + ' กก.' : '-'}</div>
                     </div>
                 </div>
                 ${pet.notes ? `
                 <div class="mt-3 pt-3 border-t border-dashed border-gray-100">
                     <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">หมายเหตุ</div>
-                    <div class="text-sm text-gray-600 font-medium leading-relaxed">${pet.notes}</div>
+                    <div class="text-sm text-gray-600 font-medium leading-relaxed">${escapeHTML(pet.notes)}</div>
                 </div>
                 ` : ''}
             `;
@@ -248,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Save Pet Details
-    savePetBtn.addEventListener('click', () => {
+    savePetBtn.addEventListener('click', async () => {
         // Validation
         if (!petNameInput.value.trim()) {
             showToast("กรุณากรอกชื่อสัตว์เลี้ยง", "error");
@@ -261,41 +295,164 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const petData = {
-            id: petIdInput.value || Date.now().toString(), // Generate simple ID
-            name: petNameInput.value.trim(),
-            species: petSpeciesInput.value,
-            breed: petBreedInput.value.trim(),
-            birthDate: petBirthDateInput.value,
-            weight: petWeightInput.value,
-            notes: petNotesInput.value.trim(),
-            image: currentTempImageSrc,
-            createdAt: petIdInput.value ? pets.find(p => p.id === petIdInput.value).createdAt : new Date().toISOString()
-        };
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        let customerId = user?.customer_id;
+        let csrfToken = user?.csrf_token;
 
-        if (petIdInput.value) {
-            // Update
-            const index = pets.findIndex(p => p.id === petIdInput.value);
-            if (index !== -1) {
-                pets[index] = petData;
-                showToast(`อัปเดตโปรไฟล์ของ ${petData.name} เรียบร้อยแล้ว`, "success");
+        if (!customerId) {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result.data) {
+                        customerId = result.data.customer_id;
+                        csrfToken = result.data.csrf_token;
+                        localStorage.setItem('user', JSON.stringify(result.data));
+                    }
+                }
+            } catch (err) {
+                console.error("Error resolving session:", err);
             }
-        } else {
-            // Add new
-            pets.unshift(petData);
-            showToast(`เพิ่มสัตว์เลี้ยง ${petData.name} สำเร็จ`, "success");
         }
 
-        savePetsToLocal();
-        renderPets();
-        closeModal();
+        if (customerId) {
+            savePetBtn.disabled = true;
+            savePetBtn.textContent = "กำลังบันทึก...";
+            
+            const formData = new FormData();
+            formData.append('customer_id', customerId);
+            if (petIdInput.value) {
+                formData.append('pet_id', petIdInput.value);
+            }
+            formData.append('pet_name', petNameInput.value.trim());
+            formData.append('pet_type', petSpeciesInput.value);
+            formData.append('breed', petBreedInput.value.trim());
+            formData.append('birthdate', petBirthDateInput.value);
+            formData.append('weight', petWeightInput.value);
+            formData.append('notes', petNotesInput.value.trim());
+            formData.append('csrf_token', csrfToken || '');
+
+            if (petImageInput.files[0]) {
+                formData.append('pet_image', petImageInput.files[0]);
+            }
+
+            try {
+                const res = await fetch('/api/pets/save', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    showToast(petIdInput.value ? "อัปเดตข้อมูลสัตว์เลี้ยงเรียบร้อยแล้ว" : "เพิ่มสัตว์เลี้ยงสำเร็จ", "success");
+                    await loadPets();
+                    closeModal();
+                } else {
+                    const errRes = await res.json();
+                    console.error("Save pet failed details: " + JSON.stringify(errRes));
+                    showToast(errRes.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล", "error");
+                }
+            } catch (err) {
+                console.error("Error saving pet to DB:", err);
+                showToast("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อบันทึกข้อมูลได้", "error");
+            } finally {
+                savePetBtn.disabled = false;
+                savePetBtn.textContent = "บันทึกข้อมูล";
+            }
+        } else {
+            const petData = {
+                id: petIdInput.value || Date.now().toString(),
+                name: petNameInput.value.trim(),
+                species: petSpeciesInput.value,
+                breed: petBreedInput.value.trim(),
+                birthDate: petBirthDateInput.value,
+                weight: petWeightInput.value,
+                notes: petNotesInput.value.trim(),
+                image: currentTempImageSrc,
+                createdAt: petIdInput.value ? pets.find(p => p.id === petIdInput.value).createdAt : new Date().toISOString()
+            };
+
+            if (petIdInput.value) {
+                const index = pets.findIndex(p => p.id === petIdInput.value);
+                if (index !== -1) {
+                    pets[index] = petData;
+                    showToast(`อัปเดตโปรไฟล์ของ ${petData.name} เรียบร้อยแล้ว`, "success");
+                }
+            } else {
+                pets.unshift(petData);
+                showToast(`เพิ่มสัตว์เลี้ยง ${petData.name} สำเร็จ`, "success");
+            }
+
+            savePetsToLocal();
+            renderPets();
+            closeModal();
+        }
     });
 
     // Delete Operations
     cancelDeleteBtn.addEventListener('click', closeDeleteModal);
     
-    confirmDeleteBtn.addEventListener('click', () => {
-        if (petToDeleteId) {
+    confirmDeleteBtn.addEventListener('click', async () => {
+        if (!petToDeleteId) return;
+
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        let customerId = user?.customer_id;
+        let csrfToken = user?.csrf_token;
+
+        if (!customerId) {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result.data) {
+                        customerId = result.data.customer_id;
+                        csrfToken = result.data.csrf_token;
+                        localStorage.setItem('user', JSON.stringify(result.data));
+                    }
+                }
+            } catch (err) {
+                console.error("Error resolving session:", err);
+            }
+        }
+
+        if (customerId) {
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.textContent = "กำลังลบ...";
+
+            try {
+                const res = await fetch('/api/pets/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify({
+                        pet_id: parseInt(petToDeleteId),
+                        customer_id: customerId,
+                        csrf_token: csrfToken
+                    })
+                });
+
+                if (res.ok) {
+                    showToast("ลบสัตว์เลี้ยงออกจากโปรไฟล์แล้ว", "success");
+                    await loadPets();
+                    closeDeleteModal();
+                } else {
+                    const errRes = await res.json();
+                    showToast(errRes.message || "เกิดข้อผิดพลาดในการลบสัตว์เลี้ยง", "error");
+                }
+            } catch (err) {
+                console.error("Error deleting pet from DB:", err);
+                showToast("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อลบข้อมูลได้", "error");
+            } finally {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.textContent = "ยืนยันการลบ";
+            }
+        } else {
             pets = pets.filter(p => p.id !== petToDeleteId);
             savePetsToLocal();
             renderPets();

@@ -467,7 +467,7 @@
         <div class="modal-card" style="width: 86mm; padding: 20px; border-radius: 20px;">
             <div class="modal-title" style="font-size: 20px; text-align: center; margin-bottom: 16px;">ใบเสร็จรับเงินสำเร็จ</div>
             
-            <div style="background: #f1f5f9; border-radius: 12px; overflow-y: auto; max-height: 380px; padding: 4px; display: flex; justify-content: center; border: 1px solid #cbd5e1; margin-bottom: 20px;">
+            <div class="no-scrollbar" style="background: #f1f5f9; border-radius: 12px; overflow-y: auto; max-height: 380px; padding: 4px; display: flex; justify-content: center; border: 1px solid #cbd5e1; margin-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
                 <div class="receipt-card" id="receiptCardContent"></div>
             </div>
 
@@ -637,7 +637,7 @@
                             <div style="font-weight: 600; font-size: 13px; color: #1e293b;"><i class="fas fa-user-circle" style="color: #3b82f6; margin-right: 6px;"></i>${cName}</div>
                             <div style="font-size: 11px; color: #64748b; margin-left: 20px;">โทร: ${cPhone}</div>
                         </div>
-                        <span style="font-size: 11px; font-weight: 700; color: #16a34a; background: #dcfce7; padding: 2px 8px; border-radius: 10px;">${cPts} แต้ม</span>
+                        <span style="font-size: 11px; font-weight: 700; color: #16a34a; background: #dcfce7; padding: 2px 8px; border-radius: 10px;">${cPts.toLocaleString()} แต้ม</span>
                     </div>
                 `;
             }).join('');
@@ -666,7 +666,7 @@
                 const cName = selectedCustomer.name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`.trim() || 'สมาชิก';
                 if (statusText) statusText.innerHTML = `<i class="fas fa-crown" style="color: #eab308; margin-right: 6px;"></i> <strong>${cName}</strong>`;
                 if (pointsText) {
-                    pointsText.textContent = `สะสม: ${selectedCustomer.points || 0} แต้ม`;
+                    pointsText.textContent = `สะสม: ${Number(selectedCustomer.points || 0).toLocaleString()} แต้ม`;
                     pointsText.style.display = 'inline-block';
                 }
                 if (statusBadge) {
@@ -744,8 +744,8 @@
                     <img class="pos-product-img" src="${p.image_url || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="${p.product_name}">
                     <div>
                         <div class="pos-product-name">${p.product_name}</div>
-                        <div class="pos-product-price">฿${parseFloat(p.selling_price || 0).toFixed(2)}</div>
-                        <div class="pos-product-stock">คงเหลือ: ${p.stock_qty || 0} ชิ้น</div>
+                        <div class="pos-product-price">฿${parseFloat(p.selling_price || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="pos-product-stock">คงเหลือ: ${Number(p.stock_qty || 0).toLocaleString()} ชิ้น</div>
                     </div>
                 </div>
             `).join('');
@@ -811,8 +811,20 @@
         }
 
         document.getElementById('barcodeSearchInput').addEventListener('input', (e) => {
-            searchKeyword = e.target.value.trim();
+            const val = e.target.value.trim();
+            searchKeyword = val;
             currentPage = 1;
+            
+            // Auto-detect barcode match (even without Enter key)
+            if (val.length >= 8) {
+                const match = allProducts.find(p => p.barcode === val && p.is_active == 1);
+                if (match) {
+                    addToCart(match.product_id);
+                    clearSearch();
+                    return;
+                }
+            }
+            
             renderProductGrid();
         });
 
@@ -823,9 +835,7 @@
                 const code = e.target.value.trim();
                 if (!code) return;
                 
-
-                
-                // 2. Check if it's a member phone number (9-10 digits)
+                // 1. Check if it's a member phone number (9-10 digits)
                 const isPhone = /^[0-9]{9,10}$/.test(code);
                 if (isPhone) {
                     const cust = allCustomers.find(c => {
@@ -840,7 +850,7 @@
                     }
                 }
 
-                // 3. Find product by exact barcode match
+                // 2. Find product by exact barcode match
                 const match = allProducts.find(p => p.barcode === code && p.is_active == 1);
                 if (match) {
                     addToCart(match.product_id);
@@ -934,14 +944,14 @@
                     <div class="pos-cart-item">
                         <div class="pos-cart-details">
                             <div class="pos-cart-name">${item.name}</div>
-                            <div class="pos-cart-price">฿${item.price.toFixed(2)}</div>
+                            <div class="pos-cart-price">฿${item.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                         </div>
                         <div class="pos-cart-qty-ctrl">
                             <button class="pos-cart-btn" onclick="adjustQty(${item.product_id}, -1)">-</button>
-                            <span class="pos-cart-qty">${item.quantity}</span>
+                            <span class="pos-cart-qty">${Number(item.quantity).toLocaleString()}</span>
                             <button class="pos-cart-btn" onclick="adjustQty(${item.product_id}, 1)">+</button>
                         </div>
-                        <div class="pos-cart-total">฿${total.toFixed(2)}</div>
+                        <div class="pos-cart-total">฿${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                         <div class="pos-cart-remove" onclick="removeCartItem(${item.product_id})">
                             <i class="fas fa-trash-alt"></i>
                         </div>
@@ -953,9 +963,9 @@
             let discount = 0;
             netTotal = Math.max(0, subtotal - discount);
 
-            document.getElementById('summarySubtotal').textContent = `฿${subtotal.toFixed(2)}`;
-            document.getElementById('summaryDiscount').textContent = `-฿${discount.toFixed(2)}`;
-            document.getElementById('summaryNetTotal').textContent = `฿${netTotal.toFixed(2)}`;
+            document.getElementById('summarySubtotal').textContent = `฿${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('summaryDiscount').textContent = `-฿${discount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('summaryNetTotal').textContent = `฿${netTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             // Points calculation and display
             const pointsRow = document.getElementById('pointsEarnedRow');
@@ -964,7 +974,7 @@
                 const peQty = parseInt(rewardSettings.point_earning_qty) || 1;
                 const pointsEarned = Math.floor(netTotal / peBaht) * peQty;
                 if (pointsEarned > 0) {
-                    document.getElementById('summaryPointsEarned').textContent = `+${pointsEarned} แต้ม`;
+                    document.getElementById('summaryPointsEarned').textContent = `+${pointsEarned.toLocaleString()} แต้ม`;
                     pointsRow.style.display = 'flex';
                 } else {
                     pointsRow.style.display = 'none';
@@ -1027,7 +1037,7 @@
             const cashReceived = parseFloat(input.value) || 0;
             const change = Math.max(0, cashReceived - netTotal);
 
-            document.getElementById('changeDueLabel').textContent = `฿${change.toFixed(2)}`;
+            document.getElementById('changeDueLabel').textContent = `฿${change.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
 
         function showToast(message, type) {
@@ -1097,8 +1107,8 @@
             const itemsHtml = cart.map(item => `
                 <div class="receipt-item-row">
                     <div style="flex: 2; margin-right: 2mm;">${item.name}</div>
-                    <div style="flex: 1; text-align: center;">${item.quantity} x ฿${item.price.toFixed(2)}</div>
-                    <div style="flex: 1; text-align: right;">฿${(item.price * item.quantity).toFixed(2)}</div>
+                    <div style="flex: 1; text-align: center;">${Number(item.quantity).toLocaleString()} x ฿${item.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div style="flex: 1; text-align: right;">฿${(item.price * item.quantity).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                 </div>
             `).join('');
 
@@ -1118,15 +1128,15 @@
                 <div class="receipt-divider"></div>
                 <div class="receipt-summary-row">
                     <span>ยอดรวม (Subtotal)</span>
-                    <span>฿${parseFloat(orderData.subtotal).toFixed(2)}</span>
+                    <span>฿${parseFloat(orderData.subtotal).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
                     <span>ส่วนลด (Discount)</span>
-                    <span>-฿${parseFloat(orderData.discount).toFixed(2)}</span>
+                    <span>-฿${parseFloat(orderData.discount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 <div class="receipt-summary-row">
                     <span>ยอดสุทธิ (Total)</span>
-                    <span>฿${parseFloat(orderData.net_total).toFixed(2)}</span>
+                    <span>฿${parseFloat(orderData.net_total).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 <div class="receipt-divider"></div>
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
@@ -1135,16 +1145,16 @@
                 </div>
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
                     <span>รับเงินมา</span>
-                    <span>฿${parseFloat(orderData.cash_received).toFixed(2)}</span>
+                    <span>฿${parseFloat(orderData.cash_received).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 <div class="receipt-summary-row">
                     <span>เงินทอน</span>
-                    <span>฿${parseFloat(orderData.change).toFixed(2)}</span>
+                    <span>฿${parseFloat(orderData.change).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 ${(orderData.points_earned && orderData.points_earned > 0) ? `
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
                     <span>แต้มได้รับครั้งนี้</span>
-                    <span>+${orderData.points_earned} แต้ม</span>
+                    <span>+${Number(orderData.points_earned).toLocaleString()} แต้ม</span>
                 </div>` : ''}
                 ${orderData.free_gift ? `
                 <div class="receipt-summary-row" style="font-weight: bold; font-size: 11px;">
@@ -1202,6 +1212,7 @@
 
 
         // Global barcode auto-focus
+        // Global barcode auto-focus
         document.addEventListener('keydown', (e) => {
             const activeEl = document.activeElement;
             const isInput = activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT' || activeEl.isContentEditable;
@@ -1212,6 +1223,25 @@
                 const searchInput = document.getElementById('barcodeSearchInput');
                 if (searchInput) {
                     searchInput.focus();
+                    searchInput.value += e.key;
+                    
+                    const val = searchInput.value;
+                    searchKeyword = val;
+                    currentPage = 1;
+                    
+                    // Auto-detect barcode match (even without Enter key)
+                    if (val.length >= 8) {
+                        const match = allProducts.find(p => p.barcode === val && p.is_active == 1);
+                        if (match) {
+                            addToCart(match.product_id);
+                            clearSearch();
+                            e.preventDefault();
+                            return;
+                        }
+                    }
+                    
+                    renderProductGrid();
+                    e.preventDefault();
                 }
             }
         });

@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputName = document.getElementById('inputName');
     const inputAddress = document.getElementById('inputAddress');
     const inputProvince = document.getElementById('inputProvince');
-    const inputZipcode = document.getElementById('zipcode');
-    const inputPhone = document.getElementById('phone');
+    const inputZipcode = document.getElementById('inputZipcode');
+    const inputPhone = document.getElementById('inputPhone');
     const inputEmail = document.getElementById('inputEmail');
 
     // Badges

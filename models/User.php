@@ -10,8 +10,8 @@ class User {
     public function findByUsername($username) {
         $query = "SELECT u.*, r.role_name 
                   FROM " . $this->table . " u
-                  JOIN roles r ON u.role_id = r.role_id
-                  WHERE u.username = :username 
+                  LEFT JOIN roles r ON u.role_id = r.role_id
+                  WHERE u.username = :username OR u.email = :username 
                   LIMIT 0,1";
 
         $stmt = $this->conn->prepare($query);
@@ -22,7 +22,7 @@ class User {
     }
 
     public function findByEmail($email) {
-        $query = "SELECT * FROM " . $this->table . " WHERE email = :email LIMIT 0,1";
+        $query = "SELECT * FROM " . $this->table . " WHERE LOWER(email) = LOWER(:email) LIMIT 0,1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':email', $email);
         $stmt->execute();

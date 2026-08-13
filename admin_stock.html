@@ -40,7 +40,7 @@
             align-items: center;
             transition: all 0.3s ease;
         }
-        .search-container:focus-within { box-shadow: 0 8px 30px rgba(47, 93, 58, 0.1) !important; border-color: #94ad5e; }
+        .search-container:focus-within { box-shadow: 0 8px 30px rgba(22, 163, 74, 0.1) !important; border-color: #16a34a; }
         .search-container input { background: transparent !important; font-size: 15px !important; font-weight: 500; border: none; outline: none; width: 100%; color: #1e293b; }
         .search-container i { color: #94a3b8 !important; font-size: 18px; margin-right: 14px; }
 
@@ -69,9 +69,9 @@
         }
         .filter-btn:hover { color: #1e293b !important; background: #f8fafc !important; }
         .filter-btn.active {
-            background: linear-gradient(135deg, #314d2a, #3e6135) !important;
+            background: linear-gradient(135deg, #1b4332, #16a34a) !important;
             color: #ffffff !important;
-            box-shadow: 0 4px 12px rgba(49, 77, 42, 0.25) !important;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25) !important;
             transform: translateY(-1px);
         }
 
@@ -126,7 +126,7 @@
         .po-form-control {
             width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box;
         }
-        .po-form-control:focus { border-color: #314d2a; box-shadow: 0 0 0 2px rgba(49, 77, 42, 0.1); }
+        .po-form-control:focus { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.1); }
         
         .po-table {
             width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px;
@@ -139,10 +139,10 @@
         .btn-po {
             padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; gap: 8px;
         }
-        .btn-po-primary { background: linear-gradient(135deg, #314d2a, #3e6135); color: white; }
-        .btn-po-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(49, 77, 42, 0.2); }
-        .btn-po-secondary { background-color: #e2e8f0; color: #475569; }
-        .btn-po-secondary:hover { background-color: #cbd5e1; }
+        .btn-po-primary { background: var(--secondary-berry-hover); color: white; }
+        .btn-po-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(194, 86, 37, 0.2); }
+        .btn-po-secondary { background-color: var(--secondary-berry-light); color: var(--secondary-berry-hover); border: 1px solid var(--secondary-berry-border); }
+        .btn-po-secondary:hover { background-color: var(--secondary-berry-border); }
         .btn-po-danger { background-color: #ef4444; color: white; }
         .btn-po-danger:hover { background-color: #dc2626; }
         
@@ -157,7 +157,7 @@
             transition: all 0.2s;
             margin-bottom: 16px;
         }
-        .scan-zone:hover { border-color: #314d2a; background-color: #f1f5f9; }
+        .scan-zone:hover { border-color: #16a34a; background-color: #f1f5f9; }
         .scan-zone i { font-size: 32px; color: #64748b; margin-bottom: 8px; }
         
         /* Print Layout Overlay */
@@ -239,7 +239,10 @@
                     <span style="flex: 1; text-align: right;">การจัดการ</span>
                 </div>
                 <div id="productContainer">
-                    <div style="padding: 50px; text-align: center; color: #718096;">กำลังโหลดข้อมูล...</div>
+                    <div class="loading-container">
+                        <div class="spinner-loader"></div>
+                        <span>กำลังโหลดข้อมูล...</span>
+                    </div>
                 </div>
             </div>
             <!-- Pagination -->
@@ -399,6 +402,40 @@
         </div>
     </div>
 
+    <!-- Receive Goods Modal -->
+    <div class="po-modal-overlay" id="receivePoModal">
+        <div class="po-modal" style="max-width: 800px;">
+            <div class="po-modal-header">
+                <h2>นำสินค้าเข้าคลัง (Goods Receipt)</h2>
+                <button class="po-modal-close" onclick="closeModal('receivePoModal')">&times;</button>
+            </div>
+            <p style="margin: 10px 0 0 0; font-size: 13px; color: #64748b; line-height: 1.4;">
+                <i class="fas fa-info-circle" style="color: #4D7C68;"></i> สำหรับสินค้าที่ไม่ใช่อาหาร หรือไม่มีระบุวันหมดอายุ (เช่น ของเล่น แปรง แชมพู คอนโดแมว) สามารถเว้นช่องวันหมดอายุและเลขล็อตว่างไว้ได้
+            </p>
+            
+            <div style="overflow-y: auto; max-height: 50vh; margin-top: 10px;">
+                <table class="po-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45%;">ชื่อสินค้า</th>
+                            <th style="width: 15%; text-align: center;">จำนวนสั่งซื้อ</th>
+                            <th style="width: 20%;">เลขล็อต (Lot Number)</th>
+                            <th style="width: 20%;">วันหมดอายุ (Expiry Date)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="receivePoItemsBody">
+                        <!-- Dynamic items will go here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-po btn-po-secondary" onclick="closeModal('receivePoModal')">ยกเลิก</button>
+                <button class="btn-po btn-po-primary" id="confirmReceivePoBtn">ยืนยันนำเข้าคลัง</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Printable PO Viewer Overlay -->
     <div class="print-layout-overlay" id="printPoOverlay">
         <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 20px;" class="no-print">
@@ -421,6 +458,7 @@
         let currentPage = 1;
         const itemsPerPage = 20;
         let allProducts = [];
+        let poProducts = [];
         let rowCounter = 0;
 
         function checkAuth() {
@@ -490,9 +528,14 @@
                 return `
                 <div class="product-row" style="display: flex; align-items: center; width: 100%;">
                     <div class="product-details" style="flex: 2; margin-right: 20px;">
-                        <div class="product-name">${p.product_name}</div>
+                        <div class="product-name">
+                            ${p.product_name}
+                            <span class="show-lots-btn" style="cursor: pointer; font-size: 11px; color: #10b981; margin-left: 8px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #d1fae5; padding: 2px 6px; border-radius: 4px; background-color: #f0fdf4;" onclick="viewProductLots(${p.product_id}, '${p.product_name.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-list-ol"></i> ดูข้อมูลล็อต
+                            </span>
+                        </div>
                     </div>
-                    <div class="stock-status" style="flex: 1; text-align: center; font-weight: 500;">
+                    <div class="stock-status" style="flex: 1; text-align: center; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px;">
                         <span class="${statusClass}">${statusText}</span>
                     </div>
                     <div class="stock-status" style="flex: 1; text-align: center; color: #475569; font-weight: 500;">
@@ -661,12 +704,20 @@
         }
 
         async function loadActiveProducts() {
-            if (allProducts.length > 0) return;
+            if (poProducts.length > 0) return;
             try {
                 const response = await fetch('/api/products?filter=all');
                 const json = await response.json();
                 if (response.ok) {
-                    allProducts = json.data;
+                    poProducts = json.data || [];
+                    poProducts.sort((a, b) => {
+                        const qtyA = parseInt(a.stock_qty) || 0;
+                        const qtyB = parseInt(b.stock_qty) || 0;
+                        if (qtyA !== qtyB) {
+                            return qtyA - qtyB;
+                        }
+                        return a.product_name.localeCompare(b.product_name, 'th');
+                    });
                 } else {
                     console.error("Failed to load products list:", json.message);
                 }
@@ -682,20 +733,30 @@
             tr.id = `po-row-${rowCounter}`;
             
             if (selectedProductId && !costPrice) {
-                const prod = allProducts.find(p => p.product_id == selectedProductId);
+                const prod = poProducts.find(p => p.product_id == selectedProductId);
                 if (prod) {
                     costPrice = parseFloat(prod.cost_price) || 0;
                 }
             }
             
-            const optionsHtml = allProducts.map(p => {
+            let selectStyle = '';
+            if (selectedProductId) {
+                const prod = poProducts.find(p => p.product_id == selectedProductId);
+                if (prod && (parseInt(prod.stock_qty) || 0) <= 5) {
+                    selectStyle = 'style="color: #ef4444; font-weight: 600;"';
+                }
+            }
+
+            const optionsHtml = poProducts.map(p => {
                 const selected = p.product_id == selectedProductId ? 'selected' : '';
-                return `<option value="${p.product_id}" data-cost="${p.cost_price}" ${selected}>${p.product_name} (${p.barcode || 'ไม่มีบาร์โค้ด'})</option>`;
+                const stockVal = parseInt(p.stock_qty) || 0;
+                const optionStyle = stockVal <= 5 ? 'style="color: #ef4444;"' : '';
+                return `<option value="${p.product_id}" data-cost="${p.cost_price}" ${selected} ${optionStyle}>${p.product_name} [คงเหลือ: ${stockVal}]</option>`;
             }).join('');
             
             tr.innerHTML = `
                 <td>
-                    <select class="po-form-control select-product" onchange="handleProductSelect(this, ${rowCounter})">
+                    <select class="po-form-control select-product" ${selectStyle} onchange="handleProductSelect(this, ${rowCounter})">
                         <option value="">-- เลือกสินค้า --</option>
                         ${optionsHtml}
                     </select>
@@ -707,7 +768,7 @@
                     <input type="number" class="po-form-control input-qty" value="${qty}" min="1" step="1" oninput="updateRowTotal(${rowCounter})">
                 </td>
                 <td>
-                    <span class="row-total" id="row-total-${rowCounter}">${(costPrice * qty).toFixed(2)}</span>
+                    <span class="row-total" id="row-total-${rowCounter}">${(costPrice * qty).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </td>
                 <td style="text-align: center;">
                     <button class="btn-po-danger" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px;" onclick="removePoRow(${rowCounter})">
@@ -730,6 +791,15 @@
         function handleProductSelect(selectEl, rowId) {
             const selectedOption = selectEl.options[selectEl.selectedIndex];
             const cost = parseFloat(selectedOption.getAttribute('data-cost')) || 0;
+            
+            if (selectedOption && selectedOption.style.color) {
+                selectEl.style.color = selectedOption.style.color;
+                selectEl.style.fontWeight = '600';
+            } else {
+                selectEl.style.color = '';
+                selectEl.style.fontWeight = '';
+            }
+
             const tr = document.getElementById(`po-row-${rowId}`);
             if (tr) {
                 const costInput = tr.querySelector('.input-cost');
@@ -749,7 +819,7 @@
                 
                 const cost = parseFloat(costInput.value) || 0;
                 const qty = parseInt(qtyInput.value) || 0;
-                totalSpan.textContent = (cost * qty).toFixed(2);
+                totalSpan.textContent = (cost * qty).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 
                 updateGrandTotal();
             }
@@ -759,9 +829,9 @@
             let grandTotal = 0;
             const totals = document.querySelectorAll('.row-total');
             totals.forEach(t => {
-                grandTotal += parseFloat(t.textContent) || 0;
+                grandTotal += parseFloat(t.textContent.replace(/,/g, '')) || 0;
             });
-            document.getElementById('poGrandTotal').textContent = grandTotal.toFixed(2);
+            document.getElementById('poGrandTotal').textContent = grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
 
         async function handleOcrFileSelect(event) {
@@ -800,7 +870,7 @@
                         icon: 'warning',
                         title: 'ไม่พบรายการสินค้า',
                         text: 'ไม่สามารถระบุสินค้าจากเอกสารที่อัปโหลดได้ กรุณากรอกรายการด้วยตัวเองหรือลองใช้รูปภาพที่คมชัดกว่านี้',
-                        confirmButtonColor: '#3b5030'
+                        confirmButtonColor: '#4D7C68'
                     });
                 } else {
                     const tbody = document.getElementById('poItemsBody');
@@ -815,7 +885,7 @@
                         icon: 'success',
                         title: 'วิเคราะห์เอกสารสำเร็จ',
                         text: `ดึงรายการสินค้าจากบิลสำเร็จทั้งหมด ${parsedItems.length} รายการ`,
-                        confirmButtonColor: '#3b5030'
+                        confirmButtonColor: '#4D7C68'
                     });
                 }
             } catch (error) {
@@ -824,7 +894,7 @@
                     icon: 'error',
                     title: 'เกิดข้อผิดพลาดในการสแกน',
                     text: error.message || 'ไม่สามารถสแกนเอกสารได้',
-                    confirmButtonColor: '#3b5030'
+                    confirmButtonColor: '#4D7C68'
                 });
             } finally {
                 statusSpan.innerHTML = 'รองรับไฟล์ PNG, JPG, PDF (ไทย/อังกฤษ)';
@@ -886,7 +956,7 @@
             const matchedProductIds = new Set();
 
             // Sort products by length to match the most specific names first
-            const sortedProducts = [...allProducts].sort((a, b) => b.product_name.length - a.product_name.length);
+            const sortedProducts = [...poProducts].sort((a, b) => b.product_name.length - a.product_name.length);
 
             for (let line of lines) {
                 line = line.trim();
@@ -1024,7 +1094,7 @@
                     icon: 'warning',
                     title: 'ไม่มีรายการสินค้า',
                     text: 'กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ',
-                    confirmButtonColor: '#314d2a'
+                    confirmButtonColor: '#4D7C68'
                 });
                 return;
             }
@@ -1034,7 +1104,7 @@
                     icon: 'warning',
                     title: 'ข้อมูลไม่ถูกต้อง',
                     text: 'กรุณากรอกข้อมูลสินค้า จำนวน และราคาทุนให้ถูกต้อง',
-                    confirmButtonColor: '#314d2a'
+                    confirmButtonColor: '#4D7C68'
                 });
                 return;
             }
@@ -1082,7 +1152,7 @@
                         icon: 'success',
                         title: 'สำเร็จ',
                         text: 'บันทึกใบสั่งซื้อสินค้าเรียบร้อยแล้ว!',
-                        confirmButtonColor: '#314d2a'
+                        confirmButtonColor: '#4D7C68'
                     }).then(() => {
                         closeModal('createPoModal');
                         fetchProducts();
@@ -1092,7 +1162,7 @@
                         icon: 'error',
                         title: 'ล้มเหลว',
                         text: result.message || 'เกิดข้อผิดพลาดในการบันทึกใบสั่งซื้อ',
-                        confirmButtonColor: '#314d2a'
+                        confirmButtonColor: '#4D7C68'
                     });
                 }
             } catch (error) {
@@ -1101,7 +1171,7 @@
                     icon: 'error',
                     title: 'ข้อผิดพลาด',
                     text: 'ไม่สามารถเชื่อมต่อระบบเครือข่ายได้',
-                    confirmButtonColor: '#314d2a'
+                    confirmButtonColor: '#4D7C68'
                 });
             }
         }
@@ -1180,74 +1250,138 @@
                 return;
             }
 
-            const confirmResult = await Swal.fire({
-                title: 'ยืนยันการนำสินค้าเข้าคลัง?',
-                text: 'ระบบจะเพิ่มจำนวนสินค้าเข้าสู่สต็อกจริง และบันทึกราคาทุนเฉลี่ยใหม่',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#314d2a',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'ยืนยันนำเข้าคลัง',
-                cancelButtonText: 'ยกเลิก'
-            });
-
-            if (!confirmResult.isConfirmed) return;
-
             try {
                 Swal.fire({
-                    title: 'กำลังนำสินค้าเข้าคลัง',
-                    text: 'กรุณารอสักครู่...',
+                    title: 'กำลังโหลดข้อมูลสินค้า...',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
 
-                let employeeId = 1;
-                const resMe = await fetch(`/api/staff/me?user_id=${user.user_id}`);
-                if (resMe.ok) {
-                    const jsonMe = await resMe.json();
-                    if (jsonMe.data && jsonMe.data.employee_id) {
-                        employeeId = jsonMe.data.employee_id;
-                    }
-                }
-
-                const response = await fetch('/api/restock/receive', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        restock_id: restockId,
-                        employee_id: employeeId
-                    })
-                });
-
-                const result = await response.json();
+                const response = await fetch(`/api/restock/details?id=${restockId}`);
+                const json = await response.json();
                 Swal.close();
 
-                if (response.ok) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'สำเร็จ',
-                        text: 'นำสินค้าเข้าคลังเรียบร้อยแล้ว!',
-                        confirmButtonColor: '#314d2a'
-                    }).then(() => {
-                        fetchPoHistory();
-                        fetchProducts();
-                    });
-                } else {
+                if (!response.ok || !json.data) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'ล้มเหลว',
-                        text: result.message || 'เกิดข้อผิดพลาดในการนำเข้าสินค้า',
-                        confirmButtonColor: '#314d2a'
+                        title: 'เกิดข้อผิดพลาด',
+                        text: json.message || 'ไม่สามารถดึงข้อมูลสินค้าในใบสั่งซื้อได้',
+                        confirmButtonColor: '#4D7C68'
                     });
+                    return;
                 }
+
+                const order = json.data;
+                const tbody = document.getElementById('receivePoItemsBody');
+                
+                tbody.innerHTML = order.items.map(item => {
+                    const reqExp = (item.requires_expiration === undefined || item.requires_expiration == 1);
+                    return `
+                        <tr data-product-id="${item.product_id}">
+                            <td>${item.product_name}</td>
+                            <td style="text-align: center;">${Number(item.quantity).toLocaleString()} ชิ้น</td>
+                            <td>
+                                <input type="text" class="po-form-control input-receive-lot" style="padding: 6px 10px; border-radius: 6px; font-size: 13px;" placeholder="เช่น LOT-A (ไม่จำเป็น)" autocomplete="off">
+                            </td>
+                            <td>
+                                ${reqExp ? `
+                                    <input type="date" class="po-form-control input-receive-expiry" style="padding: 6px 10px; border-radius: 6px; font-size: 13px;" autocomplete="off">
+                                ` : `
+                                    <input type="date" class="po-form-control input-receive-expiry" style="padding: 6px 10px; border-radius: 6px; font-size: 13px; background-color: #e2e8f0; cursor: not-allowed;" disabled title="หมวดหมู่นี้ไม่จำเป็นต้องใส่วันหมดอายุ" autocomplete="off">
+                                `}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                openModal('receivePoModal');
+
+                // Bind confirm click handler once
+                const confirmBtn = document.getElementById('confirmReceivePoBtn');
+                confirmBtn.onclick = async () => {
+                    const items = [];
+                    const rows = document.querySelectorAll('#receivePoItemsBody tr');
+                    rows.forEach(tr => {
+                        const productId = parseInt(tr.getAttribute('data-product-id'));
+                        const lotInput = tr.querySelector('.input-receive-lot');
+                        const expiryInput = tr.querySelector('.input-receive-expiry');
+                        
+                        items.push({
+                            product_id: productId,
+                            lot_number: lotInput.value.trim(),
+                            expiry_date: expiryInput.value
+                        });
+                    });
+
+                    try {
+                        Swal.fire({
+                            title: 'กำลังนำสินค้าเข้าคลัง',
+                            text: 'กรุณารอสักครู่...',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading(); }
+                        });
+
+                        let employeeId = 1;
+                        const resMe = await fetch(`/api/staff/me?user_id=${user.user_id}`);
+                        if (resMe.ok) {
+                            const jsonMe = await resMe.json();
+                            if (jsonMe.data && jsonMe.data.employee_id) {
+                                employeeId = jsonMe.data.employee_id;
+                            }
+                        }
+
+                        const receiveRes = await fetch('/api/restock/receive', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                restock_id: restockId,
+                                employee_id: employeeId,
+                                items: items
+                            })
+                        });
+
+                        const receiveJson = await receiveRes.json();
+                        Swal.close();
+
+                        if (receiveRes.ok) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'สำเร็จ',
+                                text: 'นำสินค้าเข้าคลังเรียบร้อยแล้ว!',
+                                confirmButtonColor: '#4D7C68'
+                            }).then(() => {
+                                closeModal('receivePoModal');
+                                fetchPoHistory();
+                                fetchProducts();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'ล้มเหลว',
+                                text: receiveJson.message || 'เกิดข้อผิดพลาดในการนำเข้าสินค้า',
+                                confirmButtonColor: '#4D7C68'
+                            });
+                        }
+                    } catch (err) {
+                        Swal.close();
+                        console.error(err);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'ข้อผิดพลาด',
+                            text: 'เกิดข้อผิดพลาดในการนำสินค้าเข้าคลัง: ' + err.message,
+                            confirmButtonColor: '#4D7C68'
+                        });
+                    }
+                };
+
             } catch (error) {
                 Swal.close();
                 console.error(error);
                 Swal.fire({
                     icon: 'error',
                     title: 'ข้อผิดพลาด',
-                    text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้',
-                    confirmButtonColor: '#314d2a'
+                    text: 'เกิดข้อผิดพลาดในการติดต่อระบบ',
+                    confirmButtonColor: '#4D7C68'
                 });
             }
         }
@@ -1274,7 +1408,7 @@
                         icon: 'error',
                         title: 'เกิดข้อผิดพลาด',
                         text: json.message || 'ไม่สามารถโหลดข้อมูลบิลได้',
-                        confirmButtonColor: '#314d2a'
+                        confirmButtonColor: '#4D7C68'
                     });
                 }
             } catch (error) {
@@ -1283,30 +1417,53 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'ข้อผิดพลาด',
-                    text: 'เกิดข้อผิดพลาดทางเทคนิคในการดึงข้อมูล',
-                    confirmButtonColor: '#314d2a'
+                    text: 'เกิดข้อผิดพลาดทางเทคนิคในการดึงข้อมูล: ' + error.message,
+                    confirmButtonColor: '#4D7C68'
                 });
             }
         }
 
         function renderPrintDocument(order) {
             const container = document.getElementById('printDocumentBody');
-            const dateObj = new Date(order.order_date);
-            const formattedDate = dateObj.toLocaleDateString('th-TH', {
-                year: 'numeric', month: 'long', day: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            });
             
-            const itemsHtml = order.items.map((item, idx) => `
+            let formattedDate = '-';
+            if (order.order_date) {
+                const dateObj = new Date(order.order_date.replace(' ', 'T'));
+                if (!isNaN(dateObj.getTime())) {
+                    formattedDate = dateObj.toLocaleDateString('th-TH', {
+                        year: 'numeric', month: 'long', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                }
+            }
+            
+            const items = order.items || [];
+            const itemsHtml = items.map((item, idx) => {
+                let expDate = '-';
+                if (item.expiry_date && item.expiry_date !== '0000-00-00' && item.expiry_date !== '0000-00-00 00:00:00') {
+                    const dateObj = new Date(item.expiry_date);
+                    if (!isNaN(dateObj.getTime())) {
+                        expDate = dateObj.toLocaleDateString('th-TH');
+                    }
+                }
+                
+                const lotNum = item.lot_number || '-';
+                const unitCost = parseFloat(item.unit_cost) || 0;
+                const quantity = parseInt(item.quantity) || 0;
+                const totalCostVal = unitCost * quantity;
+                
+                return `
                 <tr>
                     <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;">${idx + 1}</td>
-                    <td style="border: 1px solid #cbd5e1; padding: 8px;">${item.product_name}</td>
-                    <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;">${item.barcode || '-'}</td>
-                    <td style="text-align: right; border: 1px solid #cbd5e1; padding: 8px;">${parseFloat(item.unit_cost).toFixed(2)}</td>
-                    <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;">${item.quantity}</td>
-                    <td style="text-align: right; border: 1px solid #cbd5e1; padding: 8px;">${(item.unit_cost * item.quantity).toFixed(2)}</td>
+                    <td style="border: 1px solid #cbd5e1; padding: 8px;">${item.product_name || '-'}</td>
+                    <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;"><strong>${lotNum}</strong></td>
+                    <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;">${expDate}</td>
+                    <td style="text-align: right; border: 1px solid #cbd5e1; padding: 8px;">${unitCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;">${quantity.toLocaleString()}</td>
+                    <td style="text-align: right; border: 1px solid #cbd5e1; padding: 8px;">${totalCostVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
             
             const totalCost = parseFloat(order.total_cost) || 0;
             const totalCostText = thaiBahtText(totalCost);
@@ -1321,7 +1478,7 @@
             let staffDetailsHtml = '';
             if (statusVal === 1) {
                 staffDetailsHtml = `
-                    <strong style="color: #314d2a; display: block; margin-bottom: 6px;">ผู้สั่งซื้อสินค้า / Creator</strong>
+                    <strong style="color: #4D7C68; display: block; margin-bottom: 6px;">ผู้สั่งซื้อสินค้า / Creator</strong>
                     <div style="font-size: 13px;">
                         <strong>ชื่อพนักงาน:</strong> ${order.employee_name || 'ไม่ระบุ'}<br>
                         <strong>ตำแหน่ง:</strong> เจ้าหน้าที่จัดซื้อสินค้า<br>
@@ -1329,7 +1486,7 @@
                 `;
             } else {
                 staffDetailsHtml = `
-                    <strong style="color: #314d2a; display: block; margin-bottom: 6px;">ข้อมูลเจ้าหน้าที่ / Staff</strong>
+                    <strong style="color: #4D7C68; display: block; margin-bottom: 6px;">ข้อมูลเจ้าหน้าที่ / Staff</strong>
                     <div style="font-size: 13px;">
                         <strong>ชื่อผู้สั่งซื้อ:</strong> ${order.employee_name || 'ไม่ระบุ'}<br>
                         <strong>ชื่อผู้รับเข้าคลัง:</strong> ${order.receiver_name || 'ไม่ระบุ'}<br>
@@ -1340,9 +1497,9 @@
             container.innerHTML = `
                 <div style="font-family: 'Sarabun', 'Kanit', sans-serif; font-size: 14px; line-height: 1.6; color: #000;">
                     <!-- Header -->
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #314d2a; padding-bottom: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #4D7C68; padding-bottom: 20px; margin-bottom: 20px;">
                         <div>
-                            <h1 style="margin: 0; color: #314d2a; font-size: 26px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                            <h1 style="margin: 0; color: #4D7C68; font-size: 26px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
                                 <i class="fas fa-paw"></i> Hello Pet Shop
                             </h1>
                             <p style="margin: 5px 0 0 0; color: #475569; font-size: 12px;">
@@ -1351,7 +1508,7 @@
                             </p>
                         </div>
                         <div style="text-align: right;">
-                            <h2 style="margin: 0 0 5px 0; font-size: 18px; color: #314d2a;">${docTitle}</h2>
+                            <h2 style="margin: 0 0 5px 0; font-size: 18px; color: #4D7C68;">${docTitle}</h2>
                             <p style="margin: 0; font-size: 13px; font-weight: bold; color: #475569;">เลขที่: PO-${String(order.restock_id).padStart(5, '0')}</p>
                             <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">วันที่: ${formattedDate}</p>
                         </div>
@@ -1360,7 +1517,7 @@
                     <!-- Vendor & Receiver details -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
                         <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px;">
-                            <strong style="color: #314d2a; display: block; margin-bottom: 6px;">ผู้จัดจำหน่าย / Supplier</strong>
+                            <strong style="color: #4D7C68; display: block; margin-bottom: 6px;">ผู้จัดจำหน่าย / Supplier</strong>
                             <div style="font-size: 13px;">
                                 <strong>ชื่อบริษัท/คู่ค้า:</strong> ${order.supplier_name}<br>
                                 <strong>สถานะสั่งซื้อ:</strong> ${supplierStatusText}<br>
@@ -1375,23 +1532,24 @@
                     <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                         <thead>
                             <tr style="background-color: #f1f5f9;">
-                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 8%;">ลำดับ</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">ชื่อสินค้า (Product Name)</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 18%;">บาร์โค้ด (Barcode)</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; width: 15%;">ราคาทุนต่อชิ้น</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 12%;">จำนวน</th>
-                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; width: 15%;">จำนวนเงินรวม</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 6%;">ลำดับ</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left; width: 30%;">ชื่อสินค้า (Product Name)</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 15%;">เลขล็อต (Lot)</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 15%;">วันหมดอายุ (Expiry)</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; width: 12%;">ราคาทุนต่อชิ้น</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 10%;">จำนวน</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; width: 12%;">จำนวนเงินรวม</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${itemsHtml}
                             <!-- Totals -->
                             <tr>
-                                <td colspan="4" style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; text-align: left; background-color: #f8fafc;">
+                                <td colspan="5" style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; text-align: left; background-color: #f8fafc;">
                                     ตัวอักษร: (${totalCostText})
                                 </td>
                                 <td style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; text-align: center; background-color: #f8fafc;">รวมสุทธิ</td>
-                                <td style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; text-align: right; background-color: #f8fafc; color: #314d2a; font-size: 15px;">
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; text-align: right; background-color: #f8fafc; color: #4D7C68; font-size: 15px;">
                                     ${totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
                                 </td>
                             </tr>
@@ -1529,7 +1687,7 @@
             if (type === 2) return '<span style="color: #ef4444; font-weight: 600;">ขายสินค้า (POS/Online)</span>';
             if (type === 3) {
                 if (qty > 0) {
-                    return '<span style="color: #3b82f6; font-weight: 600;">ปรับสต็อก (เพิ่ม)</span>';
+                    return '<span style="color: var(--secondary-berry); font-weight: 600;">ปรับสต็อก (เพิ่ม)</span>';
                 } else {
                     return '<span style="color: #f59e0b; font-weight: 600;">ปรับสต็อก (ลด)</span>';
                 }
@@ -1554,6 +1712,91 @@
                 btn.classList.add('active');
             }
         });
+        async function viewProductLots(productId, productName) {
+            try {
+                Swal.fire({
+                    title: 'กำลังโหลดข้อมูลล็อต',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                
+                const response = await fetch(`/api/products/lots?product_id=${productId}`);
+                const json = await response.json();
+                
+                Swal.close();
+                
+                if (response.ok && json.data) {
+                    const lots = json.data;
+                    if (lots.length === 0) {
+                        Swal.fire({
+                            title: `ข้อมูลล็อต: ${productName}`,
+                            text: 'ไม่พบล็อตสินค้าที่ใช้งานอยู่ในขณะนี้ (สต็อกว่างเปล่า)',
+                            icon: 'info',
+                            confirmButtonColor: '#4D7C68'
+                        });
+                        return;
+                    }
+                    
+                    const lotsHtml = lots.map((lot, idx) => {
+                        const expDate = lot.expiry_date ? new Date(lot.expiry_date).toLocaleDateString('th-TH') : 'ไม่ระบุ';
+                        const lotNum = lot.lot_number || 'ไม่ระบุ';
+                        const cost = parseFloat(lot.cost_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        return `
+                            <tr>
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">${idx + 1}</td>
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;"><strong>${lotNum}</strong></td>
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${lot.quantity} ชิ้น</td>
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #b91c1c;">${expDate}</td>
+                                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">฿${cost}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                    
+                    Swal.fire({
+                        title: `ข้อมูลล็อต: ${productName}`,
+                        html: `
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:13px;">
+                                    <thead>
+                                        <tr style="background-color:#f1f5f9;">
+                                            <th style="border: 1px solid #cbd5e1; padding: 8px;">ลำดับ</th>
+                                            <th style="border: 1px solid #cbd5e1; padding: 8px;">เลขล็อต</th>
+                                            <th style="border: 1px solid #cbd5e1; padding: 8px;">จำนวนเหลือ</th>
+                                            <th style="border: 1px solid #cbd5e1; padding: 8px;">วันหมดอายุ</th>
+                                            <th style="border: 1px solid #cbd5e1; padding: 8px;">ราคาทุน</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${lotsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `,
+                        width: '600px',
+                        confirmButtonColor: '#4D7C68',
+                        confirmButtonText: 'ปิด'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: json.message || 'ไม่สามารถโหลดข้อมูลล็อตได้',
+                        confirmButtonColor: '#4D7C68'
+                    });
+                }
+            } catch (error) {
+                Swal.close();
+                console.error(error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาด',
+                    text: 'เกิดข้อผิดพลาดทางเทคนิคในการโหลดข้อมูล',
+                    confirmButtonColor: '#4D7C68'
+                });
+            }
+        }
+        window.viewProductLots = viewProductLots;
+
         window.openModal = openModal;
         window.closeModal = closeModal;
         window.addPoRow = addPoRow;

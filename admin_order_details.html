@@ -18,7 +18,7 @@
             display: inline-block;
         }
         .status-pill.pending { background-color: #fef08a; color: #854d0e; }
-        .status-pill.processing { background-color: #bfdbfe; color: #1e3a8a; }
+        .status-pill.processing { background-color: var(--secondary-berry-border); color: #1e3a8a; }
         .status-pill.intransit { background-color: #fce7f3; color: #9d174d; }
         .status-pill.completed { background-color: #dcfce7; color: #166534; }
         .status-pill.cancelled { background-color: #fecdd3; color: #9f1239; }
@@ -391,7 +391,7 @@
                 <!-- Left Column -->
                 <div class="left-col">
                     <div class="details-card">
-                        <div class="card-header"><i class="fas fa-user" style="color: #3b82f6;"></i> Customer Information</div>
+                        <div class="card-header"><i class="fas fa-user" style="color: var(--secondary-berry);"></i> Customer Information</div>
                         <div class="info-row">
                             <div class="info-label">Customer Name</div>
                             <div class="info-value" id="cName">Somchai PetLover</div>
@@ -407,6 +407,12 @@
                         <div class="info-row" id="shippingAddressRow">
                             <div class="info-label">Shipping Address</div>
                             <div class="info-value" id="cAddress" style="line-height: 1.5;">123 Happy Street, Pet City, Bangkok 10110</div>
+                        </div>
+                        <div class="info-row" id="shippingCompanyRow">
+                            <div class="info-label">Delivery Provider (บริษัทขนส่ง)</div>
+                            <div class="info-value" id="cCompany" style="font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-truck-fast" style="color: #f59e0b;"></i> <span id="cCompanyName">-</span>
+                            </div>
                         </div>
                     </div>
 
@@ -435,9 +441,9 @@
                     <div class="details-card" style="background-color: #f8fafc; border: 1px solid #e2e8f0; box-shadow: none;">
                         <div class="card-header"><i class="fas fa-receipt" style="color: #8b5cf6;"></i> Payment Summary</div>
                         <div class="summary-row"><span>Subtotal</span> <span id="sSubtotal">฿0.00</span></div>
-                        <div class="summary-row" id="shippingFeeRow"><span>Shipping Fee</span> <span id="sShipping">฿0.00</span></div>
+                        <div class="summary-row" id="shippingFeeRow"><span>Shipping Fee (<span id="sShippingProvider" style="color: #64748b; font-weight: 500;">-</span>)</span> <span id="sShipping">฿0.00</span></div>
                         <div class="summary-row" style="color: #10b981;"><span>Discount</span> <span id="sDiscount">-฿0.00</span></div>
-                        <div class="summary-total"><span>Grand Total</span> <span id="sTotal" style="color: #3b82f6;">฿0.00</span></div>
+                        <div class="summary-total"><span>Grand Total</span> <span id="sTotal" style="color: var(--secondary-berry);">฿0.00</span></div>
                         
                         <div class="summary-row" id="cashReceivedRow" style="display: none; border-top: 1px dashed #cbd5e1; padding-top: 8px; margin-top: 8px;">
                             <span>รับเงินมา (Cash Received)</span> <span id="sCashReceived">฿0.00</span>
@@ -462,9 +468,9 @@
                             <select class="status-select" id="orderStatusSelect">
                                 <option value="Pending">Pending (รอดำเนินการ)</option>
                                 <option value="Processing">Processing (กำลังแพ็คสินค้า)</option>
-                                <option value="In Transit">In Transit (มอบให้ขนส่งแล้ว)</option>
-                                <option value="Completed">Completed (ลูกค้าได้รับสินค้า)</option>
-                                <option value="Cancelled">Cancelled (ยกเลิก)</option>
+                                <option value="In Transit">In Transit (กำลังจัดส่ง)</option>
+                                <option value="Completed">Completed (จัดส่งสำเร็จ)</option>
+                                <option value="Cancelled">Cancelled (ยกเลิกแล้ว)</option>
                             </select>
 
                             <div id="trackingContainer" style="display: none;">
@@ -477,7 +483,7 @@
                                 <input type="text" id="trackingInput" class="tracking-input" placeholder="e.g. TH123456789">
                             </div>
 
-                            <button type="submit" class="save-btn" style="width: 100%; padding: 12px; font-size: 15px; background: #3b82f6;">Update Order Status</button>
+                            <button type="submit" class="save-btn" style="width: 100%; padding: 12px; font-size: 15px; background: var(--secondary-berry);">Update Order Status</button>
                         </form>
                     </div>
                 </div>
@@ -487,7 +493,7 @@
         <div class="modal-card">
             <div class="modal-title">ตัวอย่างใบเสร็จรับเงิน</div>
             
-            <div style="background: #f1f5f9; border-radius: 12px; overflow-y: auto; max-height: 380px; padding: 4px; display: flex; justify-content: center; border: 1px solid #cbd5e1; margin-bottom: 20px;">
+            <div class="no-scrollbar" style="background: #f1f5f9; border-radius: 12px; overflow-y: auto; max-height: 380px; padding: 4px; display: flex; justify-content: center; border: 1px solid #cbd5e1; margin-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
                 <div class="receipt-card" id="receiptCardContent"></div>
             </div>
 
@@ -506,8 +512,26 @@
         let currentOrderData = null;
 
         // Fetch True data from API
+        function getStatusLabel(status) {
+            if (!status) return 'รอดำเนินการ';
+            const s = status.toString().trim();
+            if (s === 'Pending' || s === 'รอดำเนินการ' || s === 'Pending Payment' || s === 'ที่ต้องชำระ') return 'รอดำเนินการ';
+            if (s === 'Processing' || s === 'กำลังแพ็คสินค้า' || s === 'กำลังดำเนินการ' || s === 'Preparing' || s === 'ที่ต้องจัดส่ง') return 'กำลังแพ็คสินค้า';
+            if (s === 'In Transit' || s === 'กำลังจัดส่ง' || s === 'กำลังนำส่ง' || s === 'Shipping' || s === 'ที่ต้องได้รับ' || s === 'มอบให้ขนส่งแล้ว') return 'กำลังจัดส่ง';
+            if (s === 'Completed' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'สำเร็จแล้ว';
+            if (s === 'Cancelled' || s === 'ยกเลิกแล้ว' || s === 'ยกเลิก') return 'ยกเลิกแล้ว';
+            return status;
+        }
+
         function getStatusClass(status) {
-            return status.toLowerCase().replace(" ", "");
+            if (!status) return 'pending';
+            const s = status.toString().trim();
+            if (s === 'Pending' || s === 'รอดำเนินการ' || s === 'Pending Payment' || s === 'ที่ต้องชำระ') return 'pending';
+            if (s === 'Processing' || s === 'กำลังแพ็คสินค้า' || s === 'กำลังดำเนินการ' || s === 'Preparing' || s === 'ที่ต้องจัดส่ง') return 'processing';
+            if (s === 'In Transit' || s === 'กำลังจัดส่ง' || s === 'กำลังนำส่ง' || s === 'Shipping' || s === 'ที่ต้องได้รับ' || s === 'มอบให้ขนส่งแล้ว') return 'intransit';
+            if (s === 'Completed' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'completed';
+            if (s === 'Cancelled' || s === 'ยกเลิกแล้ว' || s === 'ยกเลิก') return 'cancelled';
+            return s.toLowerCase().replace(/\s+/g, '');
         }
 
         function checkAuth() {
@@ -517,15 +541,22 @@
             }
         }
 
+        let allCompanies = [];
         async function loadCompanies() {
             try {
                 const res = await fetch('/api/deliveries/companies');
                 const json = await res.json();
                 if (res.ok && json.data) {
+                    allCompanies = json.data;
                     const select = document.getElementById('deliveryCompanySelect');
+                    select.innerHTML = '<option value="">Select Company</option>';
                     json.data.forEach(c => {
                         const opt = document.createElement('option');
                         opt.value = c.company_id;
+                        opt.textContent = `${c.company_name} (เริ่มต้น ฿${parseFloat(c.base_rate).toFixed(2)} + ฿${parseFloat(c.rate_per_kg).toFixed(2)}/kg)`;
+                        select.appendChild(opt);
+                    });
+                }
             } catch (error) {
                 console.error("Failed to load delivery companies", error);
             }
@@ -564,22 +595,27 @@
                     else if (st === 'Completed' || st === 'สำเร็จแล้ว' || st === 'สำเร็จ') adminStatus = 'Completed';
                     else if (st === 'Cancelled' || st === 'ยกเลิกแล้ว') adminStatus = 'Cancelled';
 
+                    const subtotalVal = parseFloat(found.subtotal || 0) || (parseFloat(found.total || found.amount || 0) - parseFloat(found.shipping || found.shipping_fee || 0));
+                    const shippingVal = parseFloat(found.shipping || found.shipping_fee || 0);
+                    const totalVal = parseFloat(found.total || found.amount || (subtotalVal + shippingVal));
+
                     data = {
                         id: found.id,
                         number: found.number || `ORD-2026-${String(found.id).padStart(3, '0')}`,
-                        date: found.date ? new Date(found.date).toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString('th-TH'),
+                        date: found.date ? new Date(typeof found.date === 'string' && found.date.includes(' ') && !found.date.includes('T') ? found.date.replace(' ', 'T') : found.date).toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString('th-TH'),
                         status: adminStatus,
                         order_type: 1,
                         order_type_label: 'ออนไลน์',
                         tracking_number: found.trackingNumber || null,
-                        company_id: null,
+                        company_id: found.company_id || null,
+                        company_name: found.company_name || found.deliveryCompany || found.shipping_provider || null,
                         customer: found.customer || { name: 'Success User', email: 'success@example.com', phone: '0812345678', address: '123 Test Road Bangkok 10110' },
                         items: (found.items || []).map(i => ({ name: i.name, price: i.price, qty: i.quantity, image: i.image })),
                         summary: {
-                            subtotal: found.subtotal || found.total || 0,
-                            shipping: found.shipping || 0,
-                            discount: 0,
-                            total: found.total || 0
+                            subtotal: subtotalVal,
+                            shipping: shippingVal,
+                            discount: parseFloat(found.discount || 0),
+                            total: totalVal
                         }
                     };
                 }
@@ -597,7 +633,7 @@
             document.getElementById('displayDate').textContent = data.date;
             
             const headerStatus = document.getElementById('headerStatus');
-            headerStatus.textContent = data.status;
+            headerStatus.textContent = getStatusLabel(data.status);
             headerStatus.className = 'status-pill ' + getStatusClass(data.status);
 
             const headerChannel = document.getElementById('headerChannel');
@@ -623,17 +659,30 @@
                             <div style="font-weight: 600; color: #334155;">${item.name}</div>
                         </div>
                     </td>
-                    <td style="text-align: center; color: #64748b;">฿${Number(item.price).toFixed(2)}</td>
-                    <td style="text-align: center; font-weight: 500;">x${item.qty}</td>
-                    <td style="text-align: right; font-weight: 600; color: #0f172a;">฿${(Number(item.price) * Number(item.qty)).toFixed(2)}</td>
+                    <td style="text-align: center; color: #64748b;">฿${Number(item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td style="text-align: center; font-weight: 500;">x${Number(item.qty).toLocaleString()}</td>
+                    <td style="text-align: right; font-weight: 600; color: #0f172a;">฿${(Number(item.price) * Number(item.qty)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 </tr>
             `).join('');
 
             // Summary
-            document.getElementById('sSubtotal').textContent = '฿' + Number(data.summary.subtotal || 0).toFixed(2);
-            document.getElementById('sShipping').textContent = '฿' + Number(data.summary.shipping || 0).toFixed(2);
-            document.getElementById('sDiscount').textContent = '-฿' + Number(data.summary.discount || 0).toFixed(2);
-            document.getElementById('sTotal').textContent = '฿' + Number(data.summary.total || 0).toFixed(2);
+            document.getElementById('sSubtotal').textContent = '฿' + Number(data.summary.subtotal || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('sShipping').textContent = '฿' + Number(data.summary.shipping || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('sDiscount').textContent = '-฿' + Number(data.summary.discount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('sTotal').textContent = '฿' + Number(data.summary.total || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            const isPos = data.order_type === 2;
+            const shippingCompName = data.company_name || data.shipping_provider || (isPos ? '-' : 'ขนส่งเอกชน');
+
+            const cCompanyName = document.getElementById('cCompanyName');
+            if (cCompanyName) {
+                cCompanyName.textContent = shippingCompName;
+            }
+
+            const sShippingProvider = document.getElementById('sShippingProvider');
+            if (sShippingProvider) {
+                sShippingProvider.textContent = shippingCompName;
+            }
 
             const giftRow = document.getElementById('freeGiftRow');
             const giftSpan = document.getElementById('sFreeGift');
@@ -656,13 +705,16 @@
             if (data.company_id) {
                 document.getElementById('deliveryCompanySelect').value = data.company_id;
             }
-            
-            const isPos = data.order_type === 2;
 
-            // Hide/show shipping address row
+            // Hide/show shipping address row & company row
             const shippingAddressRow = document.getElementById('shippingAddressRow');
             if (shippingAddressRow) {
                 shippingAddressRow.style.display = isPos ? 'none' : 'flex';
+            }
+
+            const shippingCompanyRow = document.getElementById('shippingCompanyRow');
+            if (shippingCompanyRow) {
+                shippingCompanyRow.style.display = isPos ? 'none' : 'flex';
             }
 
             // Hide/show shipping fee row
@@ -678,8 +730,8 @@
                 if (isPos) {
                     const cashReceivedVal = data.cash_received !== null ? data.cash_received : data.summary.total;
                     const changeVal = data.change !== null ? data.change : 0.00;
-                    document.getElementById('sCashReceived').textContent = '฿' + Number(cashReceivedVal).toFixed(2);
-                    document.getElementById('sChange').textContent = '฿' + Number(changeVal).toFixed(2);
+                    document.getElementById('sCashReceived').textContent = '฿' + Number(cashReceivedVal).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    document.getElementById('sChange').textContent = '฿' + Number(changeVal).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                     cashReceivedRow.style.display = 'flex';
                     changeRow.style.display = 'flex';
                 } else {
@@ -692,7 +744,7 @@
             const pointsEarnedRow = document.getElementById('pointsEarnedRow');
             if (pointsEarnedRow) {
                 if (data.points_earned > 0) {
-                    document.getElementById('sPointsEarned').textContent = '+' + data.points_earned + ' แต้ม';
+                    document.getElementById('sPointsEarned').textContent = '+' + Number(data.points_earned).toLocaleString() + ' แต้ม';
                     pointsEarnedRow.style.display = 'flex';
                 } else {
                     pointsEarnedRow.style.display = 'none';
@@ -718,8 +770,8 @@
             const itemsHtml = currentOrderData.items.map(item => `
                 <div class="receipt-item-row">
                     <div style="flex: 2; margin-right: 2mm;">${item.name}</div>
-                    <div style="flex: 1; text-align: center;">${item.qty} x ฿${Number(item.price).toFixed(2)}</div>
-                    <div style="flex: 1; text-align: right;">฿${(Number(item.price) * Number(item.qty)).toFixed(2)}</div>
+                    <div style="flex: 1; text-align: center;">${Number(item.qty).toLocaleString()} x ฿${Number(item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div style="flex: 1; text-align: right;">฿${(Number(item.price) * Number(item.qty)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                 </div>
             `).join('');
 
@@ -744,21 +796,21 @@
                 <div class="receipt-divider"></div>
                 <div class="receipt-summary-row">
                     <span>ยอดรวม (Subtotal)</span>
-                    <span>฿${parseFloat(currentOrderData.summary.subtotal).toFixed(2)}</span>
+                    <span>฿${parseFloat(currentOrderData.summary.subtotal).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 ${!isPos && currentOrderData.summary.shipping > 0 ? `
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
                     <span>ค่าจัดส่ง (Shipping)</span>
-                    <span>฿${parseFloat(currentOrderData.summary.shipping).toFixed(2)}</span>
+                    <span>฿${parseFloat(currentOrderData.summary.shipping).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 ` : ''}
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
                     <span>ส่วนลด (Discount)</span>
-                    <span>-฿${parseFloat(currentOrderData.summary.discount).toFixed(2)}</span>
+                    <span>-฿${parseFloat(currentOrderData.summary.discount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 <div class="receipt-summary-row">
                     <span>ยอดสุทธิ (Total)</span>
-                    <span>฿${parseFloat(currentOrderData.summary.total).toFixed(2)}</span>
+                    <span>฿${parseFloat(currentOrderData.summary.total).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 <div class="receipt-divider"></div>
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
@@ -768,17 +820,17 @@
                 ${isPos ? `
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
                     <span>รับเงินมา</span>
-                    <span>฿${parseFloat(currentOrderData.cash_received !== null ? currentOrderData.cash_received : currentOrderData.summary.total).toFixed(2)}</span>
+                    <span>฿${parseFloat(currentOrderData.cash_received !== null ? currentOrderData.cash_received : currentOrderData.summary.total).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 <div class="receipt-summary-row">
                     <span>เงินทอน</span>
-                    <span>฿${parseFloat(currentOrderData.change !== null ? currentOrderData.change : 0.00).toFixed(2)}</span>
+                    <span>฿${parseFloat(currentOrderData.change !== null ? currentOrderData.change : 0.00).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 ` : ''}
                 ${(currentOrderData.points_earned && currentOrderData.points_earned > 0) ? `
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
                     <span>แต้มได้รับครั้งนี้</span>
-                    <span>+${currentOrderData.points_earned} แต้ม</span>
+                    <span>+${Number(currentOrderData.points_earned).toLocaleString()} แต้ม</span>
                 </div>` : ''}
                 ${currentOrderData.free_gift ? `
                 <div class="receipt-summary-row" style="font-weight: bold; font-size: 11px;">
@@ -828,6 +880,38 @@
             toggleTrackingContainer(e.target.value);
         });
 
+        document.getElementById('deliveryCompanySelect').addEventListener('change', (e) => {
+            const selectedCompanyId = e.target.value;
+            if (!selectedCompanyId || !currentOrderData) return;
+            const comp = allCompanies.find(c => String(c.company_id) === String(selectedCompanyId));
+            if (comp) {
+                const baseRate = parseFloat(comp.base_rate) || 0;
+                const ratePerKg = parseFloat(comp.rate_per_kg) || 0;
+                let totalWeight = 0;
+                if (currentOrderData.items && Array.isArray(currentOrderData.items)) {
+                    totalWeight = currentOrderData.items.reduce((sum, item) => sum + (parseFloat(item.weight || 0) * (item.qty || 1)), 0);
+                }
+                let calcShipping = baseRate + (Math.ceil(totalWeight) * ratePerKg);
+                if (calcShipping <= 0) calcShipping = baseRate > 0 ? baseRate : 40.00;
+
+                const subtotal = parseFloat(currentOrderData.summary?.subtotal || 0);
+                const discount = parseFloat(currentOrderData.summary?.discount || 0);
+                const newTotal = Math.max(0, subtotal + calcShipping - discount);
+
+                const cCompanyName = document.getElementById('cCompanyName');
+                if (cCompanyName) cCompanyName.textContent = comp.company_name;
+
+                const sShippingProvider = document.getElementById('sShippingProvider');
+                if (sShippingProvider) sShippingProvider.textContent = comp.company_name;
+
+                const sShipping = document.getElementById('sShipping');
+                if (sShipping) sShipping.textContent = '฿' + calcShipping.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                const sTotal = document.getElementById('sTotal');
+                if (sTotal) sTotal.textContent = '฿' + newTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+        });
+
         document.getElementById('statusForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const newStatus = document.getElementById('orderStatusSelect').value;
@@ -836,6 +920,27 @@
             
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('id');
+
+            let selectedComp = allCompanies.find(c => String(c.company_id) === String(companyId));
+            let calcShippingFee = 0;
+            let calcNetTotal = 0;
+
+            if (selectedComp) {
+                const baseRate = parseFloat(selectedComp.base_rate) || 0;
+                const ratePerKg = parseFloat(selectedComp.rate_per_kg) || 0;
+                let totalWeight = 0;
+                if (currentOrderData && currentOrderData.items && Array.isArray(currentOrderData.items)) {
+                    totalWeight = currentOrderData.items.reduce((sum, item) => sum + (parseFloat(item.weight || 0) * (item.qty || 1)), 0);
+                }
+                calcShippingFee = baseRate + (Math.ceil(totalWeight) * ratePerKg);
+                if (calcShippingFee <= 0) calcShippingFee = baseRate > 0 ? baseRate : 40.00;
+
+                const subtotal = parseFloat(currentOrderData?.summary?.subtotal || 0);
+                const discount = parseFloat(currentOrderData?.summary?.discount || 0);
+                calcNetTotal = Math.max(0, subtotal + calcShippingFee - discount);
+            }
+
+            let updatedInfo = null;
 
             try {
                 const res = await fetch('/api/orders/update-status', {
@@ -850,18 +955,67 @@
                 });
                 
                 if (res.ok) {
-                    const headerStatus = document.getElementById('headerStatus');
-                    headerStatus.textContent = newStatus;
-                    headerStatus.className = 'status-pill ' + getStatusClass(newStatus);
-                    showToast("อัปเดตสถานะสำเร็จ!", "success");
-                } else {
-                    const error = await res.json();
-                    showToast(error.message || "ล้มเหลวในการอัปเดต", "error");
+                    const json = await res.json();
+                    if (json.data) updatedInfo = json.data;
                 }
             } catch (err) {
                 console.error(err);
-                showToast("ระบบขัดข้อง", "error");
             }
+
+            const finalCompanyName = (updatedInfo && updatedInfo.company_name) || (selectedComp ? selectedComp.company_name : null);
+            const finalShippingFee = (updatedInfo && updatedInfo.shipping_fee !== null && updatedInfo.shipping_fee !== undefined) ? parseFloat(updatedInfo.shipping_fee) : calcShippingFee;
+            const finalNetTotal = (updatedInfo && updatedInfo.net_total !== null && updatedInfo.net_total !== undefined) ? parseFloat(updatedInfo.net_total) : calcNetTotal;
+
+            if (finalCompanyName) {
+                const cCompanyName = document.getElementById('cCompanyName');
+                if (cCompanyName) cCompanyName.textContent = finalCompanyName;
+                const sShippingProvider = document.getElementById('sShippingProvider');
+                if (sShippingProvider) sShippingProvider.textContent = finalCompanyName;
+            }
+            if (finalShippingFee > 0) {
+                const sShipping = document.getElementById('sShipping');
+                if (sShipping) sShipping.textContent = '฿' + finalShippingFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                if (currentOrderData && currentOrderData.summary) currentOrderData.summary.shipping = finalShippingFee;
+            }
+            if (finalNetTotal > 0) {
+                const sTotal = document.getElementById('sTotal');
+                if (sTotal) sTotal.textContent = '฿' + finalNetTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                if (currentOrderData && currentOrderData.summary) currentOrderData.summary.total = finalNetTotal;
+                if (currentOrderData) currentOrderData.amount = finalNetTotal;
+            }
+
+            // Synchronize with customer frontend localStorage ('myOrders')
+            const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+            const targetOrder = myOrders.find(o => String(o.id) === String(orderId));
+            if (targetOrder) {
+                if (newStatus === 'Pending') targetOrder.status = 'Pending Payment';
+                else if (newStatus === 'Processing') targetOrder.status = 'Preparing';
+                else if (newStatus === 'In Transit') targetOrder.status = 'Shipping';
+                else if (newStatus === 'Completed') targetOrder.status = 'Completed';
+                else if (newStatus === 'Cancelled') targetOrder.status = 'Cancelled';
+                
+                if (trackingNo) targetOrder.trackingNumber = trackingNo;
+                if (companyId) targetOrder.company_id = Number(companyId);
+                if (finalCompanyName) {
+                    targetOrder.company_name = finalCompanyName;
+                    targetOrder.deliveryCompany = finalCompanyName;
+                    targetOrder.shipping_provider = finalCompanyName;
+                }
+                if (finalShippingFee > 0) {
+                    targetOrder.shipping = finalShippingFee;
+                    targetOrder.shipping_fee = finalShippingFee;
+                }
+                if (finalNetTotal > 0) {
+                    targetOrder.total = finalNetTotal;
+                    targetOrder.amount = finalNetTotal;
+                }
+                localStorage.setItem('myOrders', JSON.stringify(myOrders));
+            }
+
+            const headerStatus = document.getElementById('headerStatus');
+            headerStatus.textContent = getStatusLabel(newStatus);
+            headerStatus.className = 'status-pill ' + getStatusClass(newStatus);
+            showToast("อัปเดตสถานะและข้อมูลขนส่งสำเร็จ!", "success");
         });
 
         function showToast(message, type) {

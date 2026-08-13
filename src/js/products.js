@@ -1,4 +1,4 @@
-import { showToast } from './utils.js';
+import { showToast, escapeHTML } from './utils.js';
 import { updateGlobalCartCount } from './main.js';
 import { getPersonalizedProducts, trackSearchQuery, trackAddToCart } from './recommendationEngine.js';
 
@@ -65,23 +65,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div>
                     <div class="relative aspect-square bg-[#f8f9fa] rounded-3xl overflow-hidden mb-4 shadow-sm group-hover:shadow-md transition-all">
                         ${currentCategory === 'recommended' && p.aiReason ? `
-                            <div class="absolute top-2 left-2 z-10 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-md backdrop-blur-sm border border-white/30 flex items-center gap-1">
-                                <span>${p.aiReason}</span>
+                            <div class="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full shadow-md backdrop-blur-sm border border-white/30 flex items-center gap-1">
+                                <span>${escapeHTML(p.aiReason)}</span>
                             </div>
                         ` : ''}
-                        <img src="${p.image_url || '/image/non-image.png'}" 
-                            alt="${p.product_name}" 
+                        <img src="${escapeHTML(p.image_url || '/image/non-image.png')}" 
+                            alt="${escapeHTML(p.product_name)}" 
                             onerror="this.src='/image/non-image.png'"
                             class="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500">
                     </div>
                     <div class="text-center px-1">
-                        <h3 class="text-sm font-semibold text-gray-800 mb-1 leading-tight h-10 line-clamp-2">${p.product_name}</h3>
-                        <p class="text-blue-600 font-extrabold text-base mb-3">฿${parseFloat(p.selling_price).toFixed(2)}</p>
+                        <h3 class="text-sm font-semibold text-gray-800 mb-1 leading-tight h-10 line-clamp-2">${escapeHTML(p.product_name)}</h3>
+                        <p class="text-secondary-600 font-extrabold text-base mb-3">฿${parseFloat(p.selling_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>
                 </div>
                 <div>
-                    <button class="add-to-cart-btn w-full py-2.5 bg-[#8bb35c] hover:bg-[#7a9e4f] text-white rounded-xl text-xs font-bold shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                        data-id="${p.product_id}" data-name="${p.product_name}" data-price="${p.selling_price}" data-image="${p.image_url || '/image/non-image.png'}" data-category="${p.category_name || ''}">
+                    <button class="add-to-cart-btn w-full py-2.5 bg-secondary-600 hover:bg-secondary-700 text-white rounded-xl text-xs font-bold shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                        data-id="${escapeHTML(p.product_id)}" data-name="${escapeHTML(p.product_name)}" data-price="${escapeHTML(p.selling_price)}" data-image="${escapeHTML(p.image_url || '/image/non-image.png')}" data-category="${escapeHTML(p.category_name || '')}">
                         <i class="fas fa-cart-plus"></i> หยิบใส่ตะกร้า
                     </button>
                 </div>
@@ -208,9 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
     categoryBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             categoryBtns.forEach(b => {
-                b.classList.remove('active', 'bg-gradient-to-r', 'from-emerald-600', 'to-teal-600', 'text-white', 'shadow-sm', 'bg-blue-200');
+                b.classList.remove('active', 'bg-gradient-to-r', 'from-secondary-600', 'to-secondary-500', 'text-white', 'shadow-sm', 'bg-secondary-200');
                 if (b.dataset.category !== 'recommended') {
-                    b.className = 'category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-blue-200 transition-all shrink-0';
+                    b.className = 'category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0';
                 } else {
                     b.className = 'category-btn px-4 py-2 search-blue text-teal-800 text-xs sm:text-sm font-bold rounded-xl hover:bg-teal-100 transition-all shrink-0';
                 }
@@ -219,9 +219,9 @@ document.addEventListener('DOMContentLoaded', () => {
             currentCategory = btn.dataset.category;
 
             if (currentCategory === 'recommended') {
-                btn.className = 'category-btn active px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 shrink-0';
+                btn.className = 'category-btn active px-4 py-2 bg-gradient-to-r from-secondary-600 to-secondary-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 shrink-0';
             } else {
-                btn.classList.add('active', 'bg-blue-200');
+                btn.classList.add('active', 'bg-secondary-200');
             }
 
             renderProducts();

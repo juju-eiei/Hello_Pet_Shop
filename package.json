@@ -29,6 +29,7 @@
     "vite-plugin-full-reload": "^1.2.0"
   },
   "dependencies": {
-    "puppeteer": "^25.2.1"
+    "puppeteer": "^25.2.1",
+    "sweetalert2": "^11.26.25"
   }
 }

@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { font-family: 'Inter', 'Noto Sans Thai', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Outfit', 'Kanit', sans-serif; background-color: #f8fafc; }
         
         #loading {
             background: #ffffff;
@@ -26,7 +26,7 @@
 
         .spinner-icon {
             font-size: 32px;
-            color: #314d2a;
+            color: #16a34a;
             margin-bottom: 16px;
             animation: spin 1s linear infinite;
         }
@@ -114,8 +114,12 @@
             transition: opacity 0.2s ease;
         }
 
-        .avatar-circle:hover::after {
+        .avatar-circle.editable-avatar::after {
             opacity: 1;
+        }
+
+        .avatar-circle.editable-avatar:hover::after {
+            background: rgba(15, 23, 42, 0.75);
         }
 
         .profile-name {
@@ -200,10 +204,10 @@
 
         .info-value:focus {
             background-color: #ffffff;
-            border-color: #314d2a;
+            border-color: #16a34a;
             color: #0f172a;
             outline: none;
-            box-shadow: 0 0 0 2px rgba(49, 77, 42, 0.08);
+            box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.08);
         }
 
         .form-actions {
@@ -216,7 +220,7 @@
             padding: 10px 20px;
             border-radius: 8px;
             border: none;
-            background: #314d2a;
+            background: var(--secondary-berry-hover);
             color: white;
             cursor: pointer;
             font-weight: 500;
@@ -228,7 +232,7 @@
         }
 
         .btn-save:hover {
-            background: #253b20;
+            background: #433d30;
         }
 
         .btn-save:active {
@@ -331,11 +335,25 @@
                                 </div>
                             </div>
 
+                            <div class="info-field">
+                                <label class="info-label">Employee Type (ประเภทพนักงาน / สิทธิ์การจ้าง)</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-user-tag"></i>
+                                    <input type="text" class="info-value" id="edit_employee_type" name="employee_type" readonly disabled style="background-color: #f1f5f9; border-color: #e2e8f0; cursor: not-allowed; color: #475569; font-weight: 600;">
+                                </div>
+                            </div>
+
                             <!-- Hidden fields to keep other data intact like last_name -->
                             <input type="hidden" id="edit_last_name" name="last_name">
 
-                            <div class="form-actions">
-                                <button type="button" class="btn-save" id="saveProfileBtn">
+                            <div class="form-actions" style="display: flex; gap: 12px; justify-content: flex-end;">
+                                <button type="button" class="btn-save" id="editProfileBtn" style="background: var(--secondary-berry-hover);">
+                                    <i class="fas fa-edit"></i> แก้ไขข้อมูล
+                                </button>
+                                <button type="button" class="btn-save" id="cancelEditBtn" style="background: var(--secondary-berry-light); color: var(--secondary-berry-hover); border: 1px solid var(--secondary-berry-border); display: none;">
+                                    <i class="fas fa-times"></i> ยกเลิก
+                                </button>
+                                <button type="button" class="btn-save" id="saveProfileBtn" style="display: none;">
                                     <i class="fas fa-save"></i> บันทึกข้อมูล
                                 </button>
                             </div>
@@ -417,6 +435,62 @@
             return phone;
         }
 
+        let isEditing = false;
+        let originalAvatarHTML = '';
+        let temporaryAvatarBase64 = null;
+
+        function setFieldsEditable(editable) {
+            isEditing = editable;
+            const fields = ['edit_first_name', 'edit_address', 'edit_phone', 'edit_email'];
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.disabled = !editable;
+                    if (editable) {
+                        el.style.backgroundColor = '#ffffff';
+                        el.style.borderColor = '#cbd5e1';
+                        el.style.cursor = 'text';
+                    } else {
+                        el.style.backgroundColor = '#f1f5f9';
+                        el.style.borderColor = '#e2e8f0';
+                        el.style.cursor = 'not-allowed';
+                    }
+                }
+            });
+
+            // Ensure employee type field remains strictly disabled and non-editable
+            const typeEl = document.getElementById('edit_employee_type');
+            if (typeEl) {
+                typeEl.disabled = true;
+                typeEl.readOnly = true;
+                typeEl.style.backgroundColor = '#f1f5f9';
+                typeEl.style.borderColor = '#e2e8f0';
+                typeEl.style.cursor = 'not-allowed';
+                typeEl.style.color = '#475569';
+            }
+
+            // Handle avatar clickability
+            const avatarContainer = document.getElementById('avatarContainer');
+            if (avatarContainer) {
+                avatarContainer.style.pointerEvents = editable ? 'auto' : 'none';
+                avatarContainer.style.cursor = editable ? 'pointer' : 'default';
+                if (editable) {
+                    avatarContainer.classList.add('editable-avatar');
+                } else {
+                    avatarContainer.classList.remove('editable-avatar');
+                }
+            }
+
+            // Toggle button displays
+            const editBtn = document.getElementById('editProfileBtn');
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            const saveBtn = document.getElementById('saveProfileBtn');
+
+            if (editBtn) editBtn.style.display = editable ? 'none' : 'inline-flex';
+            if (cancelBtn) cancelBtn.style.display = editable ? 'inline-flex' : 'none';
+            if (saveBtn) saveBtn.style.display = editable ? 'inline-flex' : 'none';
+        }
+
         function renderProfile(data) {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('contentBlock').style.display = 'block';
@@ -424,12 +498,26 @@
             const fullName = `${data.first_name} ${data.last_name || ''}`.trim();
             document.getElementById('sName').textContent = fullName || 'Unknown Staff';
             
+            // Format Employee Type label based on payment_frequency & position
+            let empTypeLabel = 'พนักงานรายเดือน (Monthly)';
+            if (data.payment_frequency === 'Daily') {
+                empTypeLabel = 'พนักงานรายวัน / พาร์ทไทม์ (Daily)';
+            }
+            if (data.position && data.position.trim() !== '') {
+                empTypeLabel = `${data.position} (${empTypeLabel})`;
+            }
+
+            const typeInput = document.getElementById('edit_employee_type');
+            if (typeInput) {
+                typeInput.value = empTypeLabel;
+            }
+
             // Set role name badge if we have the role info
             const user = JSON.parse(localStorage.getItem('user'));
             if (user && user.role_name) {
                 const roleBadge = document.getElementById('sRoleBadge');
                 if (roleBadge) {
-                    roleBadge.innerHTML = `<i class="fas fa-shield-alt"></i> ${user.role_name.toUpperCase()}`;
+                    roleBadge.innerHTML = `<i class="fas fa-shield-alt"></i> ${user.role_name.toUpperCase()} &bull; ${empTypeLabel}`;
                 }
             }
 
@@ -440,6 +528,20 @@
             document.getElementById('edit_address').value = data.address || '';
             document.getElementById('edit_phone').value = data.phone || '';
             document.getElementById('edit_email').value = data.email || '';
+
+            // Load profile image from localStorage
+            const avatarContainer = document.getElementById('avatarContainer');
+            if (avatarContainer && user) {
+                const userKey = user.user_id ? `userProfileData_${user.user_id}` : 'userProfileData';
+                const userProfile = JSON.parse(localStorage.getItem(userKey) || '{}');
+                if (userProfile.profileImage) {
+                    avatarContainer.innerHTML = `<img src="${userProfile.profileImage}" alt="Avatar">`;
+                } else {
+                    avatarContainer.innerHTML = `<i class="far fa-user"></i>`;
+                }
+            }
+
+            setFieldsEditable(false);
         }
 
         const menuGroup = document.querySelector('.menu-group');
@@ -466,23 +568,37 @@
         function handleAvatarChange(event) {
             const file = event.target.files[0];
             if (file) {
-                const url = URL.createObjectURL(file);
-                const avatarContainer = document.getElementById('avatarContainer');
-                avatarContainer.innerHTML = `<img src="${url}" alt="Avatar">`;
-                
-                // Show a quick visual indication (optional)
-                setTimeout(() => {
-                    Swal.fire({
-                        title: 'สำเร็จ!',
-                        text: 'อัปเดตรูปโปรไฟล์สำเร็จ (แสดงผลชั่วคราว)',
-                        icon: 'success',
-                        confirmButtonText: 'ตกลง',
-                        confirmButtonColor: '#314d2a'
-                    });
-                }, 100);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    temporaryAvatarBase64 = e.target.result;
+                    const avatarContainer = document.getElementById('avatarContainer');
+                    avatarContainer.innerHTML = `<img src="${temporaryAvatarBase64}" alt="Avatar">`;
+                };
+                reader.readAsDataURL(file);
             }
         }
 
+
+        document.getElementById('editProfileBtn')?.addEventListener('click', () => {
+            const avatarContainer = document.getElementById('avatarContainer');
+            if (avatarContainer) {
+                originalAvatarHTML = avatarContainer.innerHTML;
+            }
+            setFieldsEditable(true);
+        });
+
+        document.getElementById('cancelEditBtn')?.addEventListener('click', () => {
+            temporaryAvatarBase64 = null;
+            const avatarContainer = document.getElementById('avatarContainer');
+            if (avatarContainer && originalAvatarHTML) {
+                avatarContainer.innerHTML = originalAvatarHTML;
+            }
+            if (currentStaffData) {
+                renderProfile(currentStaffData);
+            } else {
+                setFieldsEditable(false);
+            }
+        });
 
         document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
             const form = document.getElementById('staffProfileForm');
@@ -512,15 +628,24 @@
                 btn.disabled = false;
 
                 if (res.ok) {
+                    if (temporaryAvatarBase64) {
+                        const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+                        const userKey = userObj.user_id ? `userProfileData_${userObj.user_id}` : 'userProfileData';
+                        const userProfile = JSON.parse(localStorage.getItem(userKey) || '{}');
+                        userProfile.profileImage = temporaryAvatarBase64;
+                        localStorage.setItem(userKey, JSON.stringify(userProfile));
+                        localStorage.setItem('userProfileData', JSON.stringify(userProfile));
+                    }
+                    temporaryAvatarBase64 = null;
+
                     Swal.fire({
                         title: 'สำเร็จ!',
                         text: 'อัปเดตข้อมูลส่วนตัวสำเร็จ',
                         icon: 'success',
                         confirmButtonText: 'ตกลง',
-                        confirmButtonColor: '#314d2a'
+                        confirmButtonColor: '#4D7C68'
                     }).then(() => {
-                        const user = checkAuth();
-                        if(user) loadProfile(user);
+                        window.location.reload();
                     });
                 } else {
                     const errorJson = await res.json();

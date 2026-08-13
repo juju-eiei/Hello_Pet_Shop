@@ -69,7 +69,10 @@ class StaffController {
 
     public function update() {
         $json = file_get_contents('php://input');
-        $data = json_decode($json, true);
+        $data = json_decode($json, true) ?: [];
+        if (isset($_POST['_override_data']) && is_array($_POST['_override_data'])) {
+            $data = $_POST['_override_data'];
+        }
         $id = $_GET['id'] ?? $data['id'] ?? null;
 
         if (!$id) {

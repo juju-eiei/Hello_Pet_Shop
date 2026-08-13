@@ -2,23 +2,25 @@
 @media (max-width: 768px) {
     /* Header overrides */
     .mobile-header {
-        background: #314d2a !important; /* Force dark green */
+        background: var(--primary-green) !important; /* Slate Teal */
+        color: #ffffff !important; /* White text for contrast */
         box-shadow: none !important; /* Flat design */
         border-bottom: none !important;
     }
     
     /* Bottom Navigation Overrides */
     .bottom-nav {
-        background: #314d2a !important;
+        background: var(--primary-green) !important;
         border-top: none !important;
     }
     .nav-item {
-        color: #ffffff !important; /* Inactive white */
-        opacity: 0.8;
+        color: #ffffff !important; /* White text */
+        opacity: 0.7;
     }
     .nav-item.active {
-        color: #94ad5e !important; /* Active light green */
+        color: var(--secondary-berry) !important; /* Peach highlight */
         opacity: 1;
+        font-weight: bold;
     }
     .nav-item i {
         margin-bottom: 2px;
@@ -87,7 +89,7 @@
     
     .staff-input {
         width: 100%;
-        background-color: #e8f4f4; /* Light cyan from mockup */
+        background-color: #FFF5F6; /* Light pink background */
         border: none;
         border-radius: 12px;
         padding: 14px 16px;
@@ -98,7 +100,7 @@
     
     .staff-btn-save {
         width: 100%;
-        background-color: #94ad5e;
+        background-color: var(--secondary-berry); /* Midnight Indigo button */
         color: white;
         font-size: 16px;
         font-weight: 600;
@@ -114,7 +116,7 @@
     .staff-stock-search-bar {
         display: flex;
         align-items: center;
-        background-color: #dbeafe; /* Light blue bg */
+        background-color: var(--secondary-berry-border); /* Light blue bg */
         border-radius: 12px;
         padding: 12px 16px;
         margin: 16px;
@@ -143,7 +145,7 @@
     }
     
     .staff-filter-chip {
-        background-color: #dbeafe;
+        background-color: var(--secondary-berry-border);
         color: #64748b;
         padding: 8px 16px;
         border-radius: 8px;

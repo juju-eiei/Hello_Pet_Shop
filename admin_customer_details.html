@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', 'Noto Sans Thai', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Outfit', 'Kanit', sans-serif; background-color: #f8fafc; }
         
         .profile-header-container {
             display: flex;
@@ -162,7 +162,7 @@
             font-size: 24px;
         }
         .pet-icon.cat { background-color: #fce7f3; color: #db2777; }
-        .pet-icon.dog { background-color: #dbeafe; color: #2563eb; }
+        .pet-icon.dog { background-color: var(--secondary-berry-border); color: var(--secondary-berry-hover); }
         .pet-icon.bird { background-color: #dcfce7; color: #16a34a; }
         .pet-icon.fish { background-color: #e0f2fe; color: #0284c7; }
 
@@ -192,41 +192,129 @@
             transition: color 0.2s;
             padding: 4px;
         }
-        .action-icon:hover { color: #3b82f6; }
+        .action-icon:hover { color: var(--secondary-berry); }
         .action-icon.delete:hover { color: #ef4444; }
 
-        /* Modal Styles */
+        /* Modal Styles - Fixed Scrolling & Premium Design */
         .modal {
             display: none;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
+            top: 0; left: 0; 
+            width: 100vw; height: 100vh;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
             align-items: center;
             justify-content: center;
+            padding: 16px;
+            box-sizing: border-box;
+            overflow-y: auto;
         }
         .modal.active { display: flex; }
         .modal-content {
             background-color: white;
-            border-radius: 16px;
+            border-radius: 24px;
             width: 100%;
-            max-width: 500px;
-            padding: 32px;
+            max-width: 540px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
             position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .close-modal {
-            position: absolute;
-            top: 24px; right: 24px;
-            cursor: pointer;
-            font-size: 20px;
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #ffffff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .close-modal-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: #f1f5f9;
             color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
         }
+        .close-modal-btn:hover {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #f1f5f9;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+        
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
         }
         .form-group.full { grid-column: 1 / -1; }
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            background-color: #f8fafc;
+            font-size: 14px;
+            color: #0f172a;
+            outline: none;
+            box-sizing: border-box;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .form-control:focus {
+            background-color: #ffffff;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
 
         /* Premium Buttons */
         .btn {
@@ -234,7 +322,7 @@
             align-items: center;
             gap: 8px;
             padding: 10px 18px;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -255,12 +343,12 @@
             border-color: #94a3b8;
         }
         .btn-primary {
-            background-color: #3b82f6;
+            background-color: var(--secondary-berry);
             color: white;
             box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
         }
         .btn-primary:hover {
-            background-color: #2563eb;
+            background-color: var(--secondary-berry-hover);
             box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.3);
             transform: translateY(-1px);
         }
@@ -303,8 +391,13 @@
                             <i class="far fa-user"></i>
                         </div>
                         <div class="profile-info">
-                            <h2 id="cName">Customer Name</h2>
-                            <div class="profile-contact-line"><i class="far fa-envelope"></i> <span id="cEmail"></span></div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 8px;">
+                                <h2 id="cName" style="margin: 0;">Customer Name</h2>
+                                <button class="btn btn-secondary" onclick="openEditCustomerModal()" style="border-radius: 12px; font-size: 13px; padding: 8px 16px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-user-edit" style="color: #10b981;"></i> แก้ไขข้อมูลลูกค้า
+                                </button>
+                            </div>
+                            <div class="profile-contact-line" style="margin-top: 8px;"><i class="far fa-envelope"></i> <span id="cEmail"></span></div>
                             <div class="profile-contact-line"><i class="fas fa-phone-alt"></i> <span id="cPhone"></span></div>
                         </div>
                     </div>
@@ -342,73 +435,130 @@
     <!-- Pet Modal -->
     <div class="modal" id="petModal">
         <div class="modal-content">
-            <i class="fas fa-times close-modal" onclick="closePetModal()"></i>
-            <h2 id="modalTitle" style="margin-top: 0; margin-bottom: 24px; font-size: 20px;">Add Pet</h2>
+            <div class="modal-header">
+                <h2 id="modalTitle"><i class="fas fa-paw" style="color: #10b981;"></i> Add Pet</h2>
+                <button type="button" class="close-modal-btn" onclick="closePetModal()"><i class="fas fa-times"></i></button>
+            </div>
             
-            <form id="petForm">
+            <form id="petForm" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; margin: 0;">
                 <input type="hidden" id="petId">
                 <input type="hidden" id="customerId">
                 
-                <div class="form-grid">
-                    <div class="form-group full">
-                        <label class="form-label">Pet Name <span style="color: red">*</span></label>
-                        <input type="text" class="form-control" id="petName" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Pet Type <span style="color: red">*</span></label>
-                        <select class="form-control" id="petType" required>
-                            <option value="Dog">Dog</option>
-                            <option value="Cat">Cat</option>
-                            <option value="Bird">Bird</option>
-                            <option value="Fish">Fish</option>
-                            <option value="Rabbit">Rabbit</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group full">
+                            <label class="form-label">PET NAME <span style="color: #ef4444">*</span></label>
+                            <input type="text" class="form-control" id="petName" required placeholder="e.g. Buddy">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">PET TYPE <span style="color: #ef4444">*</span></label>
+                            <select class="form-control" id="petType" required>
+                                <option value="Dog">Dog (สุนัข)</option>
+                                <option value="Cat">Cat (แมว)</option>
+                                <option value="Bird">Bird (นก)</option>
+                                <option value="Fish">Fish (ปลา)</option>
+                                <option value="Rabbit">Rabbit (กระต่าย)</option>
+                                <option value="Other">Other (อื่นๆ)</option>
+                            </select>
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Breed</label>
-                        <input type="text" class="form-control" id="petBreed" placeholder="e.g. Golden Retriever">
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label">BREED (สายพันธุ์)</label>
+                            <input type="text" class="form-control" id="petBreed" placeholder="e.g. Golden Retriever">
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Birthdate</label>
-                        <input type="date" class="form-control" id="petBirthdate">
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label">BIRTHDATE (วันเกิด)</label>
+                            <input type="date" class="form-control" id="petBirthdate">
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Weight (kg)</label>
-                        <input type="number" step="0.1" class="form-control" id="petWeight" placeholder="0.0">
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label">WEIGHT (KG) (น้ำหนัก)</label>
+                            <input type="number" step="0.1" class="form-control" id="petWeight" placeholder="0.0">
+                        </div>
 
-                    <div class="form-group full">
-                        <label class="form-label">Allergy Information</label>
-                        <textarea class="form-control" id="petAllergy" rows="2" placeholder="Leave blank if none"></textarea>
-                    </div>
-                    
-                    <div class="form-group full">
-                        <label class="form-label">หมายเหตุ (Notes)</label>
-                        <textarea class="form-control" id="petNotes" rows="2" placeholder="Leave blank if none"></textarea>
-                    </div>
-                    
-                    <div class="form-group full">
-                        <label class="form-label">Pet Image</label>
-                        <div style="display: flex; align-items: center; gap: 16px;">
-                            <div id="petImagePreviewContainer" style="width: 64px; height: 64px; border-radius: 12px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #e2e8f0; flex-shrink: 0;">
-                                <i class="fas fa-paw" id="petImagePlaceholderIcon" style="font-size: 24px; color: #cbd5e1;"></i>
-                                <img id="petImagePreviewEl" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                        <div class="form-group full">
+                            <label class="form-label">ALLERGY INFORMATION (ข้อมูลการแพ้)</label>
+                            <textarea class="form-control" id="petAllergy" rows="2" placeholder="Leave blank if none"></textarea>
+                        </div>
+                        
+                        <div class="form-group full">
+                            <label class="form-label">หมายเหตุ (NOTES)</label>
+                            <textarea class="form-control" id="petNotes" rows="2" placeholder="Leave blank if none"></textarea>
+                        </div>
+                        
+                        <div class="form-group full">
+                            <label class="form-label">PET IMAGE (รูปสัตว์เลี้ยง)</label>
+                            <div style="display: flex; align-items: center; gap: 16px; background: #f8fafc; padding: 12px; border-radius: 16px; border: 1px dashed #cbd5e1;">
+                                <div id="petImagePreviewContainer" style="width: 64px; height: 64px; border-radius: 14px; background: #ffffff; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <i class="fas fa-paw" id="petImagePlaceholderIcon" style="font-size: 24px; color: #cbd5e1;"></i>
+                                    <img id="petImagePreviewEl" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                </div>
+                                <input type="file" id="petImageFileInput" accept="image/*" style="display: none;">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('petImageFileInput').click()" style="padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;">Choose Image</button>
+                                <button type="button" class="btn btn-secondary" id="removePetImageBtn" style="padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #ef4444; display: none;">Remove</button>
                             </div>
-                            <input type="file" id="petImageFileInput" accept="image/*" style="display: none;">
-                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('petImageFileInput').click()" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;">Choose Image</button>
-                            <button type="button" class="btn btn-secondary" id="removePetImageBtn" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #ef4444; display: none;">Remove</button>
                         </div>
                     </div>
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-                    <button type="button" class="btn btn-secondary" onclick="closePetModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary" style="background-color: #2f5d3a; color: white; display:flex; align-items:center; gap:6px; border-radius:50px; font-size:13px; font-weight:600; padding:8px 16px;">Save Pet</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closePetModal()" style="border-radius: 12px; padding: 10px 20px;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background-color: #10b981; color: white; display:flex; align-items:center; gap:6px; border-radius:12px; font-size:14px; font-weight:600; padding:10px 24px; border:none; cursor:pointer;"><i class="fas fa-save"></i> Save Pet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Customer Profile Modal -->
+    <div class="modal" id="editCustomerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-edit" style="color: #10b981;"></i> แก้ไขข้อมูลลูกค้า</h2>
+                <button type="button" class="close-modal-btn" onclick="closeEditCustomerModal()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="editCustomerForm" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; margin: 0;">
+                <input type="hidden" id="editCustomerId">
+                
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">ชื่อ (FIRST NAME) <span style="color: #ef4444">*</span></label>
+                            <input type="text" class="form-control" id="editFirstName" required placeholder="ชื่อ">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">นามสกุล (LAST NAME)</label>
+                            <input type="text" class="form-control" id="editLastName" placeholder="นามสกุล">
+                        </div>
+
+                        <div class="form-group full">
+                            <label class="form-label">ชื่อผู้ใช้ (USERNAME)</label>
+                            <input type="text" class="form-control" id="editUsername" placeholder="Username สำหรับเข้าสู่ระบบ">
+                        </div>
+
+                        <div class="form-group full">
+                            <label class="form-label">อีเมล (EMAIL)</label>
+                            <input type="email" class="form-control" id="editEmail" placeholder="example@domain.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">เบอร์โทรศัพท์ (PHONE)</label>
+                            <input type="tel" class="form-control" id="editPhone" placeholder="08XXXXXXXX">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">แต้มสะสม (POINTS)</label>
+                            <input type="number" class="form-control" id="editPoints" min="0" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditCustomerModal()" style="border-radius: 12px; padding: 10px 20px;">ยกเลิก (Cancel)</button>
+                    <button type="submit" class="btn btn-primary" style="background-color: #10b981; color: white; display:flex; align-items:center; gap:6px; border-radius:12px; font-size:14px; font-weight:600; padding:10px 24px; border:none; cursor:pointer;"><i class="fas fa-save"></i> บันทึกข้อมูลลูกค้า</button>
                 </div>
             </form>
         </div>
@@ -502,7 +652,10 @@
             return 'fa-paw';
         }
 
+        let currentCustomerData = null;
+
         function renderProfile(data) {
+            currentCustomerData = data;
             document.getElementById('loading').style.display = 'none';
             document.getElementById('contentBlock').style.display = 'block';
 
@@ -519,6 +672,56 @@
 
             renderPets();
         }
+
+        function openEditCustomerModal() {
+            if (!currentCustomerData) return;
+            document.getElementById('editCustomerId').value = currentCustomerData.id;
+            document.getElementById('editFirstName').value = currentCustomerData.first_name || '';
+            document.getElementById('editLastName').value = currentCustomerData.last_name || '';
+            document.getElementById('editUsername').value = currentCustomerData.username || '';
+            document.getElementById('editEmail').value = (currentCustomerData.email && currentCustomerData.email !== 'N/A') ? currentCustomerData.email : '';
+            document.getElementById('editPhone').value = (currentCustomerData.phone && currentCustomerData.phone !== 'N/A') ? currentCustomerData.phone : '';
+            document.getElementById('editPoints').value = currentCustomerData.points || 0;
+
+            const modal = document.getElementById('editCustomerModal');
+            modal.classList.add('active');
+        }
+
+        function closeEditCustomerModal() {
+            const modal = document.getElementById('editCustomerModal');
+            modal.classList.remove('active');
+        }
+
+        document.getElementById('editCustomerForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                customer_id: document.getElementById('editCustomerId').value,
+                first_name: document.getElementById('editFirstName').value,
+                last_name: document.getElementById('editLastName').value,
+                username: document.getElementById('editUsername').value,
+                email: document.getElementById('editEmail').value,
+                phone: document.getElementById('editPhone').value,
+                points: document.getElementById('editPoints').value
+            };
+
+            try {
+                const res = await fetch('/api/customers/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (res.ok) {
+                    showToast(json.message || 'บันทึกข้อมูลลูกค้าเรียบร้อยแล้ว', 'success');
+                    closeEditCustomerModal();
+                    loadProfile();
+                } else {
+                    showToast(json.message || 'เกิดข้อผิดพลาดในการบันทึก', 'error');
+                }
+            } catch (err) {
+                showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+            }
+        });
 
         function renderPets() {
             const container = document.getElementById('petsContainer');

@@ -2,13 +2,17 @@
 require_once __DIR__ . '/../controllers/ProductController.php';
 require_once __DIR__ . '/../controllers/OrderController.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../controllers/PasswordResetController.php';
 require_once __DIR__ . '/../controllers/CategoryController.php';
 require_once __DIR__ . '/../controllers/PromotionController.php';
 require_once __DIR__ . '/../controllers/RestockController.php';
 require_once __DIR__ . '/../controllers/DeliveryController.php';
 require_once __DIR__ . '/../controllers/RewardController.php';
 require_once __DIR__ . '/../controllers/RoleController.php';
-require_once __DIR__ . '/../controllers/PasswordResetController.php';
+require_once __DIR__ . '/../controllers/NotificationController.php';
+require_once __DIR__ . '/../controllers/TransactionController.php';
+require_once __DIR__ . '/../controllers/SalaryController.php';
+require_once __DIR__ . '/../controllers/ScheduleController.php';
 require_once __DIR__ . '/../middlewares/AuthMiddleware.php';
 
 $request_method = $_SERVER["REQUEST_METHOD"];
@@ -79,6 +83,14 @@ if (preg_match('/\/api\/products$/', $path)) {
     if ($request_method === 'POST') {
         AuthMiddleware::checkPermission('products_manage');
         $controller->updateBarcode();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/products\/lots$/', $path)) {
+    $controller = new ProductController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::checkAnyPermission(['stock_view', 'stock_manage', 'products_manage', 'pos_access']);
+        $controller->getLots();
     } else {
         http_response_code(405);
     }
@@ -220,6 +232,14 @@ if (preg_match('/\/api\/products$/', $path)) {
     if ($request_method === 'GET') {
         AuthMiddleware::checkPermission('customers_view');
         $controller->show();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/customers\/update$/', $path)) {
+    require_once __DIR__ . '/../controllers/CustomerController.php';
+    $controller = new CustomerController();
+    if ($request_method === 'POST') {
+        $controller->update();
     } else {
         http_response_code(405);
     }
@@ -371,18 +391,25 @@ if (preg_match('/\/api\/products$/', $path)) {
             AuthMiddleware::checkPermission('staff_profile_manage');
             
             $db = (new Database())->getConnection();
-            $stmt = $db->prepare("SELECT employee_id FROM employees WHERE user_id = :user_id");
+            $stmt = $db->prepare("SELECT * FROM employees WHERE user_id = :user_id");
             $stmt->execute([':user_id' => $user['user_id']]);
             $emp = $stmt->fetch(PDO::FETCH_ASSOC);
             
             $json = file_get_contents('php://input');
-            $data = json_decode($json, true);
+            $data = json_decode($json, true) ?: [];
             $id = $_GET['id'] ?? $data['id'] ?? null;
             
             if (!$emp || $emp['employee_id'] != $id) {
                 Response::json(403, "Forbidden: You can only update your own profile.");
                 exit;
             }
+
+            // Lock sensitive staff fields (payment_frequency, position, base_salary) so non-admin employees cannot edit them
+            $_POST['_override_data'] = array_merge($data, [
+                'payment_frequency' => $emp['payment_frequency'],
+                'position'          => $emp['position'],
+                'base_salary'       => $emp['base_salary']
+            ]);
         }
         $controller->update();
     } else {
@@ -483,7 +510,7 @@ if (preg_match('/\/api\/products$/', $path)) {
 } elseif (preg_match('/\/api\/rewards\/settings$/', $path)) {
     $controller = new RewardController();
     if ($request_method === 'GET') {
-        AuthMiddleware::checkPermission('rewards_manage');
+        AuthMiddleware::checkAnyPermission(['rewards_view', 'rewards_manage', 'pos_access', 'promotions_view']);
         $controller->getSettings();
     } elseif ($request_method === 'POST') {
         AuthMiddleware::checkPermission('rewards_manage');
@@ -495,7 +522,7 @@ if (preg_match('/\/api\/products$/', $path)) {
     $controller = new RewardController();
     if ($request_method === 'GET') {
         // Staff and Admin can view gifts
-        AuthMiddleware::checkPermission('rewards_view');
+        AuthMiddleware::checkAnyPermission(['rewards_view', 'promotions_view', 'pos_access']);
         $controller->getGiftRules();
     } else {
         http_response_code(405);
@@ -508,11 +535,232 @@ if (preg_match('/\/api\/products$/', $path)) {
     } else {
         http_response_code(405);
     }
-} elseif (preg_match('/\/api\/rewards\/gifts\/delete$/', $path)) {
-    $controller = new RewardController();
+} elseif (preg_match('/\/api\/payroll\/rights$/', $path)) {
+    $controller = new SalaryController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->settings();
+    } elseif ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->updateRights();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/payroll$/', $path)) {
+    $controller = new SalaryController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->index();
+    } elseif ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->pay();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/payroll\/settings$/', $path)) {
+    $controller = new SalaryController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->settings();
+    } elseif ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->updateSettings();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/payroll\/history$/', $path)) {
+    $controller = new SalaryController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->history();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/payroll\/delete$/', $path)) {
+    $controller = new SalaryController();
+    if ($request_method === 'DELETE' || $request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->delete();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/admin\/attendance\/overview$/', $path)) {
+    require_once __DIR__ . '/../controllers/AttendanceController.php';
+    $controller = new AttendanceController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->adminOverview();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/admin\/attendance\/details$/', $path)) {
+    require_once __DIR__ . '/../controllers/AttendanceController.php';
+    $controller = new AttendanceController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->adminEmployeeDetails();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/admin\/attendance\/verify$/', $path)) {
+    require_once __DIR__ . '/../controllers/AttendanceController.php';
+    $controller = new AttendanceController();
     if ($request_method === 'POST') {
-        AuthMiddleware::checkPermission('rewards_manage');
-        $controller->deleteGiftRule();
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->verify();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/month$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::authenticate();
+        $controller->getMonthlySchedules();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/date$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::authenticate();
+        $controller->getDateDetails();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/book$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::authenticate();
+        $controller->bookSchedule();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/approve-month$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->approveMonthSchedules();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/closed-days$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::authenticate();
+        $controller->getClosedDays();
+    } elseif ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->toggleClosedDay();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/approve$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->approveBooking();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/reject$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->rejectBooking();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/verify$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->verifyAttendance();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/assign$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('staff_manage');
+        $controller->adminAssignSchedule();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/schedule\/delete$/', $path)) {
+    $controller = new ScheduleController();
+    if ($request_method === 'DELETE' || $request_method === 'POST') {
+        AuthMiddleware::authenticate();
+        $controller->deleteSchedule();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/staff\/me$/', $path)) {
+    require_once __DIR__ . '/../controllers/StaffController.php';
+    $controller = new StaffController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::authenticate();
+        $controller->me();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/staff\/details$/', $path)) {
+    require_once __DIR__ . '/../controllers/StaffController.php';
+    $controller = new StaffController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::authenticate();
+        $controller->show();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/staff$/', $path)) {
+    require_once __DIR__ . '/../controllers/StaffController.php';
+    $controller = new StaffController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::authenticate();
+        $controller->index();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/transactions\/sync$/', $path)) {
+    $controller = new TransactionController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('dashboard_view');
+        $controller->syncSystemTransactions();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/transactions\/delete$/', $path)) {
+    $controller = new TransactionController();
+    if ($request_method === 'DELETE' || $request_method === 'POST') {
+        AuthMiddleware::checkPermission('dashboard_view');
+        $controller->delete();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/transactions$/', $path)) {
+    $controller = new TransactionController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::checkPermission('dashboard_view');
+        $controller->index();
+    } elseif ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('dashboard_view');
+        $controller->create();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/notifications\/alerts$/', $path)) {
+    $controller = new NotificationController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::authenticate();
+        $controller->getAlerts();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/notifications\/send-line$/', $path)) {
+    $controller = new NotificationController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::authenticate();
+        $controller->sendLineNotification();
     } else {
         http_response_code(405);
     }

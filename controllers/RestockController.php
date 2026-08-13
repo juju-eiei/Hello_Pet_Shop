@@ -67,7 +67,8 @@ class RestockController {
             return;
         }
 
-        $success = $this->restockModel->receive($restock_id, $employee_id);
+        $items = $data['items'] ?? [];
+        $success = $this->restockModel->receive($restock_id, $employee_id, $items);
         if ($success) {
             Response::json(200, "Goods imported to stock successfully");
         } else {

@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการจ่ายเงินเดือน - Hello Pet Shop</title>
+    <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Mobile User-Agent Check -->
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
+    <script type="module" src="/src/js/main.js"></script>
+
+    <style>
+        .payroll-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.total {
+            background: #f3e8ff;
+            color: #9333ea;
+        }
+
+        .stat-icon.paid {
+            background: #ecfdf5;
+            color: #10b981;
+        }
+
+        .stat-icon.pending {
+            background: #fffbeeb;
+            color: #f59e0b;
+        }
+
+        .stat-icon.count {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .stat-info h4 {
+            margin: 0;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .stat-info .amount {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 4px;
+            color: #0f172a;
+        }
+
+        .filter-section {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 16px 20px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .period-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8fafc;
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .period-btn {
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #475569;
+            transition: all 0.2s;
+        }
+
+        .period-btn:hover {
+            background: #4D7C68;
+            color: white;
+            border-color: #4D7C68;
+        }
+
+        .period-input {
+            border: none;
+            background: transparent;
+            font-weight: 700;
+            font-size: 15px;
+            color: #0f172a;
+            outline: none;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 320px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 14px 8px 38px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+            outline: none;
+            background: white;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .badge-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-paid {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .emp-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .emp-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #4D7C68;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .btn-action-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 9999 !important;
+            display: flex;
+            opacity: 0;
+            transition: opacity 0.2s ease-out;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* The shared admin stylesheet hides overlays with opacity: 0. */
+        .modal-overlay.is-open {
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #0f172a;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: #f8fafc;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            border-color: #4D7C68;
+        }
+
+        .net-salary-preview {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .net-salary-preview span {
+            font-size: 14px;
+            color: #047857;
+            font-weight: 600;
+        }
+
+        .net-salary-preview h3 {
+            margin: 0;
+            font-size: 22px;
+            color: #059669;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="preload">
+    <div class="admin-wrapper">
+        <!-- Mobile Header -->
+        <header class="mobile-header"></header>
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Sidebar Container for Layout JS -->
+        <aside class="sidebar"></aside>
+
+        <!-- Main Content Shell -->
+        <main class="main-content">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+                <div>
+                    <h1 style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">
+                        <i class="fas fa-money-check-alt" style="color: #4D7C68; margin-right: 8px;"></i>
+                        จัดการจ่ายเงินเดือนพนักงาน
+                    </h1>
+                    <p style="color: #64748b; margin: 0; font-size: 14px;">
+                        คำนวณ บันทึกการจ่ายเงินเดือน และเชื่อมโยงเข้าหมวดรายจ่ายในระบบรายรับรายจ่ายอัตโนมัติ
+                    </p>
+                </div>
+                <div>
+                    <a href="admin_attendance.html" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1; padding: 10px 16px; border-radius: 10px; color: #334155; text-decoration: none; font-weight: 600; background: white; transition: all 0.2s; margin-right: 8px;"><i class="fas fa-user-check" style="color: #4D7C68;"></i>ตรวจสอบการเข้างาน</a>
+                    <a href="admin_pay_settings.html" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1; padding: 10px 16px; border-radius: 10px; color: #334155; text-decoration: none; font-weight: 600; background: white; transition: all 0.2s; margin-right: 8px;"><i class="fas fa-sliders-h" style="color: #4D7C68;"></i>กำหนดอัตราค่าจ้าง</a>
+                    <a href="admin_transactions.html?category=เงินเดือนพนักงาน" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1; padding: 10px 16px; border-radius: 10px; color: #334155; text-decoration: none; font-weight: 600; background: white; transition: all 0.2s;">
+                        <i class="fas fa-wallet" style="color: #4D7C68;"></i>
+                        ดูในระบบรายรับรายจ่าย
+                    </a>
+                </div>
+            </header>
+
+            <!-- Stats Overview -->
+            <div class="payroll-stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon total">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h4>ยอดจ่ายเงินเดือนรวม (ประจำเดือน)</h4>
+                        <div class="amount" id="statTotalPayroll">฿ 0.00</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon paid">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h4>จ่ายเงินเดือนแล้ว</h4>
+                        <div class="amount" id="statPaidAmount" style="color: #059669;">0 รายการ (฿ 0.00)</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h4>รอการจ่ายเงินเดือน</h4>
+                        <div class="amount" id="statPendingAmount" style="color: #d97706;">0 รายการ (฿ 0.00)</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon count">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h4>จำนวนพนักงานทั้งหมด</h4>
+                        <div class="amount" id="statTotalEmployees">0 คน</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Period Selector & Search Filter Bar -->
+            <div class="filter-section">
+                <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <div class="period-selector">
+                        <button class="period-btn" onclick="changePeriod(-1)" title="เดือนก่อนหน้า">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <input type="month" id="payrollPeriodInput" class="period-input" onchange="onPeriodInputChange(this.value)">
+                        <button class="period-btn" onclick="changePeriod(1)" title="เดือนถัดไป">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <button class="btn btn-sm" onclick="setCurrentMonth()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-weight: 600; cursor: pointer;">
+                        เดือนปัจจุบัน
+                    </button>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <select id="statusFilter" onchange="filterPayrollTable()" style="padding: 8px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; background: white;">
+                        <option value="all">สถานะทั้งหมด</option>
+                        <option value="paid">จ่ายเงินแล้ว</option>
+                        <option value="pending">ยังไม่ได้จ่าย</option>
+                    </select>
+
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="payrollSearchInput" placeholder="ค้นหาชื่อพนักงาน หรือตำแหน่ง..." oninput="filterPayrollTable()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Card -->
+            <div class="table-card" style="background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; font-size: 16px; color: #0f172a; font-weight: 700;">
+                        รายการพนักงานประจำเดือน <span id="currentPeriodLabel" style="color: #4D7C68;">-</span>
+                    </h3>
+                </div>
+
+                <div class="table-responsive" style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                        <thead>
+                            <tr style="background: #f8fafc; color: #475569; font-weight: 600; border-bottom: 1px solid #e2e8f0;">
+                                <th style="padding: 14px 20px;">พนักงาน</th>
+                                <th style="padding: 14px 16px;">บัญชีธนาคาร</th>
+                                <th style="padding: 14px 16px; text-align: right;">เงินเดือนพื้นฐาน</th>
+                                <th style="padding: 14px 16px; text-align: center;">สถานะ</th>
+                                <th style="padding: 14px 20px; text-align: center;">การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payrollTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;">
+                                    <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom: 8px; color: #4D7C68;"></i>
+                                    <div>กำลังโหลดข้อมูลเงินเดือน...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav"></nav>
+    </div>
+
+    <!-- Modal: จ่ายเงินเดือนพนักงาน (Pay Salary Modal) -->
+    <div id="paySalaryModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-hand-holding-usd" style="color: #4D7C68; margin-right: 8px;"></i> ประมวลผลจ่ายเงินเดือน</h3>
+                <button type="button" onclick="closePayModal()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer;">&times;</button>
+            </div>
+            <form id="paySalaryForm" onsubmit="handlePaySubmit(event)">
+                <input type="hidden" id="payEmpId">
+                <div class="modal-body">
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #e2e8f0;">
+                        <div style="font-weight: 700; color: #0f172a; font-size: 15px;" id="payEmpName">-</div>
+                        <div style="font-size: 13px; color: #64748b;" id="payEmpDetails">-</div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>ประจำเดือน</label>
+                            <input type="text" id="payPeriod" class="form-control" readonly style="background: #f1f5f9;">
+                        </div>
+                        <div class="form-group">
+                            <label>วันที่จ่ายเงิน <span style="color: red;">*</span></label>
+                            <input type="date" id="payPaymentDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>ค่าจ้างตามอัตราที่กำหนด (บาท)</label>
+                            <input type="number" step="0.01" id="payBaseSalary" class="form-control" readonly style="background:#f1f5f9;">
+                        </div>
+                        <div class="form-group">
+                            <label>รายการหักจากการลา / ขาด (บาท)</label>
+                            <input type="number" step="0.01" id="payDeductions" class="form-control" readonly style="background:#f1f5f9;">
+                            <small id="payDeductionDetails" style="display:block;margin-top:5px;color:#64748b"></small>
+                        </div>
+                        <div class="form-group">
+                            <label>วิธีการจ่ายเงิน <span style="color: red;">*</span></label>
+                            <select id="payPaymentMethod" class="form-control">
+                                <option value="transfer">โอนเงินเข้าบัญชี (Transfer)</option>
+                                <option value="cash">เงินสด (Cash)</option>
+                                <option value="cheque">เช็คธนาคาร (Cheque)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="net-salary-preview">
+                        <span>ยอดจ่ายสุทธิ (Net Salary)</span>
+                        <h3 id="payNetPaidDisplay">฿ 0.00</h3>
+                    </div>
+
+                    <div class="form-group full-width" style="margin-bottom: 0;">
+                        <label>หมายเหตุ / รายละเอียดเพิ่มเติม</label>
+                        <textarea id="payNotes" class="form-control" rows="2" placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" onclick="closePayModal()" style="padding: 10px 18px; border-radius: 10px; border: 1px solid #cbd5e1; background: white; color: #475569; font-weight: 600; cursor: pointer;">ยกเลิก</button>
+                    <button type="submit" id="btnSubmitPay" style="padding: 10px 20px; border-radius: 10px; border: none; background: #4D7C68; color: white; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-check"></i> บันทึกการจ่ายเงินเดือน
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: แก้ไขเงินเดือนพนักงาน (Edit Base Salary Modal) -->
+    <div id="editSalaryModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit" style="color: #4D7C68; margin-right: 8px;"></i> แก้ไขเงินเดือนพนักงาน</h3>
+                <button type="button" onclick="closeEditSalaryModal()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer;">&times;</button>
+            </div>
+            <form id="editSalaryForm" onsubmit="handleEditSalarySubmit(event)">
+                <input type="hidden" id="editSalaryEmpId">
+                <div class="modal-body">
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #e2e8f0;">
+                        <div style="font-weight: 700; color: #0f172a;" id="editSalaryEmpName">-</div>
+                        <div style="font-size: 13px; color: #64748b;" id="editSalaryEmpPos">-</div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>อัตราเงินเดือนพื้นฐานใหม่ (บาท/เดือน) <span style="color: red;">*</span></label>
+                        <input type="number" step="0.01" min="0" id="editBaseSalaryInput" class="form-control" placeholder="0.00" required>
+                        <small style="color: #64748b; font-size: 12px; display: block; margin-top: 6px;">
+                            * ข้อมูลนี้จะถูกอัปเดตลงในประวัติพนักงานเพื่อใช้เป็นอัตราเงินเดือนเริ่มต้นในเดือนถัดไป
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeEditSalaryModal()" style="padding: 10px 18px; border-radius: 10px; border: 1px solid #cbd5e1; background: white; color: #475569; font-weight: 600; cursor: pointer;">ยกเลิก</button>
+                    <button type="submit" id="btnSubmitEditSalary" style="padding: 10px 20px; border-radius: 10px; border: none; background: #4D7C68; color: white; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-save"></i> บันทึกข้อมูล
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: ประวัติการรับเงินเดือน (History Modal) -->
+    <div id="historyModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-history" style="color: #4D7C68; margin-right: 8px;"></i> ประวัติการรับเงินเดือน</h3>
+                <button type="button" onclick="closeHistoryModal()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background: #f8fafc; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #e2e8f0;">
+                    <div style="font-weight: 700; color: #0f172a;" id="historyEmpName">-</div>
+                    <div style="font-size: 13px; color: #64748b;" id="historyEmpPos">-</div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569;">
+                                <th style="padding: 10px 12px; text-align: left;">ประจำเดือน</th>
+                                <th style="padding: 10px 12px; text-align: left;">วันที่จ่าย</th>
+                                <th style="padding: 10px 12px; text-align: right;">เงินเดือนพื้นฐาน</th>
+                                <th style="padding: 10px 12px; text-align: right;">รายการหัก</th>
+                                <th style="padding: 10px 12px; text-align: right;">สุทธิ</th>
+                                <th style="padding: 10px 12px; text-align: center;">วิธีจ่าย</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="closeHistoryModal()" style="padding: 10px 18px; border-radius: 10px; border: 1px solid #cbd5e1; background: white; color: #475569; font-weight: 600; cursor: pointer;">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPeriod = '';
+        let allPayrollData = [];
+
+        function formatMoney(amount) {
+            return '฿ ' + (parseFloat(amount) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatThaiMonthYear(periodStr) {
+            if (!periodStr) return '-';
+            const [year, month] = periodStr.split('-');
+            const monthsThai = [
+                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+            ];
+            const monthName = monthsThai[parseInt(month, 10) - 1] || month;
+            const thaiYear = parseInt(year, 10) + 543;
+            return `${monthName} ${thaiYear}`;
+        }
+
+        async function initPayrollPage() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            currentPeriod = `${yyyy}-${mm}`;
+
+            const periodInput = document.getElementById('payrollPeriodInput');
+            if (periodInput) {
+                periodInput.value = currentPeriod;
+            }
+
+            await fetchPayrollData(currentPeriod);
+        }
+
+        async function fetchPayrollData(period) {
+            try {
+                currentPeriod = period;
+                const periodLabel = document.getElementById('currentPeriodLabel');
+                if (periodLabel) periodLabel.textContent = formatThaiMonthYear(period);
+
+                const tbody = document.getElementById('payrollTableBody');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom: 8px; color: #4D7C68;"></i>
+                                <div>กำลังโหลดข้อมูลเงินเดือนประจำเดือน ${formatThaiMonthYear(period)}...</div>
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                const res = await fetch(`/api/payroll?period=${period}`);
+                if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลเงินเดือนได้');
+                const result = await res.json();
+
+                if (result.status === 200 && result.data) {
+                    allPayrollData = result.data.data || [];
+                    renderPayrollStats(result.data.summary);
+                    filterPayrollTable();
+                } else {
+                    throw new Error(result.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+                }
+            } catch (err) {
+                console.error('Error fetching payroll:', err);
+                const tbody = document.getElementById('payrollTableBody');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 30px; color: #ef4444;">
+                                <i class="fas fa-exclamation-circle fa-2x" style="margin-bottom: 8px;"></i>
+                                <div>${err.message}</div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+        }
+
+        function renderPayrollStats(summary) {
+            if (!summary) return;
+            document.getElementById('statTotalPayroll').textContent = formatMoney(summary.total_payroll);
+            document.getElementById('statPaidAmount').textContent = `${summary.paid_count} รายการ (${formatMoney(summary.paid_amount)})`;
+            document.getElementById('statPendingAmount').textContent = `${summary.pending_count} รายการ (${formatMoney(summary.pending_amount)})`;
+            document.getElementById('statTotalEmployees').textContent = `${summary.total_employees} คน`;
+        }
+
+        function filterPayrollTable() {
+            const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+            const searchKeyword = (document.getElementById('payrollSearchInput')?.value || '').toLowerCase().trim();
+
+            let filtered = allPayrollData.filter(emp => {
+                const matchStatus = (statusFilter === 'all') || (emp.status === statusFilter);
+                const matchSearch = !searchKeyword ||
+                    emp.name.toLowerCase().includes(searchKeyword) ||
+                    (emp.position && emp.position.toLowerCase().includes(searchKeyword)) ||
+                    (emp.email && emp.email.toLowerCase().includes(searchKeyword));
+                return matchStatus && matchSearch;
+            });
+
+            renderPayrollTable(filtered);
+        }
+
+        function renderPayrollTable(data) {
+            const tbody = document.getElementById('payrollTableBody');
+            if (!tbody) return;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;">
+                            <i class="fas fa-folder-open fa-2x" style="margin-bottom: 8px;"></i>
+                            <div>ไม่พบข้อมูลเงินเดือนพนักงานตามเงื่อนไขที่เลือก</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = data.map(emp => {
+                const initial = emp.name ? emp.name.charAt(0).toUpperCase() : 'E';
+                const isPaid = emp.status === 'paid';
+                const statusBadge = isPaid
+                    ? `<span class="badge-status badge-paid"><i class="fas fa-check-circle"></i> จ่ายแล้ว (${emp.payment_date || '-'})</span>`
+                    : `<span class="badge-status badge-pending"><i class="fas fa-clock"></i> ยังไม่ได้จ่าย</span>`;
+
+                const safeName = (emp.name || '').replace(/"/g, '&quot;');
+
+                return `
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                        <td style="padding: 14px 20px;">
+                            <div class="emp-info">
+                                <div class="emp-avatar">${initial}</div>
+                                <div>
+                                    <div style="font-weight: 700; color: #0f172a;">${emp.name}</div>
+                                    <div style="font-size: 12px; color: #64748b;">${emp.position}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 14px 16px; color: #475569; font-size: 13px;">
+                            ${emp.bank_account_details ? `<i class="fas fa-university" style="color: #64748b; margin-right: 6px;"></i>${emp.bank_account_details}` : '<span style="color:#cbd5e1;">ไม่ได้ระบุ</span>'}
+                        </td>
+                        <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: #0f172a;">
+                            ${formatMoney(emp.base_salary)}
+                        </td>
+                        <td style="padding: 14px 16px; text-align: center;">
+                            ${statusBadge}
+                        </td>
+                        <td style="padding: 14px 20px; text-align: center;">
+                            <div class="btn-action-group" style="justify-content: center;">
+                                <button type="button" class="btn btn-sm btn-pay-action" data-emp-id="${emp.employee_id}" style="background: ${isPaid ? '#f1f5f9' : '#4D7C68'}; color: ${isPaid ? '#475569' : 'white'}; border: 1px solid ${isPaid ? '#cbd5e1' : '#4D7C68'}; border-radius: 8px; padding: 6px 12px; font-weight: 600; cursor: pointer;" title="${isPaid ? 'แก้ไขข้อมูลการจ่ายเงิน' : 'จ่ายเงินเดือน'}">
+                                    <i class="fas ${isPaid ? 'fa-edit' : 'fa-hand-holding-usd'}"></i> ${isPaid ? 'แก้ไขการจ่าย' : 'จ่ายเงิน'}
+                                </button>
+                                <button type="button" onclick="window.location.href='admin_pay_settings.html'" style="background: white; color: #334155; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; font-weight: 600; cursor: pointer;" title="กำหนดอัตราค่าจ้างและค่าหัก">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-history-action" data-emp-id="${emp.employee_id}" style="background: white; color: #3b82f6; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; font-weight: 600; cursor: pointer;" title="ประวัติการจ่ายเงินเดือน">
+                                    <i class="fas fa-history"></i>
+                                </button>
+                                ${isPaid ? `
+                                    <button type="button" class="btn btn-sm btn-delete-pay-action" data-pay-id="${emp.payment_id}" data-emp-name="${safeName}" style="background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 8px; padding: 6px 10px; font-weight: 600; cursor: pointer;" title="ยกเลิกรายการจ่ายเงินนี้">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Global Event Delegation for Action Buttons
+        document.addEventListener('click', (e) => {
+            const payBtn = e.target.closest('.btn-pay-action');
+            if (payBtn) {
+                const empId = payBtn.getAttribute('data-emp-id');
+                openPayModal(empId);
+                return;
+            }
+
+            const historyBtn = e.target.closest('.btn-history-action');
+            if (historyBtn) {
+                const empId = historyBtn.getAttribute('data-emp-id');
+                openHistoryModal(empId);
+                return;
+            }
+
+            const deleteBtn = e.target.closest('.btn-delete-pay-action');
+            if (deleteBtn) {
+                const payId = deleteBtn.getAttribute('data-pay-id');
+                const empName = deleteBtn.getAttribute('data-emp-name');
+                confirmDeletePay(payId, empName);
+                return;
+            }
+        });
+
+        function changePeriod(delta) {
+            if (!currentPeriod) return;
+            const [yyyy, mm] = currentPeriod.split('-').map(Number);
+            const d = new Date(yyyy, mm - 1 + delta, 1);
+            const newYyyy = d.getFullYear();
+            const newMm = String(d.getMonth() + 1).padStart(2, '0');
+            const newPeriod = `${newYyyy}-${newMm}`;
+            
+            document.getElementById('payrollPeriodInput').value = newPeriod;
+            fetchPayrollData(newPeriod);
+        }
+
+        function onPeriodInputChange(val) {
+            if (val) fetchPayrollData(val);
+        }
+
+        function setCurrentMonth() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const period = `${yyyy}-${mm}`;
+            document.getElementById('payrollPeriodInput').value = period;
+            fetchPayrollData(period);
+        }
+
+        // Pay Salary Modal Handlers
+        function openPayModal(employeeId) {
+            const emp = allPayrollData.find(e => String(e.employee_id) === String(employeeId));
+            if (!emp) return;
+
+            document.getElementById('payEmpId').value = emp.employee_id;
+            document.getElementById('payEmpName').textContent = emp.name;
+            document.getElementById('payEmpDetails').textContent = `ตำแหน่ง: ${emp.position || 'พนักงาน'} | บัญชี: ${emp.bank_account_details || 'ไม่ได้ระบุ'}`;
+            document.getElementById('payPeriod').value = currentPeriod;
+            
+            const todayStr = new Date().toISOString().substring(0, 10);
+            document.getElementById('payPaymentDate').value = emp.payment_date || todayStr;
+            document.getElementById('payBaseSalary').value = emp.base_salary || 0;
+            document.getElementById('payDeductions').value = emp.deductions || 0;
+            document.getElementById('payDeductionDetails').textContent = `ลา ${emp.leave_days || 0} วัน (฿ ${Number(emp.leave_deduction || 0).toLocaleString()}) · ขาด ${emp.absent_days || 0} วัน (฿ ${Number(emp.absence_deduction || 0).toLocaleString()})`;
+            document.getElementById('payPaymentMethod').value = emp.payment_method || 'transfer';
+            document.getElementById('payNotes').value = emp.notes || '';
+
+            calculateNetSalary();
+
+            const modal = document.getElementById('paySalaryModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.add('is-open');
+            }
+        }
+
+        function closePayModal() {
+            const modal = document.getElementById('paySalaryModal');
+            if (modal) {
+                modal.classList.remove('is-open');
+                modal.style.display = 'none';
+            }
+        }
+
+        function calculateNetSalary() {
+            const base = parseFloat(document.getElementById('payBaseSalary').value) || 0;
+            const deductions = parseFloat(document.getElementById('payDeductions').value) || 0;
+            const net = Math.max(0, base - deductions);
+
+            document.getElementById('payNetPaidDisplay').textContent = formatMoney(net);
+        }
+
+        async function handlePaySubmit(e) {
+            e.preventDefault();
+            const btnSubmit = document.getElementById('btnSubmitPay');
+            if (btnSubmit) btnSubmit.disabled = true;
+
+            const empId = document.getElementById('payEmpId').value;
+            const paymentDate = document.getElementById('payPaymentDate').value;
+            const paymentMethod = document.getElementById('payPaymentMethod').value;
+            const notes = document.getElementById('payNotes').value;
+
+            try {
+                if (window.Swal) {
+                    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                }
+
+                const res = await fetch('/api/payroll/pay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        employee_id: empId,
+                        pay_period: currentPeriod,
+                        payment_date: paymentDate,
+                        payment_method: paymentMethod,
+                        notes: notes
+                    })
+                });
+
+                const result = await res.json();
+                if (result.status === 200) {
+                    closePayModal();
+                    if (window.Swal) {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'สำเร็จ!',
+                            text: 'บันทึกการจ่ายเงินเดือนและลงบัญชีรายจ่ายเรียบร้อยแล้ว',
+                            timer: 1600,
+                            showConfirmButton: false
+                        });
+                    }
+                    await fetchPayrollData(currentPeriod);
+                } else {
+                    throw new Error(result.message || 'บันทึกรายการไม่สำเร็จ');
+                }
+            } catch (err) {
+                console.error('Pay salary error:', err);
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + err.message);
+                }
+            } finally {
+                if (btnSubmit) btnSubmit.disabled = false;
+            }
+        }
+
+        // Edit Base Salary Modal Handlers
+        function openEditSalaryModal(employeeId) {
+            const emp = allPayrollData.find(e => String(e.employee_id) === String(employeeId));
+            if (!emp) return;
+
+            document.getElementById('editSalaryEmpId').value = emp.employee_id;
+            document.getElementById('editSalaryEmpName').textContent = emp.name;
+            document.getElementById('editSalaryEmpPos').textContent = `ตำแหน่ง: ${emp.position || 'พนักงาน'}`;
+            document.getElementById('editBaseSalaryInput').value = emp.base_salary || 0;
+
+            const modal = document.getElementById('editSalaryModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.add('is-open');
+            }
+        }
+
+        function closeEditSalaryModal() {
+            const modal = document.getElementById('editSalaryModal');
+            if (modal) {
+                modal.classList.remove('is-open');
+                modal.style.display = 'none';
+            }
+        }
+
+        async function handleEditSalarySubmit(e) {
+            e.preventDefault();
+            const btnSubmit = document.getElementById('btnSubmitEditSalary');
+            if (btnSubmit) btnSubmit.disabled = true;
+
+            const empId = document.getElementById('editSalaryEmpId').value;
+            const newBaseSalary = parseFloat(document.getElementById('editBaseSalaryInput').value) || 0;
+
+            try {
+                if (window.Swal) {
+                    Swal.fire({ title: 'กำลังอัปเดตอัตราเงินเดือน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                }
+
+                const res = await fetch('/api/payroll/update-base-salary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        employee_id: empId,
+                        base_salary: newBaseSalary
+                    })
+                });
+
+                const result = await res.json();
+                if (result.status === 200) {
+                    closeEditSalaryModal();
+                    if (window.Swal) {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'สำเร็จ!',
+                            text: 'อัปเดตอัตราเงินเดือนพื้นฐานของพนักงานเรียบร้อยแล้ว',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    }
+                    await fetchPayrollData(currentPeriod);
+                } else {
+                    throw new Error(result.message || 'ไม่สามารถอัปเดตอัตราเงินเดือนได้');
+                }
+            } catch (err) {
+                console.error('Update base salary error:', err);
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + err.message);
+                }
+            } finally {
+                if (btnSubmit) btnSubmit.disabled = false;
+            }
+        }
+
+        // Delete Payment Handler
+        async function confirmDeletePay(paymentId, empName) {
+            if (!window.Swal) {
+                if (!confirm(`ต้องการยกเลิกและลบประวัติการจ่ายเงินเดือนของ "${empName}" หรือไม่?`)) return;
+            } else {
+                const confirmRes = await Swal.fire({
+                    title: 'ยืนยันการยกเลิกการจ่ายเงิน?',
+                    text: `ต้องการยกเลิกและลบประวัติการจ่ายเงินเดือนของ "${empName}" หรือไม่? รายการในตารางรายรับรายจ่ายจะถูกลบออกด้วย`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'ยกเลิกการจ่าย',
+                    cancelButtonText: 'กลับ'
+                });
+                if (!confirmRes.isConfirmed) return;
+            }
+
+            try {
+                if (window.Swal) {
+                    Swal.fire({ title: 'กำลังยกเลิกรายการ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                }
+
+                const res = await fetch('/api/payroll/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ payment_id: paymentId })
+                });
+
+                const result = await res.json();
+                if (result.status === 200) {
+                    if (window.Swal) {
+                        await Swal.fire({ icon: 'success', title: 'เรียบร้อย!', text: 'ยกเลิกการจ่ายเงินและลบรายการรายจ่ายแล้ว', timer: 1500, showConfirmButton: false });
+                    }
+                    await fetchPayrollData(currentPeriod);
+                } else {
+                    throw new Error(result.message || 'ลบไม่สำเร็จ');
+                }
+            } catch (err) {
+                console.error('Delete payroll error:', err);
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + err.message);
+                }
+            }
+        }
+
+        // History Modal Handlers
+        async function openHistoryModal(employeeId) {
+            try {
+                const tbody = document.getElementById('historyTableBody');
+                if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> กำลังดึงประวัติ...</td></tr>';
+
+                const modal = document.getElementById('historyModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.classList.add('is-open');
+                }
+
+                const res = await fetch(`/api/payroll/history?employee_id=${employeeId}`);
+                if (!res.ok) throw new Error('ไม่สามารถดึงประวัติได้');
+                const result = await res.json();
+
+                if (result.status === 200 && result.data) {
+                    document.getElementById('historyEmpName').textContent = result.data.employee.name;
+                    document.getElementById('historyEmpPos').textContent = `ตำแหน่ง: ${result.data.employee.position}`;
+
+                    const historyList = result.data.data || [];
+                    if (historyList.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">ยังไม่มีประวัติการรับเงินเดือน</td></tr>';
+                        return;
+                    }
+
+                    const methodMap = { transfer: 'โอนเงิน', cash: 'เงินสด', cheque: 'เช็ค' };
+                    tbody.innerHTML = historyList.map(h => `
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 10px 12px; font-weight:700;">${formatThaiMonthYear(h.pay_period)}</td>
+                            <td style="padding: 10px 12px; color:#64748b;">${h.payment_date}</td>
+                            <td style="padding: 10px 12px; text-align:right;">${formatMoney(h.base_salary)}</td>
+                            <td style="padding: 10px 12px; text-align:right; font-size:12px; color:#dc2626;">-${parseFloat(h.deductions).toLocaleString()}</td>
+                            <td style="padding: 10px 12px; text-align:right; font-weight:700; color:#059669;">${formatMoney(h.net_paid)}</td>
+                            <td style="padding: 10px 12px; text-align:center;"><span style="background:#f1f5f9; padding:2px 8px; border-radius:10px; font-size:11px;">${methodMap[h.payment_method] || h.payment_method}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('History error:', err);
+            }
+        }
+
+        function closeHistoryModal() {
+            const modal = document.getElementById('historyModal');
+            if (modal) {
+                modal.classList.remove('is-open');
+                modal.style.display = 'none';
+            }
+        }
+
+        // Explicitly attach functions to window object for global SPA execution access
+        window.initPayrollPage = initPayrollPage;
+        window.fetchPayrollData = fetchPayrollData;
+        window.renderPayrollStats = renderPayrollStats;
+        window.filterPayrollTable = filterPayrollTable;
+        window.renderPayrollTable = renderPayrollTable;
+        window.changePeriod = changePeriod;
+        window.onPeriodInputChange = onPeriodInputChange;
+        window.setCurrentMonth = setCurrentMonth;
+        window.openPayModal = openPayModal;
+        window.closePayModal = closePayModal;
+        window.calculateNetSalary = calculateNetSalary;
+        window.handlePaySubmit = handlePaySubmit;
+        window.openEditSalaryModal = openEditSalaryModal;
+        window.closeEditSalaryModal = closeEditSalaryModal;
+        window.handleEditSalarySubmit = handleEditSalarySubmit;
+        window.confirmDeletePay = confirmDeletePay;
+        window.openHistoryModal = openHistoryModal;
+        window.closeHistoryModal = closeHistoryModal;
+
+        // Initialize Page on Load or SPA route navigation
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPayrollPage);
+        } else {
+            initPayrollPage();
+        }
+    </script>
+</body>
+</html>

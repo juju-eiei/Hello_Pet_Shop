@@ -8,7 +8,8 @@ class Product {
     }
 
     public function getAll($keyword = "", $filter = "all") {
-        $query = "SELECT p.*, c.category_name, CONCAT(e.first_name, ' ', e.last_name) AS creator_name 
+        $query = "SELECT p.*, c.category_name, CONCAT(e.first_name, ' ', e.last_name) AS creator_name,
+                  (SELECT MIN(expiry_date) FROM product_lots WHERE product_id = p.product_id AND quantity > 0 AND expiry_date IS NOT NULL) AS min_lot_expiry
                   FROM " . $this->table . " p 
                   LEFT JOIN product_categories c ON p.category_id = c.category_id 
                   LEFT JOIN employees e ON p.created_by = e.employee_id ";
@@ -31,7 +32,13 @@ class Product {
             $query .= " WHERE " . implode(" AND ", $conditions);
         }
         
-        $query .= " ORDER BY p.product_id DESC";
+        $query .= " ORDER BY 
+                    CASE 
+                        WHEN p.stock_qty <= 0 THEN 1
+                        WHEN (p.min_stock_level IS NOT NULL AND p.min_stock_level > 0 AND p.stock_qty <= p.min_stock_level) OR ((p.min_stock_level IS NULL OR p.min_stock_level = 0) AND p.stock_qty <= 5) THEN 2
+                        ELSE 3
+                    END ASC,
+                    p.product_id DESC";
         
         $stmt = $this->conn->prepare($query);
         

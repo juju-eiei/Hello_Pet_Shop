@@ -23,14 +23,16 @@ class RewardController
     public function getSettings()
     {
         try {
-            $stmt = $this->db->query("SELECT point_earning_baht, point_earning_qty, point_redemption_rate FROM store_settings LIMIT 1");
+            $stmt = $this->db->query("SELECT point_earning_baht, point_earning_qty, point_redemption_rate, line_oa_token, line_target_id FROM store_settings LIMIT 1");
             $settings = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$settings) {
                 // Return defaults if somehow row not created
                 $settings = [
                     'point_earning_baht' => 100.00,
                     'point_earning_qty' => 1,
-                    'point_redemption_rate' => 1.00
+                    'point_redemption_rate' => 1.00,
+                    'line_oa_token' => '',
+                    'line_target_id' => ''
                 ];
             }
             Response::json(200, "Success", $settings);
@@ -50,6 +52,8 @@ class RewardController
         $baht = isset($data['point_earning_baht']) ? (float)$data['point_earning_baht'] : 100.00;
         $qty = isset($data['point_earning_qty']) ? (int)$data['point_earning_qty'] : 1;
         $redeem = isset($data['point_redemption_rate']) ? (float)$data['point_redemption_rate'] : 1.00;
+        $lineToken = isset($data['line_oa_token']) ? trim($data['line_oa_token']) : '';
+        $lineTarget = isset($data['line_target_id']) ? trim($data['line_target_id']) : '';
 
         if ($baht <= 0 || $qty <= 0) {
             Response::json(400, "Invalid values for points earning rate.");
@@ -60,11 +64,11 @@ class RewardController
             // Check if settings exists
             $stmtCount = $this->db->query("SELECT COUNT(*) FROM store_settings");
             if ($stmtCount->fetchColumn() == 0) {
-                $stmt = $this->db->prepare("INSERT INTO store_settings (point_earning_baht, point_earning_qty, point_redemption_rate, updated_by) VALUES (?, ?, ?, 1)");
-                $stmt->execute([$baht, $qty, $redeem]);
+                $stmt = $this->db->prepare("INSERT INTO store_settings (point_earning_baht, point_earning_qty, point_redemption_rate, line_oa_token, line_target_id, updated_by) VALUES (?, ?, ?, ?, ?, 1)");
+                $stmt->execute([$baht, $qty, $redeem, $lineToken, $lineTarget]);
             } else {
-                $stmt = $this->db->prepare("UPDATE store_settings SET point_earning_baht = ?, point_earning_qty = ?, point_redemption_rate = ? WHERE setting_id = 1");
-                $stmt->execute([$baht, $qty, $redeem]);
+                $stmt = $this->db->prepare("UPDATE store_settings SET point_earning_baht = ?, point_earning_qty = ?, point_redemption_rate = ?, line_oa_token = ?, line_target_id = ? WHERE setting_id = 1");
+                $stmt->execute([$baht, $qty, $redeem, $lineToken, $lineTarget]);
             }
             Response::json(200, "Settings saved successfully");
         } catch (Exception $e) {
