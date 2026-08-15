@@ -223,6 +223,48 @@
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .date-verify-row { grid-template-columns: 1fr; }
         }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            .page-header h1 {
+                font-size: 20px !important;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 10px !important;
+            }
+            .stat-card {
+                padding: 12px 14px !important;
+                border-radius: 14px !important;
+                gap: 10px !important;
+            }
+            .stat-icon {
+                width: 38px !important;
+                height: 38px !important;
+                font-size: 16px !important;
+            }
+            .stat-info h4 {
+                font-size: 16px !important;
+            }
+            .stat-info span {
+                font-size: 11px !important;
+            }
+            .drawer-panel {
+                width: 95% !important;
+                border-radius: 16px !important;
+            }
+            .drawer-panel-header {
+                padding: 16px 18px !important;
+                font-size: 15px !important;
+            }
+            .drawer-panel-body {
+                padding: 16px !important;
+            }
+        }
     </style>
 </head>
 <body class="preload">
@@ -294,7 +336,7 @@
                         <h3><i class="fas fa-clipboard-list" style="color:#4D7C68"></i> รายชื่อพนักงานและสถิติการเข้างานประจำเดือน</h3>
                     </div>
 
-                    <div style="overflow-x: auto;">
+                    <div class="table-responsive">
                         <table class="attendance-table">
                             <thead>
                                 <tr>

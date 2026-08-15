@@ -352,6 +352,107 @@
             box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.3);
             transform: translateY(-1px);
         }
+
+        /* Customer Details Mobile Responsive */
+        @media (max-width: 768px) {
+            .profile-header-card {
+                padding: 16px !important;
+                border-radius: 14px !important;
+                margin-bottom: 16px !important;
+            }
+            .profile-card-top {
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center !important;
+                gap: 12px !important;
+            }
+            .profile-avatar {
+                width: 64px !important;
+                height: 64px !important;
+                font-size: 24px !important;
+            }
+            .profile-info h2 {
+                font-size: 18px !important;
+                text-align: center !important;
+            }
+            .profile-contact-line {
+                justify-content: center !important;
+                font-size: 12px !important;
+            }
+            .profile-actions-row {
+                justify-content: center !important;
+                width: 100% !important;
+                margin-top: 14px !important;
+            }
+            .profile-stats {
+                grid-template-columns: 1fr 1fr 1fr !important;
+                gap: 8px !important;
+            }
+            .stat-item {
+                padding: 12px 8px !important;
+                border-radius: 12px !important;
+            }
+            .stat-icon {
+                width: 34px !important;
+                height: 34px !important;
+                font-size: 16px !important;
+            }
+            .stat-text strong {
+                font-size: 16px !important;
+            }
+            .stat-text span {
+                font-size: 11px !important;
+            }
+            .section-card {
+                padding: 14px !important;
+                border-radius: 14px !important;
+                margin-bottom: 14px !important;
+            }
+            .section-header h2 {
+                font-size: 15px !important;
+            }
+            .pet-card {
+                padding: 14px !important;
+                border-radius: 12px !important;
+            }
+            .pet-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+            }
+            .form-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            .modal-content {
+                border-radius: 16px !important;
+                max-width: 100% !important;
+            }
+            .modal-header {
+                padding: 14px 18px !important;
+            }
+            .modal-header h2 {
+                font-size: 16px !important;
+            }
+            .modal-body-scroll {
+                padding: 16px !important;
+            }
+            .modal-footer {
+                padding: 14px 18px !important;
+            }
+            .btn {
+                padding: 8px 14px !important;
+                font-size: 13px !important;
+            }
+            .page-header {
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+                margin-bottom: 16px !important;
+            }
+            .page-header h1 {
+                font-size: 18px !important;
+            }
+        }
     </style>
 
     <!-- Mobile User-Agent Check -->
@@ -391,14 +492,14 @@
                             <i class="far fa-user"></i>
                         </div>
                         <div class="profile-info">
-                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 8px;">
-                                <h2 id="cName" style="margin: 0;">Customer Name</h2>
-                                <button class="btn btn-secondary" onclick="openEditCustomerModal()" style="border-radius: 12px; font-size: 13px; padding: 8px 16px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                            <h2 id="cName" style="margin: 0 0 8px 0;">Customer Name</h2>
+                            <div class="profile-contact-line"><i class="far fa-envelope"></i> <span id="cEmail"></span></div>
+                            <div class="profile-contact-line"><i class="fas fa-phone-alt"></i> <span id="cPhone"></span></div>
+                            <div class="profile-actions-row" style="margin-top: 12px; display: flex; align-items: center;">
+                                <button class="btn btn-secondary" onclick="openEditCustomerModal()" style="border-radius: 12px; font-size: 13px; padding: 8px 18px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #e2e8f0; background: #ffffff;">
                                     <i class="fas fa-user-edit" style="color: #10b981;"></i> แก้ไขข้อมูลลูกค้า
                                 </button>
                             </div>
-                            <div class="profile-contact-line" style="margin-top: 8px;"><i class="far fa-envelope"></i> <span id="cEmail"></span></div>
-                            <div class="profile-contact-line"><i class="fas fa-phone-alt"></i> <span id="cPhone"></span></div>
                         </div>
                     </div>
                     

@@ -178,19 +178,21 @@
             }
             .page-header h1 {
                 flex-wrap: wrap;
-                font-size: 22px !important;
+                font-size: 20px !important;
                 line-height: 1.4;
             }
             .details-card { 
-                padding: 16px; 
+                padding: 14px; 
                 max-width: 100%; 
                 overflow: hidden; 
-                box-sizing: border-box; 
+                box-sizing: border-box;
+                border-radius: 14px;
+                margin-bottom: 14px;
             }
+            .card-header { font-size: 14px !important; padding-bottom: 10px !important; margin-bottom: 12px !important; }
             .order-items-table {
                 min-width: 400px;
             }
-            /* Ensure the table wrapper scrolls properly without stretching the card */
             .table-responsive-wrapper {
                 width: 100%;
                 overflow-x: auto;
@@ -198,11 +200,20 @@
             }
             .info-row {
                 flex-direction: column;
-                margin-bottom: 16px;
+                margin-bottom: 12px;
             }
-            .info-label { margin-bottom: 2px; font-size: 13px; }
-            .info-value { font-size: 15px; word-break: break-all; }
+            .info-label { margin-bottom: 2px; font-size: 12px; }
+            .info-value { font-size: 14px; word-break: break-all; }
             .status-pill { padding: 4px 12px; font-size: 12px; }
+            .action-btns, .btn-group { 
+                flex-direction: column !important; 
+                gap: 8px !important;
+                width: 100% !important;
+            }
+            .action-btns button, .btn-group button {
+                width: 100% !important;
+                font-size: 13px !important;
+            }
         }
 
         /* Modal overlay styling */

@@ -167,12 +167,12 @@
             </div>
 
             <!-- Search & Filter -->
-            <div class="staff-stock-search-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div class="search-container" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: none; box-shadow: none; padding: 0; margin-bottom: 24px;">
                 <div style="display: flex; align-items: center; flex: 1; min-width: 250px; position: relative;">
                     <i class="fas fa-search" style="position: absolute; left: 16px; color: #94a3b8; z-index: 10;"></i>
                     <input type="text" id="searchInput" placeholder="ค้นหาตามรหัสคำสั่งซื้อ, สถานะ หรือช่องทาง..." style="padding-left: 45px; width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; height: 46px; outline: none; font-size: 14px; background: #f8fafc; transition: all 0.2s;">
                 </div>
-                <select id="statusFilterSelect" style="padding: 0 16px; height: 46px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px; font-weight: 500; color: #475569; background-color: #f8fafc; outline: none; min-width: 200px; cursor: pointer; transition: all 0.2s;">
+                <select id="statusFilterSelect" style="padding: 0 16px; height: 46px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px; font-weight: 500; color: #475569; background-color: #f8fafc; outline: none; min-width: 180px; cursor: pointer; transition: all 0.2s;">
                     <option value="all">สถานะทั้งหมด (All)</option>
                     <option value="unfulfilled">📦 ที่ต้องดำเนินการ (Unfulfilled)</option>
                     <option value="Pending">⏳ Pending (รอดำเนินการ)</option>
@@ -206,20 +206,24 @@
         
         <!-- Bottom Navigation for Mobile -->
         <nav class="bottom-nav">
+            <a href="staff_orders.html" class="nav-item active">
+                <i class="fas fa-file-invoice"></i>
+                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
+            </a>
             <a href="staff_stock.html" class="nav-item">
-                <i class="fas fa-box"></i>
-                <span data-i18n="nav.stock">จัดการคลังสินค้า</span>
+                <i class="fas fa-warehouse"></i>
+                <span data-i18n="nav.stock">คลังสินค้า</span>
+            </a>
+            <a href="staff_promotions.html" class="nav-item">
+                <i class="fas fa-gift"></i>
+                <span data-i18n="nav.promotions">โปรโมชั่น</span>
             </a>
             <a href="staff_customers.html" class="nav-item">
                 <i class="fas fa-users"></i>
                 <span data-i18n="nav.customers">ลูกค้า</span>
             </a>
-            <a href="staff_orders.html" class="nav-item active">
-                <i class="fas fa-file-invoice"></i>
-                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
-            </a>
             <a href="staff_profile.html" class="nav-item">
-                <i class="fas fa-user"></i>
+                <i class="fas fa-user-cog"></i>
                 <span data-i18n="nav.profile">โปรไฟล์</span>
             </a>
         </nav>

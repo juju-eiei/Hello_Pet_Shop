@@ -91,12 +91,6 @@ class PasswordResetController {
         </html>
         ";
 
-        // Write to mail_debug.log in the project root
-        $logDir = __DIR__ . '/../';
-        $logFile = $logDir . 'mail_debug.log';
-        $logContent = "[" . date('Y-m-d H:i:s') . "] Reset email sent to: {$email}\nLink: {$resetLink}\n----------------------------------------\n";
-        file_put_contents($logFile, $logContent, FILE_APPEND);
-
         // Load SMTP config
         $mailConfig = null;
         if (file_exists(__DIR__ . '/../config/mail.php')) {
@@ -109,6 +103,16 @@ class PasswordResetController {
                              $mailConfig['smtp_user'] !== 'YOUR_GMAIL_ADDRESS@gmail.com' &&
                              !empty($mailConfig['smtp_pass']) && 
                              $mailConfig['smtp_pass'] !== 'YOUR_GMAIL_APP_PASSWORD';
+
+        // Write to mail_debug.log in the project root
+        $logDir = __DIR__ . '/../';
+        $logFile = $logDir . 'mail_debug.log';
+        $logContent = "[" . date('Y-m-d H:i:s') . "] Reset email sent to: {$email}\n";
+        $logContent .= "Link: {$resetLink}\n";
+        $logContent .= "SMTP User: " . ($mailConfig['smtp_user'] ?? 'NOT SET') . "\n";
+        $logContent .= "SMTP Configured: " . ($isSmtpConfigured ? 'YES' : 'NO') . "\n";
+        $logContent .= "----------------------------------------\n";
+        file_put_contents($logFile, $logContent, FILE_APPEND);
 
         $sentSuccessfully = false;
         $errorMsg = '';
@@ -139,9 +143,14 @@ class PasswordResetController {
 
                 $mail->send();
                 $sentSuccessfully = true;
+
+                // Log success
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] SMTP SEND SUCCESS\n----------------------------------------\n", FILE_APPEND);
             } catch (Exception $e) {
                 error_log("PHPMailer SMTP Error: " . $e->getMessage());
                 $errorMsg = $e->getMessage();
+                // Log error
+                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] SMTP ERROR: {$errorMsg}\n----------------------------------------\n", FILE_APPEND);
             }
         }
 
@@ -152,6 +161,7 @@ class PasswordResetController {
             $headers .= 'From: Hello Pet Shop <noreply@hellopetshop.com>' . "\r\n";
 
             @mail($email, $subject, $message, $headers);
+            file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Used FALLBACK mail() instead of SMTP\n----------------------------------------\n", FILE_APPEND);
         }
 
         if ($sentSuccessfully) {

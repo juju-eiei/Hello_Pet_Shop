@@ -325,6 +325,77 @@
                 margin: 0;
             }
         }
+
+        /* Responsive Design for POS (Tablets & Mobile) */
+        @media (max-width: 1024px) {
+            .pos-container {
+                grid-template-columns: 1fr !important;
+                height: auto !important;
+                overflow: visible !important;
+                gap: 16px !important;
+            }
+            .pos-left, .pos-right {
+                height: auto !important;
+                overflow: visible !important;
+                padding: 16px !important;
+                border-radius: 16px !important;
+            }
+            .pos-grid-container {
+                max-height: 450px;
+                overflow-y: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .pos-products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+                gap: 10px !important;
+            }
+            .pos-product-card {
+                padding: 10px !important;
+                border-radius: 14px !important;
+            }
+            .pos-product-img {
+                height: 85px !important;
+            }
+            .pos-product-name {
+                font-size: 12px !important;
+                height: 32px !important;
+            }
+            .pos-product-price {
+                font-size: 13px !important;
+            }
+            .pos-search-bar {
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            .category-filter-chips {
+                overflow-x: auto !important;
+                white-space: nowrap !important;
+                scrollbar-width: none !important;
+                padding-bottom: 6px !important;
+            }
+            .category-filter-chips::-webkit-scrollbar { display: none !important; }
+            .pos-cart-list {
+                max-height: 250px !important;
+            }
+            .quick-cash-container {
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 4px !important;
+            }
+            .quick-cash-btn {
+                padding: 6px 2px !important;
+                font-size: 11px !important;
+            }
+            .pos-pay-btn {
+                padding: 8px 4px !important;
+                font-size: 11px !important;
+            }
+            .modal-card {
+                width: 95% !important;
+                padding: 20px 16px !important;
+            }
+        }
     </style>
 <script type="module" src="/src/js/main.js"></script>
 </head>

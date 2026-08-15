@@ -1,9 +1,9 @@
 <?php
 require_once __DIR__ . '/config.php';
 
-$smtpUser = getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? 'yingaung651@gmail.com');
-$smtpPass = getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? 'bmhbicoioxjzrrre');
-$fromEmail = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? 'yingaung651@gmail.com');
+$smtpUser = getenv('SMTP_USER') ?: ($_ENV['SMTP_USER'] ?? 'jotelpetshop2704@gmail.com');
+$smtpPass = getenv('SMTP_PASS') ?: ($_ENV['SMTP_PASS'] ?? 'wjbncyfyuxdpgosk');
+$fromEmail = getenv('FROM_EMAIL') ?: ($_ENV['FROM_EMAIL'] ?? 'jotelpetshop2704@gmail.com');
 $fromName = getenv('FROM_NAME') ?: ($_ENV['FROM_NAME'] ?? 'Hello Pet Shop');
 
 return [

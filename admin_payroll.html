@@ -337,6 +337,60 @@
             color: #059669;
             font-weight: 700;
         }
+
+        /* Payroll Mobile Responsive */
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            .page-header h1 {
+                font-size: 20px !important;
+            }
+            .payroll-stats-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 10px !important;
+                margin-bottom: 16px !important;
+            }
+            .stat-card {
+                padding: 12px 14px !important;
+                border-radius: 14px !important;
+                gap: 10px !important;
+            }
+            .stat-icon {
+                width: 38px !important;
+                height: 38px !important;
+                font-size: 16px !important;
+            }
+            .stat-info h4 {
+                font-size: 11px !important;
+            }
+            .stat-info .amount {
+                font-size: 16px !important;
+            }
+            .filter-section {
+                padding: 12px 14px !important;
+                gap: 10px !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            .filter-section > div {
+                width: 100% !important;
+            }
+            .form-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            .form-group.full-width {
+                grid-column: span 1 !important;
+            }
+            .modal-card-lg {
+                padding: 20px 16px !important;
+                border-radius: 16px !important;
+                width: 95% !important;
+            }
+        }
     </style>
 </head>
 <body class="preload">

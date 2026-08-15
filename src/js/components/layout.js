@@ -287,24 +287,32 @@ function renderBottomNav(items, currentFilename) {
     const bottomNav = document.querySelector('nav.bottom-nav');
     if (!bottomNav) return;
 
+    const isAdmin = currentFilename.startsWith('admin_');
+    let links = [];
+
+    if (isAdmin) {
+        links = [
+            { url: 'admin_orders.html', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', i18n: 'nav.orders' },
+            { url: 'admin_stock.html', icon: 'fas fa-warehouse', title: 'คลังสินค้า', i18n: 'nav.stock' },
+            { url: 'admin_customers.html', icon: 'fas fa-users', title: 'ลูกค้า', i18n: 'nav.customers' },
+            { url: 'admin_promotions.html', icon: 'fas fa-gift', title: 'โปรโมชั่น', i18n: 'nav.promotions' }
+        ];
+    } else {
+        links = [
+            { url: 'staff_orders.html', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', i18n: 'nav.orders' },
+            { url: 'staff_stock.html', icon: 'fas fa-warehouse', title: 'คลังสินค้า', i18n: 'nav.stock' },
+            { url: 'staff_promotions.html', icon: 'fas fa-gift', title: 'โปรโมชั่น', i18n: 'nav.promotions' },
+            { url: 'staff_customers.html', icon: 'fas fa-users', title: 'ลูกค้า', i18n: 'nav.customers' },
+            { url: 'staff_profile.html', icon: 'fas fa-user-cog', title: 'โปรไฟล์', i18n: 'nav.profile' }
+        ];
+    }
+
     let navHTML = '';
-    const mainLinks = [];
-
-    items.forEach(item => {
-        if (item.type === 'link' && !item.desktopOnly) {
-            mainLinks.push(item);
-        } else if (item.type === 'group') {
-            item.items.forEach(sub => {
-                if (!sub.desktopOnly) mainLinks.push({ ...sub, icon: item.icon });
-            });
-        }
-    });
-
-    mainLinks.slice(0, 4).forEach(link => {
+    links.forEach(link => {
         const isActive = isUrlActive(currentFilename, link.url) ? 'active' : '';
         navHTML += `
             <a href="${link.url}" class="nav-item ${isActive}">
-                <i class="${link.icon || 'fas fa-circle'}"></i>
+                <i class="${link.icon}"></i>
                 <span data-i18n="${link.i18n}">${link.title}</span>
             </a>`;
     });
@@ -332,14 +340,17 @@ function bindLayoutEvents() {
     const sidebar = document.querySelector('aside.sidebar');
 
     if (hamburgerBtn && sidebarOverlay && sidebar) {
-        hamburgerBtn.addEventListener('click', () => {
-            sidebar.classList.add('mobile-open');
-            sidebarOverlay.classList.add('active');
+        hamburgerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('mobile-open');
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+            sidebarOverlay.classList.toggle('show');
         });
 
         sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.remove('mobile-open');
-            sidebarOverlay.classList.remove('active');
+            sidebar.classList.remove('mobile-open', 'active');
+            sidebarOverlay.classList.remove('active', 'show');
         });
     }
 

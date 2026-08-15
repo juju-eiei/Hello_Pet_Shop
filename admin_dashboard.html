@@ -369,6 +369,97 @@
             background-color: #1b4332;
             color: white;
         }
+
+        /* Dashboard Mobile Responsive */
+        @media (max-width: 768px) {
+            .page-header-premium {
+                padding: 20px 16px !important;
+                border-radius: 16px !important;
+                margin-bottom: 20px !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+            }
+            .page-header-premium h1 {
+                font-size: 20px !important;
+            }
+            .page-header-premium p {
+                font-size: 12px !important;
+                margin-top: 6px !important;
+            }
+            .month-selector-container {
+                width: 100% !important;
+            }
+            .month-selector-container select {
+                width: 100% !important;
+                font-size: 13px !important;
+                padding: 8px 14px !important;
+            }
+            .section-title-premium h2 {
+                font-size: 14px !important;
+            }
+            .section-title-premium p {
+                font-size: 11px !important;
+            }
+            .stat-card {
+                padding: 14px !important;
+                border-radius: 14px !important;
+            }
+            .stat-icon {
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 16px !important;
+                margin-right: 10px !important;
+            }
+            .stat-details h3 {
+                font-size: 11px !important;
+            }
+            .stat-details .value {
+                font-size: 18px !important;
+            }
+            .chart-container {
+                height: 220px !important;
+            }
+            .dashboard-grid {
+                grid-template-columns: 1fr !important;
+                gap: 16px !important;
+            }
+            .period-toggle {
+                display: flex !important;
+                overflow-x: auto !important;
+                scrollbar-width: none !important;
+            }
+            .period-toggle::-webkit-scrollbar { display: none !important; }
+            .period-toggle button {
+                font-size: 11px !important;
+                padding: 6px 12px !important;
+                flex: 0 0 auto !important;
+                white-space: nowrap !important;
+            }
+            .simple-table thead { display: none !important; }
+            .simple-table, .simple-table tbody, .simple-table tr, .simple-table td {
+                display: block !important;
+                width: 100% !important;
+            }
+            .simple-table tr {
+                border: 1px solid #f1f5f9 !important;
+                border-radius: 12px !important;
+                padding: 12px !important;
+                margin-bottom: 8px !important;
+                background: #fff !important;
+            }
+            .simple-table td {
+                padding: 3px 0 !important;
+                border: none !important;
+                font-size: 13px !important;
+            }
+            .panel-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+            }
+            .panel-header h2 { font-size: 15px !important; }
+        }
     </style>
 
     <!-- Mobile User-Agent Check -->
@@ -523,7 +614,7 @@
                             <h2>คำสั่งซื้อล่าสุด</h2>
                             <a href="admin_orders.html">ดูทั้งหมด</a>
                         </div>
-                        <div style="overflow-x: auto;">
+                        <div class="table-responsive">
                             <table class="simple-table">
                                 <thead>
                                     <tr>

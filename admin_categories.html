@@ -14,7 +14,32 @@
             document.documentElement.classList.add('mobile-device');
         }
     </script>
-<script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="/src/js/main.js"></script>
+    <style>
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            .page-header > div {
+                width: 100% !important;
+                display: flex !important;
+                gap: 8px !important;
+            }
+            .page-header button {
+                flex: 1 !important;
+                justify-content: center !important;
+                font-size: 13px !important;
+                padding: 10px 14px !important;
+            }
+            .modal-card {
+                width: 95% !important;
+                padding: 20px 16px !important;
+                border-radius: 16px !important;
+            }
+        }
+    </style>
 </head>
 <body class="preload">
     <div class="admin-wrapper">

@@ -176,3 +176,107 @@ header.nav-green .bg-white {
   margin-top: 0.5rem !important;
   border-width: 3px !important;
 }
+
+/* Mobile Responsive Utilities for Customer Layout */
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 75px !important;
+    }
+    .table-responsive {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin-bottom: 1rem !important;
+    }
+
+    /* Product Grid Mobile */
+    .product-grid, [class*="grid-cols-2"], [class*="grid-cols-3"], [class*="grid-cols-4"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    /* Category Scroll Chips */
+    .category-filter, .flex.overflow-x-auto, .no-scrollbar {
+        scrollbar-width: none !important;
+    }
+    .category-filter::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    /* Order History Tab Buttons Compact */
+    .tab-btn {
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+    }
+
+    /* Compact Main Content Padding */
+    main.max-w-5xl, main.max-w-7xl {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+        padding-top: 16px !important;
+    }
+
+    /* Compact Page Headings */
+    h1.text-3xl, h1.text-2xl {
+        font-size: 22px !important;
+    }
+
+    /* Customer Bottom Nav */
+    .customer-bottom-nav {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        background-color: #1b4332 !important;
+        padding: 10px 0 !important;
+        justify-content: space-around !important;
+        z-index: 1000 !important;
+        box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.15) !important;
+    }
+    .customer-nav-item {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 3px !important;
+        color: rgba(255, 255, 255, 0.65) !important;
+        text-decoration: none !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        flex: 1 !important;
+        transition: color 0.2s ease !important;
+    }
+    .customer-nav-item i {
+        font-size: 18px !important;
+    }
+    .customer-nav-item.active, .customer-nav-item:hover {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+
+    /* Header mobile compact */
+    header nav {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    header .text-xl {
+        font-size: 16px !important;
+    }
+
+    /* Profile Page Compact */
+    .profile-card, .bg-white.rounded-2xl {
+        border-radius: 14px !important;
+    }
+
+    /* Cart Items Compact */
+    .cart-item {
+        padding: 12px !important;
+        gap: 10px !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .customer-bottom-nav {
+        display: none !important;
+    }
+}

@@ -202,6 +202,37 @@
             border-radius: 12px;
             border: 1px solid #a7f3d0;
         }
+
+        /* Delivery Mobile Responsive */
+        @media (max-width: 768px) {
+            .delivery-layout {
+                grid-template-columns: 1fr !important;
+                gap: 14px !important;
+                margin-top: 12px !important;
+            }
+            .premium-card {
+                padding: 14px !important;
+                border-radius: 14px !important;
+            }
+            .card-header h2 { font-size: 15px !important; }
+            .company-item {
+                padding: 10px !important;
+                border-radius: 10px !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            .form-row {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            .page-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            .page-header p { font-size: 12px !important; }
+            .premium-btn { width: 100% !important; justify-content: center !important; font-size: 13px !important; padding: 10px 14px !important; }
+        }
     </style>
 </head>
 <body class="preload">
@@ -344,9 +375,12 @@
 
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || user.role_name.toLowerCase() !== 'admin') {
+            const role = user ? (user.role_name || '').toLowerCase() : '';
+            if (!user || role === 'customer' || !['admin', 'employee', 'staff'].includes(role)) {
                 window.location.href = 'login.html';
+                return null;
             }
+            return user;
         }
 
         async function fetchCompanies() {

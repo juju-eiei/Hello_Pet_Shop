@@ -29,6 +29,13 @@
             justify-content: center;
             backdrop-filter: blur(4px);
         }
+        .po-modal-overlay.active, .po-modal-overlay.show,
+        .print-layout-overlay.active, .print-layout-overlay.show {
+            display: flex !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+        }
         .po-modal {
             background: white;
             border-radius: 16px;
@@ -182,10 +189,338 @@
             transform: translateY(-1px);
         }
 
-        /* Mobile Filter Adjustment */
+        /* ========================================================
+           Desktop Layout (> 768px) - 100% Preserved Table View
+           ======================================================== */
+        @media (min-width: 769px) {
+            .stock-table .product-row {
+                display: flex !important;
+                align-items: center !important;
+                width: 100% !important;
+                padding: 16px 25px !important;
+                border-bottom: 1px solid #f1f5f9 !important;
+                transition: 0.2s !important;
+                background: transparent !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                margin-bottom: 0 !important;
+                box-sizing: border-box !important;
+            }
+            .stock-table .product-row:hover { background: #f8fafc !important; }
+            
+            .stock-table .product-row .card-top-meta {
+                display: contents !important;
+            }
+            .stock-table .product-row .product-details {
+                flex: 2 !important;
+                order: 1 !important;
+                display: flex !important;
+                align-items: center !important;
+                margin-right: 15px !important;
+                min-width: 0 !important;
+            }
+            .stock-table .product-row .product-name {
+                font-weight: 600 !important;
+                color: #1e293b !important;
+                font-size: 15px !important;
+            }
+            .stock-table .product-row .card-bottom-actions {
+                order: 1 !important;
+                margin-left: 8px !important;
+                display: inline-flex !important;
+            }
+            .stock-table .product-row .show-lots-btn {
+                cursor: pointer !important;
+                font-size: 11px !important;
+                color: #10b981 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 4px !important;
+                border: 1px solid #d1fae5 !important;
+                padding: 2px 6px !important;
+                border-radius: 4px !important;
+                background-color: #f0fdf4 !important;
+                white-space: nowrap !important;
+                outline: none !important;
+            }
+            .stock-table .product-row .stock-status-cell {
+                flex: 1 !important;
+                order: 2 !important;
+                text-align: center !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            .stock-table .product-row .stock-qty-cell {
+                flex: 1 !important;
+                order: 3 !important;
+                text-align: center !important;
+                color: #475569 !important;
+                font-weight: 500 !important;
+                font-size: 14px !important;
+            }
+            .stock-table .product-row .mobile-qty-label,
+            .stock-table .product-row .mobile-qty-unit {
+                display: none !important;
+            }
+            .stock-table .product-row .stock-qty-value {
+                font-weight: 500 !important;
+                color: #475569 !important;
+                font-size: 14px !important;
+            }
+        }
+
+        /* ========================================================
+           Mobile Scoped Layout (<= 768px) - Clean Stock Card UI
+           ======================================================== */
         @media (max-width: 768px) {
-            .filter-tabs { width: 100%; display: flex; box-sizing: border-box; }
-            .filter-btn { flex: 1; text-align: center; }
+            .main-content {
+                padding: 16px 16px 100px 16px !important;
+                background: #f8fafc !important;
+            }
+
+            /* Hide PO buttons on mobile */
+            .btn-po, #createPoBtn, #poHistoryBtn, #stockHistoryBtn, .no-print > button {
+                display: none !important;
+            }
+            .page-header {
+                margin-bottom: 14px !important;
+                display: block !important;
+            }
+            .page-header h1 {
+                font-size: 20px !important;
+                font-weight: 800 !important;
+                color: #1e293b !important;
+                margin: 0 !important;
+            }
+
+            /* Search bar: Clean & balanced */
+            .search-container {
+                display: flex !important;
+                align-items: center !important;
+                background: #ffffff !important;
+                border: 1.5px solid #e2e8f0 !important;
+                border-radius: 14px !important;
+                padding: 0 16px !important;
+                height: 46px !important;
+                margin-bottom: 12px !important;
+                gap: 12px !important;
+                box-sizing: border-box !important;
+                width: 100% !important;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+                transition: border-color 0.2s, box-shadow 0.2s !important;
+            }
+            .search-container:focus-within {
+                border-color: var(--accent-green) !important;
+                box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1) !important;
+            }
+            .search-container i {
+                color: #94a3b8 !important;
+                font-size: 15px !important;
+                position: static !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+            }
+            .search-container input {
+                flex: 1 !important;
+                background: transparent !important;
+                border: none !important;
+                outline: none !important;
+                font-size: 14px !important;
+                color: #1e293b !important;
+                padding: 0 !important;
+                height: 100% !important;
+                width: 100% !important;
+            }
+            .search-container input::placeholder {
+                color: #94a3b8 !important;
+                font-size: 14px !important;
+            }
+
+            /* Filter Tabs */
+            .filter-tabs {
+                display: flex !important;
+                gap: 8px !important;
+                margin-bottom: 14px !important;
+                padding: 2px 0 4px 0 !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .filter-btn {
+                flex: 1 !important;
+                text-align: center !important;
+                padding: 9px 12px !important;
+                font-size: 13px !important;
+                font-weight: 600 !important;
+                border-radius: 12px !important;
+                border: 1px solid #e2e8f0 !important;
+                background: #ffffff !important;
+                color: #64748b !important;
+                cursor: pointer !important;
+                transition: all 0.2s ease !important;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+                white-space: nowrap !important;
+            }
+            .filter-btn.active {
+                background: var(--primary-green) !important;
+                color: #ffffff !important;
+                border-color: var(--primary-green) !important;
+                box-shadow: 0 2px 8px rgba(27, 67, 50, 0.2) !important;
+            }
+
+            /* Table wrapper */
+            .stock-table {
+                border: none !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                overflow: visible !important;
+            }
+            .stock-table .table-header {
+                display: none !important;
+            }
+
+            /* Stock Card - Dedicated Vertical Hierarchy */
+            .stock-table .product-row {
+                display: flex !important;
+                flex-direction: column !important;
+                grid-template-columns: none !important;
+                grid-template-areas: none !important;
+                background: #ffffff !important;
+                border: 1px solid #f1f5f9 !important;
+                border-radius: 16px !important;
+                padding: 16px !important;
+                margin-bottom: 12px !important;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03) !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                gap: 12px !important;
+            }
+
+            /* Top: Status Badge (Left) & Stock Quantity (Right) */
+            .stock-table .product-row .card-top-meta {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                width: 100% !important;
+                padding-bottom: 10px !important;
+                border-bottom: 1px solid #f8fafc !important;
+                box-sizing: border-box !important;
+            }
+            .stock-table .product-row .stock-status-cell {
+                display: flex !important;
+                align-items: center !important;
+                flex: none !important;
+            }
+            .stock-table .product-row .stock-qty-cell {
+                display: flex !important;
+                align-items: baseline !important;
+                gap: 4px !important;
+                font-size: 13px !important;
+                color: #64748b !important;
+                flex: none !important;
+            }
+            .stock-table .product-row .mobile-qty-label,
+            .stock-table .product-row .mobile-qty-unit {
+                display: inline !important;
+                font-size: 13px !important;
+                color: #64748b !important;
+                font-weight: 500 !important;
+            }
+            .stock-table .product-row .stock-qty-value {
+                font-size: 16px !important;
+                font-weight: 700 !important;
+                color: #1e293b !important;
+            }
+
+            /* Middle: Product Name (Full Width, Multi-line wrapping) */
+            .stock-table .product-row .product-details {
+                display: block !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                flex: none !important;
+            }
+            .stock-table .product-row .product-name {
+                font-size: 15px !important;
+                font-weight: 700 !important;
+                color: #1e293b !important;
+                line-height: 1.45 !important;
+                word-break: break-word !important;
+                white-space: normal !important;
+                display: block !important;
+                width: 100% !important;
+            }
+
+            /* Bottom: View Lots Action Button */
+            .stock-table .product-row .card-bottom-actions {
+                display: flex !important;
+                justify-content: flex-end !important;
+                width: 100% !important;
+                padding-top: 2px !important;
+                flex: none !important;
+            }
+            .stock-table .product-row .show-lots-btn {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                background: #f0fdf4 !important;
+                color: #16a34a !important;
+                border: 1px solid #bbf7d0 !important;
+                padding: 7px 16px !important;
+                border-radius: 20px !important;
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                cursor: pointer !important;
+                transition: all 0.2s ease !important;
+                outline: none !important;
+                white-space: nowrap !important;
+            }
+            .stock-table .product-row .show-lots-btn:active {
+                background: #dcfce7 !important;
+                transform: scale(0.97) !important;
+            }
+
+            /* Status Badges with white-space nowrap */
+            .status-in-stock {
+                background: #dcfce7 !important;
+                color: #15803d !important;
+                padding: 4px 10px !important;
+                border-radius: 20px !important;
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                display: inline-block !important;
+                white-space: nowrap !important;
+            }
+            .status-low-stock {
+                background: #fef3c7 !important;
+                color: #b45309 !important;
+                padding: 4px 10px !important;
+                border-radius: 20px !important;
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                display: inline-block !important;
+                white-space: nowrap !important;
+            }
+            .status-out-of-stock {
+                background: #fee2e2 !important;
+                color: #b91c1c !important;
+                padding: 4px 10px !important;
+                border-radius: 20px !important;
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                display: inline-block !important;
+                white-space: nowrap !important;
+            }
+        }
+
+        /* Mobile Device Class Overrides */
+        html.mobile-device .btn-po,
+        html.mobile-device #createPoBtn,
+        html.mobile-device #poHistoryBtn,
+        html.mobile-device #stockHistoryBtn,
+        html.mobile-device .no-print > button {
+            display: none !important;
         }
 
         .menu-item.active-pill { background: #f1f5f9; border-radius: 8px; color: #0f172a; font-weight: 600; }
@@ -257,20 +592,24 @@
         
         <!-- Bottom Navigation for Mobile -->
         <nav class="bottom-nav">
+            <a href="staff_orders.html" class="nav-item">
+                <i class="fas fa-file-invoice"></i>
+                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
+            </a>
             <a href="staff_stock.html" class="nav-item active">
-                <i class="fas fa-box"></i>
-                <span data-i18n="nav.stock">จัดการคลังสินค้า</span>
+                <i class="fas fa-warehouse"></i>
+                <span data-i18n="nav.stock">คลังสินค้า</span>
+            </a>
+            <a href="staff_promotions.html" class="nav-item">
+                <i class="fas fa-gift"></i>
+                <span data-i18n="nav.promotions">โปรโมชั่น</span>
             </a>
             <a href="staff_customers.html" class="nav-item">
                 <i class="fas fa-users"></i>
                 <span data-i18n="nav.customers">ลูกค้า</span>
             </a>
-            <a href="staff_orders.html" class="nav-item">
-                <i class="fas fa-file-invoice"></i>
-                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
-            </a>
             <a href="staff_profile.html" class="nav-item">
-                <i class="fas fa-user"></i>
+                <i class="fas fa-user-cog"></i>
                 <span data-i18n="nav.profile">โปรไฟล์</span>
             </a>
         </nav>
@@ -531,20 +870,27 @@
                 }
 
                 return `
-                <div class="product-row" style="display: flex; align-items: center; width: 100%;">
-                    <div class="product-details" style="flex: 2; margin-right: 20px;">
-                        <div class="product-name">
-                            ${p.product_name}
-                            <span class="show-lots-btn" style="cursor: pointer; font-size: 11px; color: #10b981; margin-left: 8px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #d1fae5; padding: 2px 6px; border-radius: 4px; background-color: #f0fdf4;" onclick="viewProductLots(${p.product_id}, '${p.product_name.replace(/'/g, "\\'")}')">
-                                <i class="fas fa-list-ol"></i> ดูข้อมูลล็อต
-                            </span>
+                <div class="product-row">
+                    <!-- Top: Status Left + Quantity Right -->
+                    <div class="card-top-meta">
+                        <div class="stock-status-cell">
+                            <span class="${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="stock-qty-cell">
+                            <span class="mobile-qty-label">คงเหลือ: </span><span class="stock-qty-value">${qty}</span><span class="mobile-qty-unit"> ชิ้น</span>
                         </div>
                     </div>
-                    <div class="stock-status" style="flex: 1; text-align: center; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px;">
-                        <span class="${statusClass}">${statusText}</span>
+
+                    <!-- Middle: Product Name (allows multi-line wrap cleanly) -->
+                    <div class="product-details">
+                        <div class="product-name">${p.product_name}</div>
                     </div>
-                    <div class="stock-status" style="flex: 1; text-align: center; color: #475569; font-weight: 500;">
-                        ${qty}
+
+                    <!-- Bottom: Action Button (View Lots) -->
+                    <div class="card-bottom-actions">
+                        <button type="button" class="show-lots-btn" onclick="viewProductLots(${p.product_id}, '${p.product_name.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-list-ol"></i> ดูข้อมูลล็อต
+                        </button>
                     </div>
                 </div>
                 `;
@@ -620,6 +966,7 @@
         function openModal(id) {
             const modal = document.getElementById(id);
             if (modal) {
+                modal.classList.add('active', 'show');
                 modal.style.display = 'flex';
                 if (id === 'poHistoryModal') {
                     fetchPoHistory();
@@ -629,9 +976,12 @@
                 }
                 if (id === 'createPoModal') {
                     // Reset supplier and clear items
-                    document.getElementById('poSupplier').value = 'General Supplier';
-                    document.getElementById('poItemsBody').innerHTML = '';
-                    document.getElementById('poGrandTotal').textContent = '0.00';
+                    const supplierEl = document.getElementById('poSupplier');
+                    if (supplierEl) supplierEl.value = 'General Supplier';
+                    const itemsBody = document.getElementById('poItemsBody');
+                    if (itemsBody) itemsBody.innerHTML = '';
+                    const grandTotal = document.getElementById('poGrandTotal');
+                    if (grandTotal) grandTotal.textContent = '0.00';
                     rowCounter = 0;
                     loadActiveProducts().then(() => {
                         addPoRow();
@@ -643,6 +993,7 @@
         function closeModal(id) {
             const modal = document.getElementById(id);
             if (modal) {
+                modal.classList.remove('active', 'show');
                 modal.style.display = 'none';
             }
         }
@@ -1760,6 +2111,15 @@
         window.fetchPoHistory = fetchPoHistory;
         window.fetchStockHistory = fetchStockHistory;
         window.handleOcrFileSelect = handleOcrFileSelect;
+
+        // Close modal when clicking outside modal content
+        document.querySelectorAll('.po-modal-overlay, .print-layout-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeModal(overlay.id);
+                }
+            });
+        });
     </script>
 </body>
 </html>
