@@ -105,10 +105,9 @@ if (preg_match('/\/api\/products$/', $path)) {
 } elseif (preg_match('/\/api\/orders$/', $path)) {
     $controller = new OrderController();
     if ($request_method === 'POST') {
-        // Online customer orders are public
         $controller->createOnlineOrder();
     } elseif ($request_method === 'GET') {
-        AuthMiddleware::checkPermission('orders_manage');
+        AuthMiddleware::authenticate();
         $controller->index();
     } else {
         http_response_code(405);
@@ -116,7 +115,7 @@ if (preg_match('/\/api\/products$/', $path)) {
 } elseif (preg_match('/\/api\/orders\/pos$/', $path)) {
     $controller = new OrderController();
     if ($request_method === 'POST') {
-        AuthMiddleware::checkPermission('pos_access');
+        AuthMiddleware::checkAnyPermission(['pos_access', 'orders_manage']);
         $controller->createPOSOrder();
     } else {
         http_response_code(405);
@@ -124,10 +123,8 @@ if (preg_match('/\/api\/products$/', $path)) {
 } elseif (preg_match('/\/api\/orders\/details$/', $path)) {
     $controller = new OrderController();
     if ($request_method === 'GET') {
+        AuthMiddleware::authenticate();
         if(isset($_GET['id'])) {
-            // Note: Customers might want to view their own, but since these are admin/staff routes,
-            // we enforce orders_manage. Online customers check orders via customer-specific endpoints if any.
-            AuthMiddleware::checkPermission('orders_manage');
             $controller->show();
         } else {
             http_response_code(400);
@@ -139,30 +136,24 @@ if (preg_match('/\/api\/products$/', $path)) {
 } elseif (preg_match('/\/api\/orders\/update-status$/', $path)) {
     $controller = new OrderController();
     if ($request_method === 'POST') {
-        // Can be updated by order manager or delivery manager
-        $user = AuthMiddleware::authenticate();
-        if (strtolower($user['role'] ?? '') !== 'admin') {
-            $database = new Database();
-            $db = $database->getConnection();
-            
-            $stmt = $db->prepare("SELECT permissions FROM users WHERE user_id = :user_id");
-            $stmt->execute([':user_id' => $user['user_id']]);
-            $uData = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $stmt2 = $db->prepare("SELECT r.permissions FROM roles r JOIN users u ON u.role_id = r.role_id WHERE u.user_id = :user_id");
-            $stmt2->execute([':user_id' => $user['user_id']]);
-            $rData = $stmt2->fetch(PDO::FETCH_ASSOC);
-            
-            $uPerms = json_decode($uData['permissions'] ?? '[]', true) ?: [];
-            $rPerms = json_decode($rData['permissions'] ?? '[]', true) ?: [];
-            $allPerms = array_merge($uPerms, $rPerms);
-            
-            if (!in_array('orders_manage', $allPerms) && !in_array('delivery_manage', $allPerms)) {
-                Response::json(403, "Forbidden: Lacking orders_manage or delivery_manage permission.");
-                exit;
-            }
-        }
+        AuthMiddleware::authenticate();
         $controller->updateStatus();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/orders\/upload-slip$/', $path)) {
+    $controller = new OrderController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::authenticate();
+        $controller->uploadSlip();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/orders\/verify-slip$/', $path)) {
+    $controller = new OrderController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('orders_manage');
+        $controller->verifySlip();
     } else {
         http_response_code(405);
     }
@@ -221,7 +212,7 @@ if (preg_match('/\/api\/products$/', $path)) {
     require_once __DIR__ . '/../controllers/CustomerController.php';
     $controller = new CustomerController();
     if ($request_method === 'GET') {
-        AuthMiddleware::checkPermission('customers_view');
+        AuthMiddleware::checkAnyPermission(['customers_view', 'pos_access', 'orders_view']);
         $controller->index();
     } else {
         http_response_code(405);
@@ -230,7 +221,7 @@ if (preg_match('/\/api\/products$/', $path)) {
     require_once __DIR__ . '/../controllers/CustomerController.php';
     $controller = new CustomerController();
     if ($request_method === 'GET') {
-        AuthMiddleware::checkPermission('customers_view');
+        AuthMiddleware::authenticate();
         $controller->show();
     } else {
         http_response_code(405);
@@ -239,6 +230,7 @@ if (preg_match('/\/api\/products$/', $path)) {
     require_once __DIR__ . '/../controllers/CustomerController.php';
     $controller = new CustomerController();
     if ($request_method === 'POST') {
+        AuthMiddleware::authenticate();
         $controller->update();
     } else {
         http_response_code(405);
@@ -247,7 +239,7 @@ if (preg_match('/\/api\/products$/', $path)) {
     require_once __DIR__ . '/../controllers/CustomerController.php';
     $controller = new CustomerController();
     if ($request_method === 'POST') {
-        AuthMiddleware::checkPermission('pets_manage');
+        AuthMiddleware::authenticate();
         $controller->savePet();
     } else {
         http_response_code(405);
@@ -256,7 +248,7 @@ if (preg_match('/\/api\/products$/', $path)) {
     require_once __DIR__ . '/../controllers/CustomerController.php';
     $controller = new CustomerController();
     if ($request_method === 'POST') {
-        AuthMiddleware::checkPermission('pets_manage');
+        AuthMiddleware::authenticate();
         $controller->deletePet();
     } else {
         http_response_code(405);
@@ -694,33 +686,6 @@ if (preg_match('/\/api\/products$/', $path)) {
     } else {
         http_response_code(405);
     }
-} elseif (preg_match('/\/api\/staff\/me$/', $path)) {
-    require_once __DIR__ . '/../controllers/StaffController.php';
-    $controller = new StaffController();
-    if ($request_method === 'GET') {
-        AuthMiddleware::authenticate();
-        $controller->me();
-    } else {
-        http_response_code(405);
-    }
-} elseif (preg_match('/\/api\/staff\/details$/', $path)) {
-    require_once __DIR__ . '/../controllers/StaffController.php';
-    $controller = new StaffController();
-    if ($request_method === 'GET') {
-        AuthMiddleware::authenticate();
-        $controller->show();
-    } else {
-        http_response_code(405);
-    }
-} elseif (preg_match('/\/api\/staff$/', $path)) {
-    require_once __DIR__ . '/../controllers/StaffController.php';
-    $controller = new StaffController();
-    if ($request_method === 'GET') {
-        AuthMiddleware::authenticate();
-        $controller->index();
-    } else {
-        http_response_code(405);
-    }
 } elseif (preg_match('/\/api\/transactions\/sync$/', $path)) {
     $controller = new TransactionController();
     if ($request_method === 'POST') {
@@ -763,6 +728,32 @@ if (preg_match('/\/api\/products$/', $path)) {
         $controller->sendLineNotification();
     } else {
         http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/notifications\/test-line$/', $path)) {
+    $controller = new NotificationController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::authenticate();
+        $controller->testLineConnection();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/line\/webhook$/', $path)) {
+    if ($request_method === 'POST') {
+        require_once __DIR__ . '/../utils/LineService.php';
+        $body = file_get_contents('php://input');
+        $headers = function_exists('apache_request_headers') ? apache_request_headers() : [];
+        $signature = $headers['X-Line-Signature'] ?? ($headers['x-line-signature'] ?? ($_SERVER['HTTP_X_LINE_SIGNATURE'] ?? null));
+        $res = LineService::handleWebhook($body, null, $signature);
+        if (isset($res['code']) && $res['code'] !== 200) {
+            http_response_code($res['code']);
+            echo json_encode($res);
+        } else {
+            http_response_code(200);
+            echo json_encode(["status" => "ok"]);
+        }
+    } else {
+        http_response_code(200);
+        echo "LINE Webhook Endpoint is ready";
     }
 } else {
     http_response_code(404);

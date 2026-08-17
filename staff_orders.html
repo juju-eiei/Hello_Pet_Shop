@@ -5,10 +5,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>จัดการคำสั่งซื้อ (พนักงาน) - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="/css/staff_mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .status-pill {
             padding: 6px 16px; 
@@ -88,6 +88,39 @@
             color: #475569;
         }
 
+        .slip-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .slip-pill.attached {
+            background-color: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+            cursor: pointer;
+        }
+        .slip-pill.attached:hover {
+            background-color: #d1fae5;
+            transform: scale(1.04);
+        }
+        .slip-pill.missing {
+            background-color: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        .slip-pill.pos {
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
         .order-row {
             display: flex;
             align-items: center;
@@ -97,12 +130,13 @@
             transition: 0.2s;
         }
         .order-row:hover { background: #f8fafc; }
-        .order-date { flex: 1.5; color: #64748b; font-size: 14px; }
-        .order-number { flex: 2; color: #334155; font-weight: 500; font-size: 14px; }
-        .order-channel { flex: 1.5; display: flex; align-items: center; }
-        .order-amount { flex: 1.5; text-align: left; font-size: 14px; color: #334155; }
-        .order-status { flex: 1; display: flex; justify-content: center; }
-        .order-actions { flex: 1; display: flex; justify-content: flex-end; }
+        .order-date { flex: 1.3; color: #64748b; font-size: 14px; }
+        .order-number { flex: 1.8; color: #334155; font-weight: 500; font-size: 14px; }
+        .order-channel { flex: 1.2; display: flex; align-items: center; }
+        .order-slip { flex: 1.3; display: flex; justify-content: center; }
+        .order-amount { flex: 1.3; text-align: left; font-size: 14px; color: #334155; }
+        .order-status { flex: 1.1; display: flex; justify-content: center; }
+        .order-actions { flex: 0.8; display: flex; justify-content: flex-end; }
         
         @media (max-width: 768px) {
             .order-row {
@@ -117,7 +151,7 @@
                 box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             }
             .order-date { grid-column: 1 / -1; color: #94a3b8; font-size: 13px; }
-            .order-number { font-weight: 700; color: #1e293b; font-size: 15px; display: flex; align-items: center; justify-content: space-between; grid-column: 1 / -1; }
+            .order-number { font-weight: 700; color: #1e293b; font-size: 15px; display: flex; align-items: center; justify-content: space-between; grid-column: 1 / -1; flex-wrap: wrap; gap: 6px; }
             .order-amount { font-weight: 600; color: var(--secondary-berry); text-align: left; }
             .order-status { display: flex; justify-content: flex-end; }
             .order-actions { display: none !important; }
@@ -181,17 +215,25 @@
                     <option value="Completed">✅ Completed (จัดส่งสำเร็จ)</option>
                     <option value="Cancelled">❌ Cancelled (ยกเลิกแล้ว)</option>
                 </select>
+                <!-- Slip Filter -->
+                <select id="slipFilterSelect" style="padding: 0 16px; height: 46px; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px; font-weight: 500; color: #475569; background-color: #f8fafc; outline: none; min-width: 170px; cursor: pointer; transition: all 0.2s;">
+                    <option value="all">สถานะสลิปทั้งหมด (All Slips)</option>
+                    <option value="attached">📎 แนบสลิปแล้ว</option>
+                    <option value="missing">⏳ ยังไม่แนบสลิป</option>
+                    <option value="pos">🏪 ขายหน้าร้าน (POS)</option>
+                </select>
             </div>
 
             <!-- Table -->
             <div class="staff-stock-table" style="border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
                 <div class="staff-stock-header" style="display: flex; padding: 16px 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #475569; align-items: center;">
-                    <span style="flex: 1.5;">วันที่สั่งซื้อ</span>
-                    <span style="flex: 2;">หมายเลขคำสั่งซื้อ</span>
-                    <span style="flex: 1.5;">ช่องทาง</span>
-                    <span style="flex: 1.5; text-align: left;">ยอดรวม</span>
-                    <span style="flex: 1; text-align: center;">สถานะ</span>
-                    <span style="flex: 1; text-align: right;">จัดการ</span>
+                    <span style="flex: 1.3;">วันที่สั่งซื้อ</span>
+                    <span style="flex: 1.8;">หมายเลขคำสั่งซื้อ</span>
+                    <span style="flex: 1.2;">ช่องทาง</span>
+                    <span style="flex: 1.3; text-align: center;">สลิปชำระเงิน</span>
+                    <span style="flex: 1.3; text-align: left;">ยอดรวม</span>
+                    <span style="flex: 1.1; text-align: center;">สถานะ</span>
+                    <span style="flex: 0.8; text-align: right;">จัดการ</span>
                 </div>
                 <div id="ordersContainer">
                     <div class="loading-container">
@@ -227,6 +269,52 @@
                 <span data-i18n="nav.profile">โปรไฟล์</span>
             </a>
         </nav>
+    </div>
+
+    <!-- Quick Slip Modal -->
+    <div id="quickSlipModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeQuickSlipModal()">
+        <div class="modal-card" style="width: 92%; max-width: 520px; padding: 20px; max-height: 92vh; display: flex; flex-direction: column; border-radius: 20px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+                <div>
+                    <div class="modal-title" style="margin: 0; font-size: 16px; text-align: left; display: flex; align-items: center; gap: 8px; font-weight: 700; color: #1e293b;">
+                        <i class="fas fa-file-invoice-dollar" style="color: #0284c7;"></i> ตรวจสอบสลิป: <span id="quickSlipOrderNum">-</span>
+                    </div>
+                    <div style="font-size: 13px; color: #64748b; margin-top: 2px; text-align: left;">
+                        ยอดคำสั่งซื้อ: <b id="quickSlipOrderAmount" style="color: #0f172a;">฿0.00</b> • สถานะปัจจุบัน: <span id="quickSlipOrderStatus" class="status-pill pending" style="font-size: 11px; padding: 2px 8px;">รอดำเนินการ</span>
+                    </div>
+                </div>
+                <button type="button" onclick="closeQuickSlipModal()" style="border: none; background: #f1f5f9; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: #64748b; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- Slip Image Container -->
+            <div style="background: #f8fafc; border-radius: 14px; overflow-y: auto; display: flex; justify-content: center; align-items: center; padding: 12px; flex: 1; min-height: 250px; max-height: 52vh; border: 1px solid #e2e8f0;">
+                <img id="quickSlipImage" src="" alt="Payment Slip" style="max-width: 100%; max-height: 50vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+            </div>
+
+            <!-- Fast Action Verification Panel -->
+            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button type="button" id="quickApproveBtn" onclick="quickVerifySlip('approve')" style="background: #10b981; color: white; border: none; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(16,185,129,0.25); transition: all 0.2s;">
+                        <i class="fas fa-check-circle"></i> สลิปจริง (เริ่มแพ็คสินค้า)
+                    </button>
+                    <button type="button" id="quickRejectBtn" onclick="quickVerifySlip('reject')" style="background: #ef4444; color: white; border: none; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(239,68,68,0.25); transition: all 0.2s;">
+                        <i class="fas fa-times-circle"></i> สลิปปลอม (ยกเลิกออเดอร์)
+                    </button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px;">
+                    <a id="quickSlipDetailLink" href="#" class="action-link" style="font-size: 12px; color: #0284c7; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-external-link-alt"></i> ไปหน้ารายละเอียดคำสั่งซื้อเต็ม
+                    </a>
+                    <div style="display: flex; gap: 8px;">
+                        <a id="quickSlipLink" href="#" target="_blank" style="font-size: 12px; color: #64748b; text-decoration: none; font-weight: 600; padding: 6px 10px; background: #f1f5f9; border-radius: 8px;">
+                            <i class="fas fa-search-plus"></i> รูปต้นฉบับ
+                        </a>
+                        <button type="button" onclick="closeQuickSlipModal()" style="font-size: 12px; color: #64748b; border: 1px solid #e2e8f0; background: white; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-weight: 600;">ปิด</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="toast" class="toast"></div>
@@ -352,32 +440,44 @@
                         order_type: o.order_type || 1,
                         order_type_label: o.order_type_label || 'ออนไลน์',
                         amount: parseFloat(o.total || o.amount || 0),
+                        slip_image: o.slipImage || o.slip_image || null,
+                        has_slip: !!(o.slipImage || o.slip_image),
                         customer: o.customer || { name: o.shippingAddress?.fullName || 'ลูกค้าออนไลน์', email: 'customer@example.com', phone: o.shippingAddress?.phone || '-', address: o.shippingAddress ? `${o.shippingAddress.address} ${o.shippingAddress.province}` : '-' }
                     };
                 });
 
-                const localIdMap = new Map(localMapped.map(item => [String(item.id), item]));
+                const orderMap = new Map();
+                // 1. Primary source of truth: API Orders from Database
                 apiOrders.forEach(ao => {
-                    if (!localIdMap.has(String(ao.id))) {
-                        let pDate = ao.date;
-                        if (typeof pDate === 'string' && pDate.includes(' ') && !pDate.includes('T')) {
-                            pDate = pDate.replace(' ', 'T');
-                        }
-                        const dateObj = pDate ? new Date(pDate) : new Date();
-                        localIdMap.set(String(ao.id), {
-                            id: ao.id,
-                            date: formatOrderDate(pDate || dateObj),
-                            timestamp: dateObj.getTime(),
-                            number: ao.number,
-                            status: ao.status,
-                            order_type: ao.order_type || 1,
-                            order_type_label: ao.order_type_label,
-                            amount: parseFloat(ao.amount)
-                        });
+                    let pDate = ao.date;
+                    if (typeof pDate === 'string' && pDate.includes(' ') && !pDate.includes('T')) {
+                        pDate = pDate.replace(' ', 'T');
+                    }
+                    const dateObj = pDate ? new Date(pDate) : new Date();
+                    orderMap.set(String(ao.id), {
+                        id: ao.id,
+                        date: formatOrderDate(pDate || dateObj),
+                        timestamp: dateObj.getTime(),
+                        number: ao.number,
+                        status: ao.status,
+                        order_type: ao.order_type || 1,
+                        order_type_label: ao.order_type_label || (ao.order_type === 2 ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์'),
+                        amount: parseFloat(ao.amount || 0),
+                        slip_image: ao.slip_image || null,
+                        has_slip: !!ao.has_slip,
+                        payment_method: ao.payment_method || null,
+                        customer: ao.customer || { name: 'ลูกค้าออนไลน์', email: '-', phone: '-', address: '-' }
+                    });
+                });
+
+                // 2. Fallback: local orders if not in API yet
+                localMapped.forEach(lo => {
+                    if (!orderMap.has(String(lo.id))) {
+                        orderMap.set(String(lo.id), lo);
                     }
                 });
 
-                allOrders = Array.from(localIdMap.values());
+                allOrders = Array.from(orderMap.values());
                 allOrders.sort((a, b) => b.timestamp - a.timestamp);
                 currentPage = 1;
                 updateBadges();
@@ -395,7 +495,7 @@
             if (s === 'Pending' || s === 'รอดำเนินการ' || s === 'Pending Payment' || s === 'ที่ต้องชำระ') return 'รอดำเนินการ';
             if (s === 'Processing' || s === 'กำลังแพ็คสินค้า' || s === 'กำลังดำเนินการ' || s === 'Preparing' || s === 'ที่ต้องจัดส่ง') return 'กำลังแพ็คสินค้า';
             if (s === 'In Transit' || s === 'กำลังจัดส่ง' || s === 'กำลังนำส่ง' || s === 'Shipping' || s === 'ที่ต้องได้รับ' || s === 'มอบให้ขนส่งแล้ว') return 'กำลังจัดส่ง';
-            if (s === 'Completed' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'สำเร็จแล้ว';
+            if (s === 'Completed' || s === 'จัดส่งสำเร็จ' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'จัดส่งสำเร็จ';
             if (s === 'Cancelled' || s === 'ยกเลิกแล้ว' || s === 'ยกเลิก') return 'ยกเลิกแล้ว';
             return status;
         }
@@ -416,6 +516,7 @@
             const paginationContainer = document.getElementById('paginationContainer');
             const keyword = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('statusFilterSelect').value;
+            const slipFilter = document.getElementById('slipFilterSelect')?.value || 'all';
             
             filteredOrders = allOrders.filter(o => {
                 const statusLabel = getStatusLabel(o.status);
@@ -438,6 +539,13 @@
                         if (o.status !== statusFilter) return false;
                     }
                 }
+
+                if (slipFilter !== 'all') {
+                    if (slipFilter === 'attached' && (!o.has_slip || o.order_type === 2)) return false;
+                    if (slipFilter === 'missing' && (o.has_slip || o.order_type === 2)) return false;
+                    if (slipFilter === 'pos' && o.order_type !== 2) return false;
+                }
+
                 return true;
             });
 
@@ -468,11 +576,27 @@
                         <span class="channel-pill ${o.order_type === 2 ? 'pos' : 'online'} mobile-only-pill">
                             <i class="fas ${o.order_type === 2 ? 'fa-store' : 'fa-globe'}"></i> ${o.order_type_label}
                         </span>
+                        ${o.order_type === 2 ? `
+                            <span class="slip-pill pos mobile-only-pill" style="font-size: 11px; padding: 2px 6px;"><i class="fas fa-cash-register"></i> หน้าร้าน</span>
+                        ` : o.has_slip && o.slip_image ? `
+                            <span class="slip-pill attached mobile-only-pill" style="font-size: 11px; padding: 2px 6px;" onclick="event.stopPropagation(); window.openQuickSlipModalById('${o.id}')"><i class="fas fa-receipt"></i> มีสลิป</span>
+                        ` : `
+                            <span class="slip-pill missing mobile-only-pill" style="font-size: 11px; padding: 2px 6px;"><i class="fas fa-clock"></i> ยังไม่แนบ</span>
+                        `}
                     </div>
                     <div class="order-channel desktop-only-cell">
                         <span class="channel-pill ${o.order_type === 2 ? 'pos' : 'online'}">
                             <i class="fas ${o.order_type === 2 ? 'fa-store' : 'fa-globe'}"></i> ${o.order_type_label}
                         </span>
+                    </div>
+                    <div class="order-slip desktop-only-cell">
+                        ${o.order_type === 2 ? `
+                            <span class="slip-pill pos"><i class="fas fa-cash-register"></i> หน้าร้าน</span>
+                        ` : o.has_slip && o.slip_image ? `
+                            <span class="slip-pill attached" onclick="event.stopPropagation(); window.openQuickSlipModalById('${o.id}')" title="คลิกดูตัวอย่างสลิป"><i class="fas fa-receipt"></i> แนบสลิปแล้ว</span>
+                        ` : `
+                            <span class="slip-pill missing"><i class="fas fa-clock"></i> ยังไม่แนบสลิป</span>
+                        `}
                     </div>
                     <div class="order-amount">฿${Number(o.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                     <div class="order-status">
@@ -531,6 +655,166 @@
 
         window.changePage = changePage;
 
+        let currentQuickModalOrderId = null;
+
+        function openQuickSlipModalById(orderId) {
+            const order = allOrders.find(o => String(o.id) === String(orderId));
+            if (!order || !order.slip_image) {
+                showToast('ยังไม่มีหลักฐานการชำระเงินในคำสั่งซื้อนี้', 'warning');
+                return;
+            }
+            currentQuickModalOrderId = order.id;
+
+            const modal = document.getElementById('quickSlipModal');
+            const img = document.getElementById('quickSlipImage');
+            const num = document.getElementById('quickSlipOrderNum');
+            const amount = document.getElementById('quickSlipOrderAmount');
+            const statusSpan = document.getElementById('quickSlipOrderStatus');
+            const link = document.getElementById('quickSlipLink');
+            const detailLink = document.getElementById('quickSlipDetailLink');
+
+            if (img) img.src = order.slip_image;
+            if (num) num.textContent = order.number || `#${order.id}`;
+            if (amount) amount.textContent = `฿${Number(order.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            if (statusSpan) {
+                statusSpan.textContent = getStatusLabel(order.status);
+                statusSpan.className = 'status-pill ' + getStatusClass(order.status);
+            }
+            if (link) link.href = order.slip_image;
+            if (detailLink) detailLink.href = `staff_order_details.html?id=${order.id}`;
+
+            // Toggle buttons state according to status
+            const approveBtn = document.getElementById('quickApproveBtn');
+            const rejectBtn = document.getElementById('quickRejectBtn');
+            const isCancelled = order.status === 'Cancelled' || order.status === 'ยกเลิกแล้ว';
+
+            if (approveBtn) {
+                approveBtn.style.opacity = isCancelled ? '0.5' : '1';
+                approveBtn.disabled = isCancelled;
+            }
+            if (rejectBtn) {
+                rejectBtn.style.opacity = isCancelled ? '0.5' : '1';
+                rejectBtn.disabled = isCancelled;
+            }
+
+            if (modal) {
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+            }
+        }
+        window.openQuickSlipModalById = openQuickSlipModalById;
+
+        async function quickVerifySlip(action) {
+            if (!currentQuickModalOrderId) return;
+            const order = allOrders.find(o => String(o.id) === String(currentQuickModalOrderId));
+            if (!order) return;
+
+            if (action === 'reject') {
+                const result = await Swal.fire({
+                    title: 'ยืนยันปฏิเสธสลิปหรือไม่?',
+                    html: `ต้องการระบุคำสั่งซื้อ <b>${order.number}</b> เป็น <span style="color: #ef4444; font-weight: bold;">"สลิปไม่ถูกต้อง / ปลอม"</span> และยกเลิกคำสั่งซื้อนี้ทันทีหรือไม่?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#94a3b8',
+                    confirmButtonText: '<i class="fas fa-trash-alt"></i> ยืนยันยกเลิกออเดอร์',
+                    cancelButtonText: 'ยกเลิก',
+                    reverseButtons: true,
+                    borderRadius: '16px'
+                });
+                if (!result.isConfirmed) return;
+            }
+
+            const approveBtn = document.getElementById('quickApproveBtn');
+            const rejectBtn = document.getElementById('quickRejectBtn');
+            if (approveBtn) approveBtn.disabled = true;
+            if (rejectBtn) rejectBtn.disabled = true;
+
+            const csrfToken = localStorage.getItem('csrf_token');
+            const reqHeaders = { 'Content-Type': 'application/json' };
+            if (csrfToken) reqHeaders['X-CSRF-Token'] = csrfToken;
+
+            try {
+                let res = await fetch('/api/orders/verify-slip', {
+                    method: 'POST',
+                    headers: reqHeaders,
+                    body: JSON.stringify({
+                        order_id: order.id,
+                        action: action,
+                        reason: action === 'reject' ? 'สลิปไม่ถูกต้อง / ยอดเงินไม่ตรง' : ''
+                    })
+                });
+
+                if (!res.ok) {
+                    // Fallback to update-status
+                    res = await fetch('/api/orders/update-status', {
+                        method: 'POST',
+                        headers: reqHeaders,
+                        body: JSON.stringify({
+                            order_id: order.id,
+                            status: action === 'approve' ? 'Processing' : 'Cancelled'
+                        })
+                    });
+                }
+
+                if (res.ok) {
+                    const newStatus = action === 'approve' ? 'Processing' : 'Cancelled';
+                    order.status = newStatus;
+
+                    // Also update localStorage 'myOrders' if present
+                    try {
+                        const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+                        const idx = myOrders.findIndex(o => String(o.id) === String(order.id));
+                        if (idx !== -1) {
+                            myOrders[idx].status = (action === 'approve' ? 'Preparing' : 'Cancelled');
+                            localStorage.setItem('myOrders', JSON.stringify(myOrders));
+                        }
+                    } catch (eLoc) {}
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: action === 'approve' ? 'อนุมัติสลิปสำเร็จ!' : 'ยกเลิกคำสั่งซื้อสำเร็จ',
+                        text: action === 'approve' ? 'เปลี่ยนสถานะเป็น "กำลังแพ็คสินค้า" เรียบร้อยแล้ว' : 'ยกเลิกคำสั่งซื้อเนื่องจากสลิปไม่ถูกต้องเรียบร้อยแล้ว',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        borderRadius: '16px'
+                    });
+
+                    closeQuickSlipModal();
+                    renderOrders();
+                } else {
+                    const json = await res.json().catch(() => ({}));
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: json.message || 'เกิดข้อผิดพลาดในการตรวจสอบสลิป',
+                        borderRadius: '16px'
+                    });
+                }
+            } catch (err) {
+                console.error('Error verifying slip:', err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เชื่อมต่อไม่สำเร็จ',
+                    text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อตรวจสอบสลิปได้',
+                    borderRadius: '16px'
+                });
+            } finally {
+                if (approveBtn) approveBtn.disabled = false;
+                if (rejectBtn) rejectBtn.disabled = false;
+            }
+        }
+        window.quickVerifySlip = quickVerifySlip;
+
+        function closeQuickSlipModal() {
+            const modal = document.getElementById('quickSlipModal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+        }
+        window.closeQuickSlipModal = closeQuickSlipModal;
+
         document.getElementById('searchInput').addEventListener('input', () => {
             currentPage = 1;
             renderOrders();
@@ -540,6 +824,14 @@
             currentPage = 1;
             renderOrders();
         });
+
+        const slipFilterSelect = document.getElementById('slipFilterSelect');
+        if (slipFilterSelect) {
+            slipFilterSelect.addEventListener('change', () => {
+                currentPage = 1;
+                renderOrders();
+            });
+        }
 
         const user = checkAuth();
 

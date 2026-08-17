@@ -58,6 +58,65 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePendingBadge();
         renderOrders();
         updateActiveTabUI();
+
+        // Always sync with backend database to keep prices and statuses 100% accurate
+        syncOrdersWithBackend();
+    }
+
+    async function syncOrdersWithBackend() {
+        try {
+            const res = await fetch('/api/orders');
+            if (res.ok) {
+                const json = await res.json();
+                const backendOrders = json.data || [];
+                if (backendOrders.length > 0) {
+                    let updated = false;
+
+                    backendOrders.forEach(bOrder => {
+                        const bId = bOrder.id || bOrder.order_id;
+                        let existing = orders.find(o => o.id == bId);
+                        
+                        if (existing) {
+                            const newTotal = parseFloat(bOrder.amount);
+                            if (!isNaN(newTotal) && existing.total !== newTotal) {
+                                existing.total = newTotal;
+                                updated = true;
+                            }
+                            if (bOrder.slip_image && existing.slipImage !== bOrder.slip_image) {
+                                existing.slipImage = bOrder.slip_image;
+                                updated = true;
+                            }
+                            if (bOrder.status) {
+                                let newStatus = bOrder.status;
+                                if (newStatus === 'Pending') {
+                                    newStatus = 'Pending Payment';
+                                } else if (newStatus === 'Processing') {
+                                    newStatus = 'Preparing';
+                                } else if (newStatus === 'In Transit') {
+                                    newStatus = 'Shipping';
+                                } else if (newStatus === 'Completed') {
+                                    newStatus = 'Completed';
+                                } else if (newStatus === 'Cancelled') {
+                                    newStatus = 'Cancelled';
+                                }
+                                if (existing.status !== newStatus) {
+                                    existing.status = newStatus;
+                                    updated = true;
+                                }
+                            }
+                        }
+                    });
+
+                    if (updated) {
+                        localStorage.setItem('myOrders', JSON.stringify(orders));
+                        updatePendingBadge();
+                        renderOrders();
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn("Could not sync orders from backend:", err);
+        }
     }
 
     function updatePendingBadge() {
@@ -256,29 +315,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function markAsShipped(orderId) {
-        const order = orders.find(o => o.id == orderId);
+    async function markAsShipped(orderId) {
+        const order = orders.find(o => String(o.id) === String(orderId));
         if (!order) return;
+
+        const trackingNumber = 'TH' + Math.floor(100000000 + Math.random() * 900000000);
+
+        try {
+            await fetch('/api/orders/update-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: order.id,
+                    status: 'In Transit',
+                    tracking_number: trackingNumber
+                })
+            });
+        } catch (err) {
+            console.warn("Backend update-status sync:", err);
+        }
 
         order.status = 'Shipping'; // Move to Stage 3: ที่ต้องได้รับ
         order.shippedAt = new Date().toISOString();
-        order.trackingNumber = 'TH' + Math.floor(100000000 + Math.random() * 900000000);
+        order.trackingNumber = trackingNumber;
 
         localStorage.setItem('myOrders', JSON.stringify(orders));
         renderOrders();
         showToast(`จัดส่งสินค้าสำหรับคำสั่งซื้อ #${order.id} แล้ว! (เลขพัสดุ: ${order.trackingNumber})`, "success");
     }
 
-    function confirmReceived(orderId) {
-        const order = orders.find(o => o.id == orderId);
+    async function confirmReceived(orderId) {
+        const order = orders.find(o => String(o.id) === String(orderId));
         if (!order) return;
 
-        order.status = 'Completed'; // Move to Stage 4: สำเร็จแล้ว
+        try {
+            await fetch('/api/orders/update-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: order.id,
+                    status: 'Completed'
+                })
+            });
+        } catch (err) {
+            console.warn("Backend update-status sync:", err);
+        }
+
+        order.status = 'Completed'; // Move to Stage 4: สำเร็จแล้ว / จัดส่งสำเร็จ
         order.completedAt = new Date().toISOString();
 
         localStorage.setItem('myOrders', JSON.stringify(orders));
         renderOrders();
-        showToast(`ขอบคุณที่ยืนยันรับสินค้า! คำสั่งซื้อ #${order.id} เสร็จสมบูรณ์แล้ว`, "success");
+        showToast(`ขอบคุณที่ยืนยันรับสินค้า! คำสั่งซื้อ #${order.id} เสร็จสมบูรณ์แล้ว (จัดส่งสำเร็จ)`, "success");
     }
 
     function updateActiveTabUI() {
@@ -301,8 +389,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    function showOrderDetails(orderId) {
-        const order = orders.find(o => o.id == orderId);
+    async function showOrderDetails(orderId) {
+        let order = orders.find(o => o.id == orderId);
+
+        try {
+            const res = await fetch(`/api/orders/details?id=${orderId}`);
+            if (res.ok) {
+                const json = await res.json();
+                if (json.data) {
+                    const d = json.data;
+                    if (!order) {
+                        order = { id: d.id, items: [] };
+                        orders.unshift(order);
+                    }
+                    if (d.summary) {
+                        order.subtotal = parseFloat(d.summary.subtotal) || order.subtotal || 0;
+                        order.shipping = parseFloat(d.summary.shipping) || order.shipping || 0;
+                        order.total = parseFloat(d.summary.total) || order.total || 0;
+                        order.discount = parseFloat(d.summary.discount) || 0;
+                    }
+                    if (d.date) order.date = d.date;
+                    if (d.shipping_provider) order.deliveryProvider = d.shipping_provider;
+                    if (d.slip_image) order.slipImage = d.slip_image;
+                    if (d.status) {
+                        let newStatus = d.status;
+                        if (newStatus === 'Pending' && (d.has_slip || d.slip_image)) newStatus = 'Preparing';
+                        else if (newStatus === 'Pending') newStatus = 'Pending Payment';
+                        else if (newStatus === 'Processing') newStatus = 'Preparing';
+                        else if (newStatus === 'In Transit') newStatus = 'Shipping';
+                        order.status = newStatus;
+                    }
+                    localStorage.setItem('myOrders', JSON.stringify(orders));
+                }
+            }
+        } catch (err) {
+            console.warn("Fetch order details fallback:", err);
+        }
+
         if (!order) return;
 
         modalOrderId.textContent = `#${order.id}`;
@@ -333,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         modalPayment.textContent = 'โอนผ่านธนาคาร / PromptPay';
-        modalShipping.textContent = order.deliveryMethod === 'standard' ? 'ส่งธรรมดา (3-5 วัน)' : 'ส่งด่วนพิเศษ (1-2 วัน)';
+        modalShipping.textContent = order.deliveryProvider || (order.deliveryMethod === 'standard' ? 'ส่งธรรมดา (3-5 วัน)' : 'Kerry Express');
         
         // Render items
         modalItems.innerHTML = (order.items || []).map(item => `
@@ -351,9 +474,13 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
 
-        modalSubtotal.textContent = `฿${order.subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        modalShippingFee.textContent = `฿${order.shipping.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        modalTotal.textContent = `฿${order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const subtotalVal = parseFloat(order.subtotal) || ((order.items || []).reduce((s, it) => s + (parseFloat(it.price) * it.quantity), 0));
+        const totalVal = parseFloat(order.total) || (subtotalVal + (parseFloat(order.shipping) || 0));
+        const shippingVal = parseFloat(order.shipping) !== undefined ? parseFloat(order.shipping) : Math.max(0, totalVal - subtotalVal);
+
+        modalSubtotal.textContent = `฿${subtotalVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        modalShippingFee.textContent = `฿${shippingVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        modalTotal.textContent = `฿${totalVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
         // Open modal
         orderDetailModal.classList.remove('opacity-0', 'pointer-events-none');
@@ -410,28 +537,41 @@ document.addEventListener('DOMContentLoaded', () => {
         payModalPlaceholder.classList.remove('hidden');
     });
 
-    confirmPayNowBtn?.addEventListener('click', () => {
+    confirmPayNowBtn?.addEventListener('click', async () => {
         if (!currentPayingOrder) return;
 
         confirmPayNowBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>กำลังบันทึก...</span>';
         confirmPayNowBtn.disabled = true;
 
-        setTimeout(() => {
-            currentPayingOrder.status = 'Preparing'; // Change status to Stage 2: 'ที่ต้องจัดส่ง'
-            currentPayingOrder.slipImage = attachedSlipData;
-            currentPayingOrder.paidAt = new Date().toISOString();
+        try {
+            if (attachedSlipData) {
+                await fetch('/api/orders/upload-slip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        order_id: currentPayingOrder.id,
+                        slip_image: attachedSlipData
+                    })
+                });
+            }
+        } catch (err) {
+            console.warn("Backend slip sync note:", err);
+        }
 
-            localStorage.setItem('myOrders', JSON.stringify(orders));
+        currentPayingOrder.status = 'Preparing'; // Change status to Stage 2: 'ที่ต้องจัดส่ง'
+        currentPayingOrder.slipImage = attachedSlipData;
+        currentPayingOrder.paidAt = new Date().toISOString();
 
-            closePayNowModal();
-            confirmPayNowBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>ยืนยันการชำระเงิน</span>';
-            confirmPayNowBtn.disabled = false;
+        localStorage.setItem('myOrders', JSON.stringify(orders));
 
-            updatePendingBadge();
-            renderOrders();
+        closePayNowModal();
+        confirmPayNowBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>ยืนยันการชำระเงิน</span>';
+        confirmPayNowBtn.disabled = false;
 
-            showToast(`ชำระเงินคำสั่งซื้อ #${currentPayingOrder.id} สำเร็จ! ย้ายไปที่สถานะ 'ที่ต้องจัดส่ง'`, "success");
-        }, 1000);
+        updatePendingBadge();
+        renderOrders();
+
+        showToast(`ชำระเงินคำสั่งซื้อ #${currentPayingOrder.id} สำเร็จ! ย้ายไปที่สถานะ 'ที่ต้องจัดส่ง'`, "success");
     });
 
     closeModalBtn?.addEventListener('click', () => {

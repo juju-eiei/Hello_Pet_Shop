@@ -2,9 +2,36 @@
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-XSS-Protection "1; mode=block"
 </IfModule>
 
+# Disable directory listing
+Options -Indexes
+
+# Prevent access to hidden files (.env, .git, etc.)
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent access to sensitive file extensions
+<FilesMatch "\.(env|sql|log|ini|sh|bak|md|json|lock)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent direct access to internal PHP directories
 RewriteEngine On
+
+# Block direct access to sensitive backend directories
+RewriteRule ^(config|controllers|models|middlewares|utils|routes|vendor|maintenance|scratch)/ - [F,L,NC]
+
+# Block direct access to any root .php files except index.php
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.+?)\.php[?\s] [NC]
+RewriteCond %{REQUEST_URI} !^/index\.php [NC]
+RewriteRule ^ - [F,L]
+
+# Route application traffic to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]

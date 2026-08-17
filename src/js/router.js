@@ -2,8 +2,7 @@ import { updateActiveMenu } from './components/layout.js';
 
 export function initRouter() {
     // Ensure active menu highlights match the current page location
-    const filename = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
-    updateActiveMenu(filename);
+    updateActiveMenu(window.location.pathname);
 }
 
 export function navigateTo(url) {

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/Response.php';
+require_once __DIR__ . '/../middlewares/AuthMiddleware.php';
 
 class CustomerController {
     private $db;
@@ -47,11 +48,31 @@ class CustomerController {
 
     public function show() {
         try {
+            $user = AuthMiddleware::authenticate();
+
             if (!isset($_GET['id'])) {
                 Response::json(400, "Customer ID is required");
                 return;
             }
             $customerId = (int)$_GET['id'];
+
+            $roleLower = strtolower($user['role'] ?? '');
+            $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
+
+            if (!$isStaffOrAdmin) {
+                // Verify customer ownership
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$user['user_id']]);
+                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                $cid = $cRow ? (int)$cRow['customer_id'] : -1;
+
+                if ($customerId !== $cid) {
+                    Response::json(403, "Forbidden: You do not have permission to view this customer");
+                    return;
+                }
+            } else {
+                AuthMiddleware::checkAnyPermission(['customers_view', 'pos_access', 'orders_view']);
+            }
 
             // Customer Info
             $qCust = "SELECT c.customer_id, c.first_name, c.last_name, c.phone, c.points, 
@@ -103,23 +124,48 @@ class CustomerController {
 
     public function update() {
         try {
+            $user = AuthMiddleware::authenticate();
+
             $data = json_decode(file_get_contents('php://input'), true);
             if (empty($data)) {
                 $data = $_POST;
             }
 
-            if (empty($data['customer_id']) || empty($data['first_name'])) {
+            if (empty($data['first_name'])) {
                 Response::json(400, "กรุณากรอกชื่อลูกค้า");
                 return;
             }
 
-            $customerId = (int)$data['customer_id'];
+            $roleLower = strtolower($user['role'] ?? '');
+            $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
+
+            if ($isStaffOrAdmin) {
+                AuthMiddleware::checkPermission('customers_manage');
+                if (empty($data['customer_id'])) {
+                    Response::json(400, "กรุณาระบุรหัสลูกค้า");
+                    return;
+                }
+                $customerId = (int)$data['customer_id'];
+                $points = isset($data['points']) ? (int)$data['points'] : 0;
+            } else {
+                // Customer can only update their own profile and cannot modify points
+                $stmtOwnCust = $this->db->prepare("SELECT customer_id, points FROM customers WHERE user_id = ?");
+                $stmtOwnCust->execute([$user['user_id']]);
+                $ownCust = $stmtOwnCust->fetch(PDO::FETCH_ASSOC);
+
+                if (!$ownCust) {
+                    Response::json(404, "ไม่พบข้อมูลลูกค้าในระบบ");
+                    return;
+                }
+                $customerId = (int)$ownCust['customer_id'];
+                $points = (int)$ownCust['points']; // Preserve existing points
+            }
+
             $firstName = trim($data['first_name']);
             $lastName = isset($data['last_name']) ? trim($data['last_name']) : '';
             $username = isset($data['username']) ? trim($data['username']) : null;
             $phone = isset($data['phone']) ? trim($data['phone']) : null;
             $email = isset($data['email']) ? trim($data['email']) : null;
-            $points = isset($data['points']) ? (int)$data['points'] : 0;
 
             // Check if customer exists
             $stmtC = $this->db->prepare("SELECT user_id FROM customers WHERE customer_id = ?");
@@ -219,17 +265,31 @@ class CustomerController {
 
     public function savePet() {
         try {
+            $user = AuthMiddleware::authenticate();
+
             $data = $_POST;
             if (empty($data)) {
                 $data = json_decode(file_get_contents('php://input'), true);
             }
             
-            if (empty($data['customer_id']) || empty($data['pet_name']) || empty($data['pet_type'])) {
+            if (empty($data['pet_name']) || empty($data['pet_type'])) {
                 Response::json(400, "Missing required pet information");
                 return;
             }
 
-            $customerId = (int)$data['customer_id'];
+            $roleLower = strtolower($user['role'] ?? '');
+            $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
+
+            if ($isStaffOrAdmin) {
+                AuthMiddleware::checkAnyPermission(['pets_manage', 'customers_manage']);
+                $customerId = !empty($data['customer_id']) ? (int)$data['customer_id'] : 0;
+            } else {
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$user['user_id']]);
+                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                $customerId = $cRow ? (int)$cRow['customer_id'] : 0;
+            }
+
             if ($customerId <= 0) {
                 Response::json(400, "Invalid customer ID");
                 return;
@@ -309,14 +369,28 @@ class CustomerController {
 
     public function deletePet() {
         try {
+            $user = AuthMiddleware::authenticate();
+
             $data = json_decode(file_get_contents('php://input'), true);
-            if (empty($data['pet_id']) || empty($data['customer_id'])) {
+            if (empty($data['pet_id'])) {
                 Response::json(400, "Missing required info");
                 return;
             }
             
             $petId = (int)$data['pet_id'];
-            $customerId = (int)$data['customer_id'];
+            $roleLower = strtolower($user['role'] ?? '');
+            $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
+
+            if ($isStaffOrAdmin) {
+                AuthMiddleware::checkAnyPermission(['pets_manage', 'customers_manage']);
+                $customerId = !empty($data['customer_id']) ? (int)$data['customer_id'] : 0;
+            } else {
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$user['user_id']]);
+                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                $customerId = $cRow ? (int)$cRow['customer_id'] : 0;
+            }
+
             if ($petId <= 0 || $customerId <= 0) {
                 Response::json(400, "Invalid pet ID or customer ID");
                 return;

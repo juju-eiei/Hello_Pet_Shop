@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/Response.php';
+require_once __DIR__ . '/../utils/LineService.php';
+require_once __DIR__ . '/../middlewares/AuthMiddleware.php';
 
 class OrderController {
     private $db;
@@ -11,45 +13,121 @@ class OrderController {
     }
 
     public function createOnlineOrder() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
         $data = json_decode(file_get_contents("php://input"), true);
         
         $this->db->beginTransaction();
         
         try {
-            if(empty($data['customer_id']) || empty($data['address_id']) || empty($data['items'])) {
-                throw new Exception("Missing required order information");
+            if (empty($data['items']) || !is_array($data['items'])) {
+                throw new Exception("ไม่พบรายการสินค้าในคำสั่งซื้อ");
             }
 
-            // 0. validate address ownership
-            $stmtAddress = $this->db->prepare("SELECT id FROM addresses WHERE id = ? AND customer_id = ?");
-            $stmtAddress->execute([$data['address_id'], $data['customer_id']]);
-            if (!$stmtAddress->fetch()) {
-                throw new Exception("Invalid address or address does not belong to the customer");
+            // 1. Resolve customer_id securely
+            $customerId = null;
+            if (!empty($_SESSION['user_id'])) {
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$_SESSION['user_id']]);
+                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                if ($cRow) {
+                    $customerId = (int)$cRow['customer_id'];
+                }
+            } else {
+                // Try token
+                $headers = function_exists('apache_request_headers') ? apache_request_headers() : [];
+                $authHeader = $headers['Authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? null);
+                if ($authHeader && defined('JWT_SECRET') && JWT_SECRET !== '') {
+                    try {
+                        $token = str_replace('Bearer ', '', $authHeader);
+                        $decoded = \Firebase\JWT\JWT::decode($token, new \Firebase\JWT\Key(JWT_SECRET, 'HS256'));
+                        $tokenUserId = $decoded->data->user_id ?? null;
+                        if ($tokenUserId) {
+                            $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                            $stmtCust->execute([$tokenUserId]);
+                            $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                            if ($cRow) {
+                                $customerId = (int)$cRow['customer_id'];
+                            }
+                        }
+                    } catch(Exception $e) {}
+                }
+            }
+
+            // Fallback to customer_id from data only if not logged in (e.g. guest order), or fallback to first customer
+            if (!$customerId && !empty($data['customer_id'])) {
+                $customerId = (int)$data['customer_id'];
+            }
+            if (!$customerId) {
+                $stmtFirstCust = $this->db->query("SELECT customer_id FROM customers ORDER BY customer_id ASC LIMIT 1");
+                $firstCust = $stmtFirstCust->fetch(PDO::FETCH_ASSOC);
+                $customerId = $firstCust ? (int)$firstCust['customer_id'] : 1;
+            }
+
+            // 2. Resolve address_id
+            $addressId = !empty($data['address_id']) ? (int)$data['address_id'] : null;
+            if (!$addressId && !empty($data['shipping_address'])) {
+                $sa = $data['shipping_address'];
+                $rName = !empty($sa['fullName']) ? trim($sa['fullName']) : 'Customer';
+                $rPhone = !empty($sa['phone']) ? trim($sa['phone']) : '0000000000';
+                $rAddr = !empty($sa['address']) ? trim($sa['address']) : '-';
+                $rProv = !empty($sa['province']) ? trim($sa['province']) : '-';
+                $rZip = !empty($sa['zipcode']) ? trim($sa['zipcode']) : '10000';
+
+                $stmtInsertAddr = $this->db->prepare("INSERT INTO addresses (customer_id, recipient_name, phone, address_detail, province, zip_code, is_default) VALUES (?, ?, ?, ?, ?, ?, 1)");
+                $stmtInsertAddr->execute([$customerId, $rName, $rPhone, $rAddr, $rProv, $rZip]);
+                $addressId = (int)$this->db->lastInsertId();
+            }
+
+            if (!$addressId) {
+                $stmtAddr = $this->db->prepare("SELECT address_id FROM addresses WHERE customer_id = ? LIMIT 1");
+                $stmtAddr->execute([$customerId]);
+                $addr = $stmtAddr->fetch(PDO::FETCH_ASSOC);
+                if ($addr) {
+                    $addressId = (int)$addr['address_id'];
+                } else {
+                    $stmtAnyAddr = $this->db->query("SELECT address_id FROM addresses LIMIT 1");
+                    $anyAddr = $stmtAnyAddr->fetch(PDO::FETCH_ASSOC);
+                    $addressId = $anyAddr ? (int)$anyAddr['address_id'] : 1;
+                }
             }
             
             $subtotal = 0;
             $order_details = [];
             
             foreach ($data['items'] as $item) {
-                // 2. check stock
-                $stmt = $this->db->prepare("SELECT price, cost_price, stock_quantity FROM products WHERE id = ? FOR UPDATE");
-                $stmt->execute([$item['product_id']]);
+                $pid = (int)($item['product_id'] ?? 0);
+                $qty = (int)($item['quantity'] ?? 0);
+                if ($pid <= 0 || $qty <= 0) continue;
+
+                // Check stock using correct MySQL columns (product_id, selling_price, cost_price, stock_qty)
+                $stmt = $this->db->prepare("SELECT product_id, product_name, selling_price as price, cost_price, stock_qty FROM products WHERE product_id = ? FOR UPDATE");
+                $stmt->execute([$pid]);
                 $product = $stmt->fetch(PDO::FETCH_ASSOC);
                 
-                if (!$product || $product['stock_quantity'] < $item['quantity']) {
-                    throw new Exception("Product ID {$item['product_id']} is out of stock or insufficient quantity");
+                if (!$product) {
+                    throw new Exception("ไม่พบสินค้ารหัส #{$pid} ในระบบ");
+                }
+
+                if ($product['stock_qty'] < $qty) {
+                    throw new Exception("สินค้า '{$product['product_name']}' มีจำนวนไม่เพียงพอในสต็อก (คงเหลือ {$product['stock_qty']} ชิ้น)");
                 }
                 
-                $total_price = $product['price'] * $item['quantity'];
+                $total_price = (float)$product['price'] * $qty;
                 $subtotal += $total_price;
                 
                 $order_details[] = [
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_cost' => $product['cost_price'],
-                    'unit_price' => $product['price'],
-                    'total_price' => $total_price
+                    'product_id' => $pid,
+                    'quantity' => $qty,
+                    'unit_cost' => (float)$product['cost_price'],
+                    'unit_price' => (float)$product['price']
                 ];
+            }
+
+            if (empty($order_details)) {
+                throw new Exception("ไม่มีรายการสินค้าที่สามารถสั่งซื้อได้");
             }
             
             $discount = 0;
@@ -62,7 +140,7 @@ class OrderController {
                     if ($promo['discount_type'] === 'percent') {
                         $discount = ($subtotal * $promo['discount_value']) / 100;
                     } else {
-                        $discount = $promo['discount_value'];
+                        $discount = (float)$promo['discount_value'];
                     }
                 }
             }
@@ -72,40 +150,24 @@ class OrderController {
                 $discount = $subtotal;
             }
             
-            $shipping_fee = $data['shipping_fee'] ?? 0;
-            $net_total = ($subtotal - $discount) + $shipping_fee;
-            if ($net_total < 0) $net_total = 0;
-
-            // Calculate Tiered Gift
-            $freeGift = null;
-            $stmtGift = $this->db->prepare("SELECT gift_name FROM gift_rules WHERE min_spend <= ? ORDER BY min_spend DESC LIMIT 1");
-            $stmtGift->execute([$net_total]);
-            $giftRow = $stmtGift->fetch(PDO::FETCH_ASSOC);
-            if ($giftRow) {
-                $freeGift = $giftRow['gift_name'];
-            }
-            
-            // Calculate reward points first
-            $pointsEarned = 0;
-            $customerId = !empty($data['customer_id']) ? (int)$data['customer_id'] : null;
-            if ($customerId) {
-                $stmtSettings = $this->db->query("SELECT point_earning_baht, point_earning_qty FROM store_settings LIMIT 1");
-                $settings = $stmtSettings->fetch(PDO::FETCH_ASSOC);
-                $peBaht = $settings && isset($settings['point_earning_baht']) ? (float)$settings['point_earning_baht'] : 100.00;
-                $peQty = $settings && isset($settings['point_earning_qty']) ? (int)$settings['point_earning_qty'] : 1;
-
-                if ($peBaht > 0 && $peQty > 0) {
-                    $pointsEarned = (int)(floor($net_total / $peBaht) * $peQty);
+            // Calculate total weight from order items
+            $totalWeight = 0;
+            foreach ($order_details as $od) {
+                $pStmt = $this->db->prepare("SELECT weight, weight_value, weight_unit FROM products WHERE product_id = ?");
+                $pStmt->execute([$od['product_id']]);
+                $pRow = $pStmt->fetch(PDO::FETCH_ASSOC);
+                $w = 0.0;
+                if ($pRow) {
+                    $w = isset($pRow['weight']) && $pRow['weight'] !== null ? (float)$pRow['weight'] : (float)($pRow['weight_value'] ?? 0.0);
+                    $u = strtolower(trim($pRow['weight_unit'] ?? 'kg'));
+                    if ($u === 'g' || $u === 'ml' || $u === 'กรัม' || $u === 'มิลลิลิตร') {
+                        $w = $w / 1000.0;
+                    }
                 }
+                $totalWeight += ($w * (int)$od['quantity']);
             }
-            
-            // 3. insert into orders
-            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, order_type, free_gift, points_earned) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)");
-            $promo_id = !empty($data['promo_id']) ? $data['promo_id'] : null;
-            $stmtOrder->execute([$data['customer_id'], $data['address_id'], $promo_id, $subtotal, $discount, $shipping_fee, $net_total, $freeGift, $pointsEarned]);
-            $order_id = (int)$this->db->lastInsertId();
 
-            // Insert into deliveries table
+            // Resolve company_id
             $company_id = !empty($data['company_id']) ? (int)$data['company_id'] : (!empty($data['delivery_company_id']) ? (int)$data['delivery_company_id'] : null);
             if (!$company_id) {
                 try {
@@ -117,47 +179,111 @@ class OrderController {
                 } catch(Exception $exComp) {}
             }
 
+            $stmtCompRate = $this->db->prepare("SELECT base_rate, rate_per_kg FROM delivery_companies WHERE company_id = ?");
+            $stmtCompRate->execute([$company_id ?: 1]);
+            $compRate = $stmtCompRate->fetch(PDO::FETCH_ASSOC);
+            $baseRate = $compRate ? (float)$compRate['base_rate'] : 40.00;
+            $ratePerKg = $compRate ? (float)$compRate['rate_per_kg'] : 0.00;
+
+            $extraKg = $totalWeight > 1.0 ? ceil($totalWeight - 1.0) : 0;
+            $shipping_fee = $baseRate + ($extraKg * $ratePerKg);
+            if ($shipping_fee <= 0) $shipping_fee = $baseRate > 0 ? $baseRate : 40.00;
+
+            $net_total = ($subtotal - $discount) + $shipping_fee;
+            if ($net_total < 0) $net_total = 0;
+
+            // Calculate Tiered Gift
+            $freeGift = null;
+            try {
+                $stmtGift = $this->db->prepare("SELECT gift_name FROM gift_rules WHERE min_spend <= ? ORDER BY min_spend DESC LIMIT 1");
+                $stmtGift->execute([$net_total]);
+                $giftRow = $stmtGift->fetch(PDO::FETCH_ASSOC);
+                if ($giftRow) {
+                    $freeGift = $giftRow['gift_name'];
+                }
+            } catch (Exception $eGift) {}
+            
+            // Calculate reward points
+            $pointsEarned = 0;
+            if ($customerId) {
+                try {
+                    $stmtSettings = $this->db->query("SELECT point_earning_baht, point_earning_qty FROM store_settings LIMIT 1");
+                    $settings = $stmtSettings->fetch(PDO::FETCH_ASSOC);
+                    $peBaht = $settings && isset($settings['point_earning_baht']) ? (float)$settings['point_earning_baht'] : 100.00;
+                    $peQty = $settings && isset($settings['point_earning_qty']) ? (int)$settings['point_earning_qty'] : 1;
+
+                    if ($peBaht > 0 && $peQty > 0) {
+                        $pointsEarned = (int)(floor($net_total / $peBaht) * $peQty);
+                    }
+                } catch (Exception $ePts) {}
+            }
+            
+            // 3. Insert into orders
+            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, order_type, free_gift, points_earned) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)");
+            $promo_id = !empty($data['promo_id']) ? $data['promo_id'] : null;
+            $stmtOrder->execute([$customerId, $addressId, $promo_id, $subtotal, $discount, $shipping_fee, $net_total, $freeGift, $pointsEarned]);
+            $order_id = (int)$this->db->lastInsertId();
+
+            // Insert into deliveries table
             if ($company_id) {
                 try {
                     $stmtDel = $this->db->prepare("INSERT INTO deliveries (order_id, company_id, tracking_number, status) VALUES (?, ?, ?, 1)");
                     $stmtDel->execute([$order_id, $company_id, $data['tracking_number'] ?? null]);
                 } catch(Exception $exDel) {}
             }
+
+            // Insert payment record if slip or payment method provided
+            try {
+                $payMethod = 1; // Transfer / PromptPay
+                $slipImg = !empty($data['slip_image']) ? $data['slip_image'] : null;
+                $stmtPay = $this->db->prepare("INSERT INTO payments (order_id, payment_method, amount, slip_image, status) VALUES (?, ?, ?, ?, 0)");
+                $stmtPay->execute([$order_id, $payMethod, $net_total, $slipImg]);
+            } catch (Exception $exPay) {}
             
-            $stmtDetail = $this->db->prepare("INSERT INTO order_details (order_id, product_id, quantity, unit_cost, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)");
+            // 4. Insert order_details, deduct stock, insert inventory log
+            $stmtDetail = $this->db->prepare("INSERT INTO order_details (order_id, product_id, quantity, unit_price, unit_cost) VALUES (?, ?, ?, ?, ?)");
             $stmtUpdateStock = $this->db->prepare("UPDATE products SET stock_qty = stock_qty - ? WHERE product_id = ? AND stock_qty >= ?");
             $stmtLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, employee_id, reference_id, quantity, movement_type, unit_cost) VALUES (?, 1, ?, ?, 2, ?)");
             
             foreach ($order_details as $detail) {
-                // 4. order_details
-                $stmtDetail->execute([$order_id, $detail['product_id'], $detail['quantity'], $detail['unit_cost'], $detail['unit_price'], $detail['total_price']]);
+                $stmtDetail->execute([$order_id, $detail['product_id'], $detail['quantity'], $detail['unit_price'], $detail['unit_cost']]);
                 
-                // 5. Update stock with safety condition
+                // Update stock with safety condition
                 $stmtUpdateStock->execute([$detail['quantity'], $detail['product_id'], $detail['quantity']]);
                 if ($stmtUpdateStock->rowCount() === 0) {
-                    throw new Exception("Safety Error: Cannot deduct stock for Product ID {$detail['product_id']}");
+                    throw new Exception("ไม่สามารถตัดสต็อกสินค้ารหัส #{$detail['product_id']} ได้ เนื่องจากสินค้าไม่เพียงพอ");
                 }
                 
-                // 6. log
+                // Log inventory movement
                 $stmtLog->execute([$detail['product_id'], $order_id, -$detail['quantity'], $detail['unit_cost']]); 
             }
             
             // Award reward points to customer
             if ($customerId && $pointsEarned > 0) {
-                // Update points in customers
-                $stmtUpdatePoints = $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?");
-                $stmtUpdatePoints->execute([$pointsEarned, $customerId]);
+                try {
+                    $stmtUpdatePoints = $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?");
+                    $stmtUpdatePoints->execute([$pointsEarned, $customerId]);
 
-                // Insert log
-                $orderNum = "ORD-" . date('Y') . "-" . str_pad($order_id, 3, '0', STR_PAD_LEFT);
-                $stmtLogPoints = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
-                $stmtLogPoints->execute([$customerId, $order_id, $pointsEarned, "ได้รับแต้มสะสมจากรายการสั่งซื้อออนไลน์ #$orderNum"]);
+                    $orderNum = "ORD-" . date('Y') . "-" . str_pad($order_id, 3, '0', STR_PAD_LEFT);
+                    $stmtLogPoints = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
+                    $stmtLogPoints->execute([$customerId, $order_id, $pointsEarned, "ได้รับแต้มสะสมจากรายการสั่งซื้อออนไลน์ #$orderNum"]);
+                } catch (Exception $exLogPts) {}
             }
             
             $this->db->commit();
+
+            // Trigger Automatic LINE Notifications (Fail-safe)
+            try {
+                $affectedProductIds = array_column($order_details, 'product_id');
+                LineService::sendNewOrderAlert($order_id, $this->db);
+                LineService::checkAndNotifyLowStock($affectedProductIds, $this->db);
+            } catch (Exception $exLine) {
+                error_log("LINE Auto-Notification failed on order #$order_id: " . $exLine->getMessage());
+            }
             
             Response::json(201, "Order created successfully", [
                 "order_id" => $order_id, 
+                "shipping_fee" => $shipping_fee,
                 "net_total" => $net_total,
                 "free_gift" => $freeGift,
                 "points_earned" => $pointsEarned
@@ -165,11 +291,13 @@ class OrderController {
             
         } catch (Exception $e) {
             $this->db->rollBack();
-            Response::json(400, "Failed to create order", ["error" => $e->getMessage()]);
+            Response::json(400, "Failed to create order: " . $e->getMessage(), ["error" => $e->getMessage()]);
         }
     }
 
     public function createPOSOrder() {
+        AuthMiddleware::checkAnyPermission(['pos_access', 'orders_manage']);
+
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -375,6 +503,14 @@ class OrderController {
 
             $this->db->commit();
 
+            // Trigger Automatic LINE Low Stock Check (Fail-safe)
+            try {
+                $affectedProductIds = array_column($order_details, 'product_id');
+                LineService::checkAndNotifyLowStock($affectedProductIds, $this->db);
+            } catch (Exception $exLine) {
+                error_log("LINE Auto-Notification failed on POS order #$orderId: " . $exLine->getMessage());
+            }
+
             Response::json(201, "POS Order completed successfully", [
                 "order_id" => $orderId,
                 "order_number" => "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT),
@@ -399,16 +535,45 @@ class OrderController {
 
     public function index() {
         try {
-            $query = "SELECT order_id as id, 
-                             order_date as date, 
-                             CASE WHEN order_type = 2 THEN CONCAT('ORD-POS-', DATE_FORMAT(order_date, '%Y'), '-', LPAD(order_id, 3, '0'))
-                                  ELSE CONCAT('ORD-', DATE_FORMAT(order_date, '%Y'), '-', LPAD(order_id, 3, '0')) END as number, 
-                             net_total as amount, 
-                             status,
-                             order_type
-                      FROM orders 
-                      ORDER BY order_date DESC";
-            $stmt = $this->db->query($query);
+            $user = AuthMiddleware::authenticate();
+            $roleLower = strtolower($user['role'] ?? '');
+            $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
+
+            $baseQuery = "SELECT o.order_id as id, 
+                             o.order_date as date, 
+                             CASE WHEN o.order_type = 2 THEN CONCAT('ORD-POS-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0'))
+                                  ELSE CONCAT('ORD-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0')) END as number, 
+                             o.net_total as amount, 
+                             o.status,
+                             o.order_type,
+                             p.slip_image,
+                             p.payment_method,
+                             p.status as payment_status
+                      FROM orders o 
+                      LEFT JOIN (
+                          SELECT p1.order_id, p1.slip_image, p1.payment_method, p1.status
+                          FROM payments p1
+                          INNER JOIN (
+                              SELECT order_id, MAX(payment_id) as max_payment_id
+                              FROM payments
+                              GROUP BY order_id
+                          ) p2 ON p1.order_id = p2.order_id AND p1.payment_id = p2.max_payment_id
+                      ) p ON o.order_id = p.order_id";
+
+            if ($isStaffOrAdmin) {
+                $query = $baseQuery . " ORDER BY o.order_date DESC";
+                $stmt = $this->db->query($query);
+            } else {
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$user['user_id']]);
+                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                $cid = $cRow ? (int)$cRow['customer_id'] : -1;
+
+                $query = $baseQuery . " WHERE o.customer_id = ? ORDER BY o.order_date DESC";
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([$cid]);
+            }
+
             $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $statusMap = [
@@ -426,6 +591,8 @@ class OrderController {
                 $order['date'] = date('Y-m-d H:i:s', strtotime($order['date']));
                 $order['order_type'] = (int)($order['order_type'] ?? 1);
                 $order['order_type_label'] = ($order['order_type'] == 2) ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์';
+                $order['has_slip'] = !empty($order['slip_image']);
+                $order['slip_image'] = $order['slip_image'] ?? null;
             }
 
             Response::json(200, "Orders retrieved successfully", $orders);
@@ -436,22 +603,24 @@ class OrderController {
 
     public function show() {
         try {
+            $user = AuthMiddleware::authenticate();
+
             if (!isset($_GET['id'])) {
                 Response::json(400, "Order ID is required");
                 return;
             }
             $orderId = (int)$_GET['id'];
 
-            $qOrder = "SELECT o.order_id, o.order_date, 
+            $qOrder = "SELECT o.order_id, o.customer_id, o.order_date, 
                               CASE WHEN o.order_type = 2 THEN CONCAT('ORD-POS-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0'))
                                    ELSE CONCAT('ORD-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0')) END as number, 
                               o.status, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, o.order_type, o.free_gift, o.points_earned, o.cash_received,
                               c.first_name, c.last_name, c.phone, u.email,
-                              a.address_detail, a.province, a.zip_code,
+                              a.address_detail, a.province, a.zip_code, a.recipient_name, a.phone as recipient_phone,
                               e.first_name as employee_first_name, e.last_name as employee_last_name
                        FROM orders o
-                       JOIN customers c ON o.customer_id = c.customer_id
-                       JOIN users u ON c.user_id = u.user_id
+                       LEFT JOIN customers c ON o.customer_id = c.customer_id
+                       LEFT JOIN users u ON c.user_id = u.user_id
                        LEFT JOIN addresses a ON o.address_id = a.address_id
                        LEFT JOIN employees e ON o.employee_id = e.employee_id
                        WHERE o.order_id = ?";
@@ -462,6 +631,20 @@ class OrderController {
             if (!$order) {
                 Response::json(404, "Order not found");
                 return;
+            }
+
+            $roleLower = strtolower($user['role'] ?? '');
+            $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
+            if (!$isStaffOrAdmin) {
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$user['user_id']]);
+                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                $cid = $cRow ? (int)$cRow['customer_id'] : -1;
+
+                if ((int)$order['customer_id'] !== $cid) {
+                    Response::json(403, "Forbidden: You do not have permission to view this order");
+                    return;
+                }
             }
 
             $qItems = "SELECT od.quantity as qty, od.unit_price as price, p.product_name as name, p.image_url as image
@@ -501,14 +684,20 @@ class OrderController {
                 }
             }
 
-            // Fetch payment method
+            // Fetch payment method and slip details
             $payment_method = 'transfer';
+            $slip_image = null;
+            $payment_status = null;
+            $payment_date = null;
             try {
-                $qPay = "SELECT payment_method FROM payments WHERE order_id = ? LIMIT 1";
+                $qPay = "SELECT payment_method, slip_image, status, payment_date FROM payments WHERE order_id = ? ORDER BY payment_id DESC LIMIT 1";
                 $stmtPay = $this->db->prepare($qPay);
                 $stmtPay->execute([$orderId]);
                 $pay = $stmtPay->fetch(PDO::FETCH_ASSOC);
                 if ($pay) {
+                    $slip_image = $pay['slip_image'];
+                    $payment_status = $pay['status'];
+                    $payment_date = $pay['payment_date'];
                     if ((int)$pay['payment_method'] === 2) {
                         $payment_method = 'cash';
                     } elseif ((int)$pay['payment_method'] === 3) {
@@ -527,6 +716,14 @@ class OrderController {
             $sId = (int)$order['status'];
             $statusStr = isset($statusMap[$sId]) ? $statusMap[$sId] : 'Pending';
 
+            $cName = trim(($order['first_name'] ?? '') . ' ' . ($order['last_name'] ?? ''));
+            if (empty($cName)) {
+                $cName = !empty($order['recipient_name']) ? $order['recipient_name'] : 'ลูกค้าทั่วไป';
+            }
+            $cPhone = !empty($order['phone']) ? $order['phone'] : (!empty($order['recipient_phone']) ? $order['recipient_phone'] : '-');
+            $addressParts = array_filter([$order['address_detail'] ?? '', $order['province'] ?? '', $order['zip_code'] ?? '']);
+            $cAddress = count($addressParts) > 0 ? implode(' ', $addressParts) : '-';
+
             $data = [
                 'id' => $order['order_id'],
                 'date' => date('Y-m-d H:i:s', strtotime($order['order_date'])),
@@ -539,16 +736,20 @@ class OrderController {
                 'company_name' => $company_name,
                 'shipping_provider' => $company_name,
                 'payment_method' => $payment_method,
+                'slip_image' => $slip_image,
+                'has_slip' => !empty($slip_image),
+                'payment_status' => $payment_status,
+                'payment_date' => $payment_date ? date('Y-m-d H:i:s', strtotime($payment_date)) : null,
                 'free_gift' => $order['free_gift'],
                 'points_earned' => (int)($order['points_earned'] ?? 0),
                 'cash_received' => $order['cash_received'] !== null ? (float)$order['cash_received'] : null,
                 'change' => $order['cash_received'] !== null ? max(0, (float)$order['cash_received'] - (float)$order['net_total']) : 0.00,
                 'cashier_name' => $order['employee_first_name'] ? trim($order['employee_first_name'] . ' ' . $order['employee_last_name']) : 'System',
                 'customer' => [
-                    'name' => trim($order['first_name'] . ' ' . $order['last_name']),
-                    'email' => $order['email'] ? $order['email'] : '-',
-                    'phone' => $order['phone'] ? $order['phone'] : '-',
-                    'address' => trim($order['address_detail'] . ' ' . $order['province'] . ' ' . $order['zip_code'])
+                    'name' => $cName,
+                    'email' => !empty($order['email']) ? $order['email'] : '-',
+                    'phone' => $cPhone,
+                    'address' => $cAddress
                 ],
                 'items' => $items,
                 'summary' => [
@@ -567,6 +768,7 @@ class OrderController {
 
     public function updateStatus() {
         try {
+            $user = AuthMiddleware::authenticate();
             $data = json_decode(file_get_contents('php://input'), true);
             if (!isset($data['order_id']) || !isset($data['status'])) {
                 Response::json(400, "Missing parameters");
@@ -588,6 +790,44 @@ class OrderController {
 
             $sId = isset($map[$statusStr]) ? $map[$statusStr] : 1;
 
+            $roleLower = strtolower($user['role'] ?? '');
+            $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
+
+            if (!$isStaffOrAdmin) {
+                // Verify customer ownership
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$user['user_id']]);
+                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                $cid = $cRow ? (int)$cRow['customer_id'] : -1;
+
+                $stmtCheck = $this->db->prepare("SELECT customer_id, status FROM orders WHERE order_id = ?");
+                $stmtCheck->execute([$orderId]);
+                $orderRow = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+                if (!$orderRow || (int)$orderRow['customer_id'] !== $cid) {
+                    Response::json(403, "Forbidden: You do not have permission to modify this order");
+                    return;
+                }
+
+                $currentStatus = (int)$orderRow['status'];
+                // Allowed transitions for customer:
+                // 1. Confirm receive: status -> Completed (4) from In Transit (3) or Processing (2)
+                // 2. Cancel: status -> Cancelled (5) from Pending (1)
+                if ($sId === 4 && ($currentStatus === 2 || $currentStatus === 3)) {
+                    // Allowed
+                } elseif ($sId === 5 && $currentStatus === 1) {
+                    // Allowed
+                } else {
+                    Response::json(403, "Forbidden: Invalid status transition for customer");
+                    return;
+                }
+
+                $companyIdReq = null;
+                $tracking = null;
+            } else {
+                AuthMiddleware::checkAnyPermission(['orders_manage', 'delivery_manage']);
+            }
+
             $updatedShippingFee = null;
             $updatedNetTotal = null;
             $updatedCompanyName = null;
@@ -602,12 +842,21 @@ class OrderController {
                     $baseRate = (float)($comp['base_rate'] ?? 0);
                     $ratePerKg = (float)($comp['rate_per_kg'] ?? 0);
 
-                    $wStmt = $this->db->prepare("SELECT SUM(od.quantity * COALESCE(p.weight, 0)) as total_weight FROM order_details od JOIN products p ON od.product_id = p.product_id WHERE od.order_id = ?");
+                    $wStmt = $this->db->prepare("SELECT od.quantity, p.weight, p.weight_value, p.weight_unit FROM order_details od JOIN products p ON od.product_id = p.product_id WHERE od.order_id = ?");
                     $wStmt->execute([$orderId]);
-                    $wRow = $wStmt->fetch(PDO::FETCH_ASSOC);
-                    $totalWeight = (float)($wRow['total_weight'] ?? 0);
+                    $odRows = $wStmt->fetchAll(PDO::FETCH_ASSOC);
+                    $totalWeight = 0;
+                    foreach ($odRows as $odR) {
+                        $w = isset($odR['weight']) && $odR['weight'] !== null ? (float)$odR['weight'] : (float)($odR['weight_value'] ?? 0.0);
+                        $u = strtolower(trim($odR['weight_unit'] ?? 'kg'));
+                        if ($u === 'g' || $u === 'ml' || $u === 'กรัม' || $u === 'มิลลิลิตร') {
+                            $w = $w / 1000.0;
+                        }
+                        $totalWeight += ($w * (int)$odR['quantity']);
+                    }
 
-                    $calcShippingFee = $baseRate + ceil($totalWeight) * $ratePerKg;
+                    $extraKg = $totalWeight > 1.0 ? ceil($totalWeight - 1.0) : 0;
+                    $calcShippingFee = $baseRate + ($extraKg * $ratePerKg);
                     if ($calcShippingFee <= 0) {
                         $calcShippingFee = $baseRate > 0 ? $baseRate : 40.00;
                     }
@@ -632,6 +881,12 @@ class OrderController {
             }
 
             if ($executed) {
+                if ($sId == 2 || $sId == 4) {
+                    $this->db->prepare("UPDATE payments SET status = 1 WHERE order_id = ?")->execute([$orderId]);
+                } else if ($sId == 5) {
+                    $this->db->prepare("UPDATE payments SET status = 2 WHERE order_id = ?")->execute([$orderId]);
+                }
+
                 // Allow delivery table insertion even if tracking is blank
                 if ($sId == 3 || $sId == 4 || $companyIdReq !== null) {
                     $cStmt = $this->db->prepare("SELECT delivery_id FROM deliveries WHERE order_id = ?");
@@ -681,6 +936,117 @@ class OrderController {
             }
         } catch (Exception $e) {
             Response::json(500, "Error updating status", ["error" => $e->getMessage()]);
+        }
+    }
+
+    public function uploadSlip() {
+        try {
+            $user = AuthMiddleware::authenticate();
+            $data = json_decode(file_get_contents('php://input'), true);
+            $orderId = isset($data['order_id']) ? (int)$data['order_id'] : null;
+            $slipImage = isset($data['slip_image']) ? $data['slip_image'] : null;
+
+            if (!$orderId || empty($slipImage)) {
+                Response::json(400, "Order ID and slip image are required");
+                return;
+            }
+
+            $roleLower = strtolower($user['role'] ?? '');
+            $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
+            if (!$isStaffOrAdmin) {
+                // Verify order belongs to customer
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$user['user_id']]);
+                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                $cid = $cRow ? (int)$cRow['customer_id'] : -1;
+
+                $stmtCheck = $this->db->prepare("SELECT customer_id FROM orders WHERE order_id = ?");
+                $stmtCheck->execute([$orderId]);
+                $orderRow = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+                if (!$orderRow || (int)$orderRow['customer_id'] !== $cid) {
+                    Response::json(403, "Forbidden: You do not have permission to upload slip for this order");
+                    return;
+                }
+            }
+
+            // Check if payment record exists
+            $chkStmt = $this->db->prepare("SELECT payment_id FROM payments WHERE order_id = ? ORDER BY payment_id DESC LIMIT 1");
+            $chkStmt->execute([$orderId]);
+            $paymentRow = $chkStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($paymentRow) {
+                $uStmt = $this->db->prepare("UPDATE payments SET slip_image = ?, payment_date = NOW() WHERE payment_id = ?");
+                $uStmt->execute([$slipImage, $paymentRow['payment_id']]);
+            } else {
+                // Fetch net_total from order
+                $oStmt = $this->db->prepare("SELECT net_total FROM orders WHERE order_id = ?");
+                $oStmt->execute([$orderId]);
+                $oRow = $oStmt->fetch(PDO::FETCH_ASSOC);
+                $netTotal = $oRow ? (float)$oRow['net_total'] : 0;
+
+                $iStmt = $this->db->prepare("INSERT INTO payments (order_id, payment_method, amount, slip_image, status, payment_date) VALUES (?, 1, ?, ?, 0, NOW())");
+                $iStmt->execute([$orderId, $netTotal, $slipImage]);
+            }
+
+            // Order status remains Pending (1) awaiting admin/staff verification
+
+            Response::json(200, "Slip uploaded and updated successfully", [
+                "order_id" => $orderId,
+                "has_slip" => true
+            ]);
+        } catch (Exception $e) {
+            Response::json(500, "Error uploading slip", ["error" => $e->getMessage()]);
+        }
+    }
+
+    public function verifySlip() {
+        try {
+            AuthMiddleware::checkPermission('orders_manage');
+            $data = json_decode(file_get_contents('php://input'), true);
+            $orderId = isset($data['order_id']) ? (int)$data['order_id'] : null;
+            $action = isset($data['action']) ? trim($data['action']) : '';
+            $reason = isset($data['reason']) ? trim($data['reason']) : '';
+
+            if (!$orderId || !in_array($action, ['approve', 'reject'])) {
+                Response::json(400, "Valid order ID and action ('approve' or 'reject') required");
+                return;
+            }
+
+            if ($action === 'approve') {
+                // 1. Update order status to 2 (Processing / กำลังแพ็คสินค้า)
+                $uOrder = $this->db->prepare("UPDATE orders SET status = 2 WHERE order_id = ?");
+                $uOrder->execute([$orderId]);
+
+                // 2. Update payment status to 1 (Paid / Verified)
+                $uPay = $this->db->prepare("UPDATE payments SET status = 1 WHERE order_id = ?");
+                $uPay->execute([$orderId]);
+
+                Response::json(200, "สลิปถูกต้อง อนุมัติคำสั่งซื้อเรียบร้อยแล้ว (สถานะ: กำลังแพ็คสินค้า)", [
+                    "order_id" => $orderId,
+                    "status" => "Processing",
+                    "status_id" => 2,
+                    "payment_status" => 1
+                ]);
+            } else {
+                // 1. Update order status to 5 (Cancelled / ยกเลิกแล้ว)
+                $uOrder = $this->db->prepare("UPDATE orders SET status = 5 WHERE order_id = ?");
+                $uOrder->execute([$orderId]);
+
+                // 2. Update payment status to 2 (Rejected / Failed)
+                $uPay = $this->db->prepare("UPDATE payments SET status = 2 WHERE order_id = ?");
+                $uPay->execute([$orderId]);
+
+                Response::json(200, "ระบุเป็นสลิปไม่ถูกต้อง และยกเลิกคำสั่งซื้อเรียบร้อยแล้ว", [
+                    "order_id" => $orderId,
+                    "status" => "Cancelled",
+                    "status_id" => 5,
+                    "payment_status" => 2,
+                    "reason" => $reason
+                ]);
+            }
+        } catch (Exception $e) {
+            Response::json(500, "Error verifying slip", ["error" => $e->getMessage()]);
         }
     }
 

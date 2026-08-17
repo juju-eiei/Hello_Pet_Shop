@@ -88,7 +88,7 @@ if (!window.__csrfInterceptorInstalled) {
             if (response.status === 401 && !url.includes("/api/login")) {
                 localStorage.removeItem("user");
                 localStorage.removeItem("csrf_token");
-                window.location.href = "/login.html";
+                window.location.href = "/login";
             }
             return response;
         } catch (err) {
@@ -176,7 +176,7 @@ function initApp() {
             e.preventDefault();
             localStorage.removeItem('user');
             localStorage.removeItem('cart');
-            window.location.href = 'login.html';
+            window.location.href = '/login';
         });
     }
 }

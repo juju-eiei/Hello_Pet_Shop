@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkoutItems = cart.filter(item => item.selected !== false);
         
         if (checkoutItems.length === 0) {
-            window.location.href = 'cart.html'; // Redirect back if empty/none selected
+            window.location.href = '/cart'; // Redirect back if empty/none selected
             return;
         }
 
@@ -66,9 +66,50 @@ document.addEventListener('DOMContentLoaded', () => {
         if (profile.province) inputProvince.value = profile.province;
         if (profile.zipcode) inputZipcode.value = profile.zipcode;
 
+        // Enrich weights from backend database in case existing cart lacked weights
+        await enrichCartWithProductDetails();
+
         await loadDeliveryCompanies();
         renderSummary();
         attachEvents();
+    }
+
+    async function enrichCartWithProductDetails() {
+        try {
+            const res = await fetch('/api/products');
+            const json = await res.json();
+            if (res.ok && json.data) {
+                const prodMap = {};
+                json.data.forEach(p => {
+                    let w = parseFloat(p.weight !== null && p.weight !== undefined ? p.weight : (p.weight_value || 0)) || 0;
+                    const u = (p.weight_unit || 'kg').toLowerCase().trim();
+                    if (u === 'g' || u === 'ml' || u === 'กรัม' || u === 'มิลลิลิตร') {
+                        w = w / 1000.0;
+                    }
+                    prodMap[String(p.product_id)] = {
+                        weight: w,
+                        weight_unit: p.weight_unit || 'kg'
+                    };
+                });
+
+                let updated = false;
+                cart.forEach(item => {
+                    const match = prodMap[String(item.id)];
+                    if (match && (item.weight === undefined || item.weight === null || item.weight !== match.weight)) {
+                        item.weight = match.weight;
+                        item.weight_unit = match.weight_unit;
+                        updated = true;
+                    }
+                });
+
+                if (updated) {
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    checkoutItems = cart.filter(item => item.selected !== false);
+                }
+            }
+        } catch (err) {
+            console.warn("Could not enrich cart products:", err);
+        }
     }
 
     async function loadDeliveryCompanies() {
@@ -89,20 +130,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Fallback default options if API has no companies
         deliveryCompanies = [
-            { company_id: 1, company_name: 'Kerry Express', base_rate: 40 },
-            { company_id: 2, company_name: 'Flash Express', base_rate: 35 },
-            { company_id: 3, company_name: 'J&T Express', base_rate: 30 }
+            { company_id: 1, company_name: 'Kerry Express', base_rate: 40, rate_per_kg: 15 },
+            { company_id: 2, company_name: 'Flash Express', base_rate: 35, rate_per_kg: 12 },
+            { company_id: 3, company_name: 'J&T Express', base_rate: 30, rate_per_kg: 10 }
         ];
         renderDeliveryOptions();
+    }
+
+    function calculateTotalWeight() {
+        return checkoutItems.reduce((sum, item) => {
+            let w = parseFloat(item.weight || 0);
+            const u = (item.weight_unit || 'kg').toLowerCase().trim();
+            if (u === 'g' || u === 'ml' || u === 'กรัม' || u === 'มิลลิลิตร') {
+                w = w / 1000.0;
+            }
+            return sum + (w * (item.quantity || 1));
+        }, 0);
+    }
+
+    function calculateShippingForCompany(comp) {
+        const baseRate = parseFloat(comp.base_rate) || 0;
+        const ratePerKg = parseFloat(comp.rate_per_kg) || 0;
+        const totalWeight = calculateTotalWeight();
+        const extraKg = totalWeight > 1.0 ? Math.ceil(totalWeight - 1.0) : 0;
+        let fee = baseRate + (extraKg * ratePerKg);
+        if (fee <= 0) fee = baseRate > 0 ? baseRate : 40.00;
+        return fee;
     }
 
     function renderDeliveryOptions() {
         const container = document.getElementById('deliveryMethodsContainer');
         if (!container) return;
 
+        const totalWeight = calculateTotalWeight();
+        const extraKg = totalWeight > 1.0 ? Math.ceil(totalWeight - 1.0) : 0;
+
         container.innerHTML = deliveryCompanies.map((c, idx) => {
-            const fee = parseFloat(c.base_rate) > 0 ? parseFloat(c.base_rate) : 35.00;
+            const fee = calculateShippingForCompany(c);
             const isChecked = idx === 0 ? 'checked' : '';
+            const weightDesc = totalWeight > 1.0
+                ? `น้ำหนัก ${totalWeight.toFixed(2)} กก. (เกิน 1 กก. บวกเพิ่ม ${extraKg} กก.)`
+                : `อัตราปกติเริ่มต้น (น้ำหนัก ${totalWeight > 0 ? totalWeight.toFixed(2) + ' กก.' : 'ไม่เกิน 1 กก.'})`;
+
             return `
                 <label class="option-card block cursor-pointer">
                     <input type="radio" name="deliveryMethod" value="${c.company_id}" data-fee="${fee}" data-company-name="${c.company_name}" class="hidden" ${isChecked}>
@@ -119,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     ${c.company_name}
                                     <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-100/70 text-emerald-700">ขนส่งพันธมิตร</span>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-0.5">อัตราจัดส่งเริ่มต้น ฿${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (ตั้งค่าโดยผู้ดูแลระบบ)</div>
+                                <div class="text-xs text-gray-500 mt-0.5">${weightDesc}</div>
                             </div>
                         </div>
                         <div class="font-bold text-[#FE7F9C] text-base">+฿${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
@@ -267,13 +336,13 @@ document.addEventListener('DOMContentLoaded', () => {
             submitPaymentBtn.disabled = true;
 
             setTimeout(() => {
-                pendingOrderData.status = 'Preparing'; // Change status to 'ที่ต้องจัดส่ง'
+                pendingOrderData.status = 'Pending Payment'; // Keeps as 'ที่ต้องชำระ' (รอแอดมินตรวจสลิป)
                 pendingOrderData.slipImage = attachedSlipData;
                 pendingOrderData.paidAt = new Date().toISOString();
                 
                 finalizeOrder(
-                    "ชำระเงินและสั่งซื้อสำเร็จ!",
-                    `เราได้รับชำระเงินสำหรับคำสั่งซื้อ #${pendingOrderData.id} เรียบร้อยแล้ว ร้านค้าจะจัดส่งสินค้าให้โดยเร็วที่สุด`
+                    "แนบหลักฐานชำระเงินเรียบร้อยแล้ว!",
+                    `เราได้รับหลักฐานการโอนเงินสำหรับคำสั่งซื้อ #${pendingOrderData.id} แล้ว ทางร้านจะดำเนินการตรวจสอบยอดเงินและเริ่มแพ็คสินค้าให้โดยเร็วที่สุด`
                 );
             }, 1000);
         });
@@ -336,47 +405,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let dbOrderId = pendingOrderData.id;
-        if (customerId) {
-            try {
-                const orderPayload = {
-                    customer_id: customerId,
-                    company_id: pendingOrderData.company_id,
-                    shipping_address: pendingOrderData.shippingAddress,
-                    items: pendingOrderData.items.map(item => ({
-                        product_id: item.id,
-                        quantity: item.quantity
-                    })),
-                    shipping_fee: pendingOrderData.shipping,
-                    discount_amount: 0,
-                    csrf_token: csrfToken
-                };
+        try {
+            const orderPayload = {
+                customer_id: customerId || 1,
+                company_id: pendingOrderData.company_id,
+                shipping_address: pendingOrderData.shippingAddress,
+                items: pendingOrderData.items.map(item => ({
+                    product_id: item.id,
+                    quantity: item.quantity
+                })),
+                shipping_fee: pendingOrderData.shipping,
+                discount_amount: 0,
+                payment_method: pendingOrderData.paymentMethod || 'transfer',
+                slip_image: pendingOrderData.slipImage,
+                csrf_token: csrfToken
+            };
 
-                const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken || ''
-                    },
-                    body: JSON.stringify(orderPayload)
-                });
+            const res = await fetch('/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken || ''
+                },
+                body: JSON.stringify(orderPayload)
+            });
 
-                if (res.ok) {
-                    const resJson = await res.json();
-                    if (resJson.data && resJson.data.order_id) {
-                        dbOrderId = resJson.data.order_id;
-                        pendingOrderData.id = dbOrderId;
+            if (res.ok) {
+                const resJson = await res.json();
+                if (resJson.data && resJson.data.order_id) {
+                    dbOrderId = resJson.data.order_id;
+                    pendingOrderData.id = dbOrderId;
+                    if (resJson.data.net_total !== undefined) {
+                        pendingOrderData.total = parseFloat(resJson.data.net_total);
                     }
-                } else {
-                    const errRes = await res.json();
-                    console.error("Order creation failed details: " + JSON.stringify(errRes));
-                    showToast(errRes.message || "เกิดข้อผิดพลาดในการบันทึกคำสั่งซื้อลงฐานข้อมูล", "error");
-                    return;
+                    if (resJson.data.shipping_fee !== undefined) {
+                        pendingOrderData.shipping = parseFloat(resJson.data.shipping_fee);
+                    }
                 }
-            } catch (err) {
-                console.error("Error creating order:", err);
-                showToast("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อบันทึกคำสั่งซื้อได้", "error");
+            } else {
+                const errRes = await res.json();
+                console.error("Order creation failed details:", errRes);
+                showToast(errRes.message || "เกิดข้อผิดพลาดในการบันทึกคำสั่งซื้อลงฐานข้อมูล", "error");
                 return;
             }
+        } catch (err) {
+            console.error("Error creating order:", err);
+            showToast("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อบันทึกคำสั่งซื้อได้", "error");
+            return;
         }
 
         // Save order to localStorage 'myOrders'
@@ -403,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (viewOrderBtn) {
             viewOrderBtn.addEventListener('click', () => {
                 const targetTab = pendingOrderData.status === 'Pending Payment' ? 'pending_payment' : 'preparing';
-                window.location.href = `order-history.html?tab=${targetTab}`;
+                window.location.href = `/orders?tab=${targetTab}`;
             });
         }
     }

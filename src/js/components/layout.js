@@ -1,11 +1,64 @@
 import { menuConfig } from '../config/menu.js';
 
+function normalizeRoute(urlOrPath) {
+    if (!urlOrPath) return '';
+    let p = urlOrPath.split('?')[0].trim();
+    if (p.startsWith('/')) p = p.substring(1);
+
+    const map = {
+        'admin_dashboard.html': 'admin/dashboard',
+        'admin_product_management.html': 'admin/products',
+        'admin_product_edit.html': 'admin/products/edit',
+        'admin_stock.html': 'admin/stock',
+        'admin_categories.html': 'admin/categories',
+        'admin_promotions.html': 'admin/promotions',
+        'admin_orders.html': 'admin/orders',
+        'admin_order_details.html': 'admin/orders/details',
+        'admin_customers.html': 'admin/customers',
+        'admin_customer_details.html': 'admin/customers/details',
+        'admin_delivery.html': 'admin/delivery',
+        'admin_reward_management.html': 'admin/rewards',
+        'admin_staff.html': 'admin/staff',
+        'admin_schedule.html': 'admin/schedule',
+        'admin_attendance.html': 'admin/attendance',
+        'admin_pay_settings.html': 'admin/payroll/settings',
+        'admin_payroll.html': 'admin/payroll',
+        'admin_transactions.html': 'admin/transactions',
+        'staff_stock.html': 'staff/stock',
+        'staff_orders.html': 'staff/orders',
+        'staff_order_details.html': 'staff/orders/details',
+        'staff_customers.html': 'staff/customers',
+        'staff_customer_details.html': 'staff/customers/details',
+        'staff_promotions.html': 'staff/promotions',
+        'staff_schedule.html': 'staff/schedule',
+        'staff_profile.html': 'staff/profile',
+        'pos.html': 'pos',
+        'products.html': 'products',
+        'cart.html': 'cart',
+        'checkout.html': 'checkout',
+        'order-history.html': 'orders',
+        'my-pets.html': 'my-pets',
+        'profile.html': 'profile',
+        'contact.html': 'contact',
+        'login.html': 'login',
+        'register.html': 'register',
+        'forgot_password.html': 'forgot-password',
+        'reset_password.html': 'reset-password'
+    };
+
+    if (map[p]) return map[p];
+    return p.replace(/\.html$/, '');
+}
+
 export async function initLayout() {
     const currentPath = window.location.pathname;
+    const cleanRoute = normalizeRoute(currentPath);
     const filename = currentPath.split('/').pop() || 'index.html';
     
     // Only run centralized layout and gates for admin or staff pages
-    if (!filename.startsWith('admin_') && !filename.startsWith('staff_') && filename !== 'pos.html') {
+    const isAdminOrStaff = cleanRoute.startsWith('admin') || cleanRoute.startsWith('staff') || cleanRoute === 'pos' ||
+                           filename.startsWith('admin_') || filename.startsWith('staff_') || filename === 'pos.html';
+    if (!isAdminOrStaff) {
         return;
     }
     
@@ -14,7 +67,7 @@ export async function initLayout() {
         if (!res.ok) {
             // Session expired or invalid
             localStorage.removeItem('user');
-            window.location.href = '/login.html';
+            window.location.href = '/login';
             return;
         }
         
@@ -27,7 +80,7 @@ export async function initLayout() {
         if (roleNameLower === 'admin') {
             role = 'admin';
         } else if (roleNameLower === 'customer') {
-            window.location.href = '/products.html';
+            window.location.href = '/products';
             return;
         }
         
@@ -52,7 +105,7 @@ export async function initLayout() {
         traverseMenu(menuConfig.admin);
         traverseMenu(menuConfig.staff);
         
-        const matchingConfig = allMenuUrlMaps.find(m => m.url === filename);
+        const matchingConfig = allMenuUrlMaps.find(m => normalizeRoute(m.url) === cleanRoute || m.url === filename);
         
         if (matchingConfig && matchingConfig.permission) {
             if (roleNameLower !== 'admin' && !permissions.includes(matchingConfig.permission)) {
@@ -61,7 +114,7 @@ export async function initLayout() {
         }
         
         // Also enforce path role logic
-        if (filename.startsWith('admin_') && roleNameLower !== 'admin') {
+        if ((cleanRoute.startsWith('admin') || filename.startsWith('admin_')) && roleNameLower !== 'admin') {
             allowed = false;
         }
         
@@ -77,7 +130,7 @@ export async function initLayout() {
             } else {
                 alert('คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้ (Access Denied)');
             }
-            window.location.href = roleNameLower === 'admin' ? 'admin_stock.html' : 'staff_profile.html';
+            window.location.href = roleNameLower === 'admin' ? '/admin/stock' : '/staff/profile';
             return;
         }
         
@@ -85,9 +138,9 @@ export async function initLayout() {
         const rawItems = menuConfig[role] || menuConfig.staff;
         const filteredItems = filterMenuByPermissions(rawItems, permissions, roleNameLower === 'admin');
         
-        renderSidebar(filteredItems, filename, role);
-        renderMobileHeader(filename);
-        renderBottomNav(filteredItems, filename);
+        renderSidebar(filteredItems, currentPath, role);
+        renderMobileHeader(currentPath);
+        renderBottomNav(filteredItems, currentPath);
         bindLayoutEvents();
         initNotifications();
         bindNotificationEvents();
@@ -97,7 +150,7 @@ export async function initLayout() {
         }
     } catch (error) {
         console.error('Error during auth validation:', error);
-        window.location.href = '/login.html';
+        window.location.href = '/login';
     }
 }
 
@@ -119,25 +172,27 @@ function filterMenuByPermissions(menuItems, permissions, isAdmin) {
     }).filter(Boolean);
 }
 
-function isUrlActive(currentFilename, targetUrl) {
-    if (!currentFilename || !targetUrl) return false;
-    if (currentFilename === targetUrl || targetUrl.endsWith(currentFilename)) return true;
+function isUrlActive(currentPath, targetUrl) {
+    const curNorm = normalizeRoute(currentPath);
+    const tarNorm = normalizeRoute(targetUrl);
+    if (!curNorm || !tarNorm) return false;
+    if (curNorm === tarNorm) return true;
     
     // Map detail pages to main parent pages
-    if (currentFilename === 'admin_product_edit.html' && (targetUrl === 'admin_product_management.html' || targetUrl === 'admin_stock.html')) return true;
-    if (currentFilename === 'admin_order_details.html' && targetUrl === 'admin_orders.html') return true;
-    if (currentFilename === 'admin_customer_details.html' && targetUrl === 'admin_customers.html') return true;
-    if (currentFilename === 'staff_order_details.html' && targetUrl === 'staff_orders.html') return true;
-    if (currentFilename === 'staff_customer_details.html' && targetUrl === 'staff_customers.html') return true;
+    if (curNorm === 'admin/products/edit' && (tarNorm === 'admin/products' || tarNorm === 'admin/stock')) return true;
+    if (curNorm === 'admin/orders/details' && tarNorm === 'admin/orders') return true;
+    if (curNorm === 'admin/customers/details' && tarNorm === 'admin/customers') return true;
+    if (curNorm === 'staff/orders/details' && tarNorm === 'staff/orders') return true;
+    if (curNorm === 'staff/customers/details' && tarNorm === 'staff/customers') return true;
     
     return false;
 }
 
-export function updateActiveMenu(currentFilename) {
+export function updateActiveMenu(currentPath) {
     document.querySelectorAll('.sidebar-menu .menu-item, .sidebar-menu .submenu a').forEach(el => {
         el.classList.remove('active');
         const href = el.getAttribute('href');
-        if (href && isUrlActive(currentFilename, href.split('/').pop())) {
+        if (href && isUrlActive(currentPath, href)) {
             el.classList.add('active');
             const parentGroup = el.closest('.menu-group');
             if (parentGroup) {
@@ -149,7 +204,7 @@ export function updateActiveMenu(currentFilename) {
     document.querySelectorAll('.bottom-nav .nav-item').forEach(el => {
         el.classList.remove('active');
         const href = el.getAttribute('href');
-        if (href && isUrlActive(currentFilename, href.split('/').pop())) {
+        if (href && isUrlActive(currentPath, href)) {
             el.classList.add('active');
         }
     });
@@ -159,7 +214,7 @@ export function updateActiveMenu(currentFilename) {
     }
 }
 
-function renderSidebar(items, currentFilename, role) {
+function renderSidebar(items, currentPath, role) {
     const sidebar = document.querySelector('aside.sidebar');
     if (!sidebar) return;
 
@@ -188,7 +243,7 @@ function renderSidebar(items, currentFilename, role) {
                     <div class="px-4 py-6 text-center text-slate-400 text-sm">กำลังโหลด...</div>
                 </div>
                 <div class="dropdown-footer px-4 py-2.5 border-t border-slate-100 text-center bg-slate-50/30">
-                    <a href="${role === 'admin' ? 'admin_stock.html' : 'staff_stock.html'}" class="text-xs text-blue-600 hover:text-blue-700 no-underline font-bold transition-colors">จัดการสต็อกทั้งหมด</a>
+                    <a href="${role === 'admin' ? '/admin/stock' : '/staff/stock'}" class="text-xs text-blue-600 hover:text-blue-700 no-underline font-bold transition-colors">จัดการสต็อกทั้งหมด</a>
                 </div>
             </div>
         </div>
@@ -198,7 +253,7 @@ function renderSidebar(items, currentFilename, role) {
 
     items.forEach(item => {
         if (item.type === 'link') {
-            const isActive = isUrlActive(currentFilename, item.url) ? 'active' : '';
+            const isActive = isUrlActive(currentPath, item.url) ? 'active' : '';
             const desktopClass = item.desktopOnly ? 'desktop-only-menu' : '';
             menuHTML += `
                 <a href="${item.url}" class="${desktopClass} menu-item ${isActive}">
@@ -210,7 +265,7 @@ function renderSidebar(items, currentFilename, role) {
             let subItemsHTML = '';
 
             item.items.forEach(sub => {
-                const isActive = isUrlActive(currentFilename, sub.url) ? 'active' : '';
+                const isActive = isUrlActive(currentPath, sub.url) ? 'active' : '';
                 if (isActive) groupHasActive = true;
                 const desktopClass = sub.desktopOnly ? 'desktop-only-menu' : '';
                 const iconHTML = sub.icon ? `<i class="${sub.icon}"></i>` : `<i class="fas fa-angle-right"></i>`;
@@ -248,9 +303,12 @@ function renderSidebar(items, currentFilename, role) {
     sidebar.innerHTML = menuHTML;
 }
 
-function renderMobileHeader(currentFilename) {
+function renderMobileHeader(currentPath) {
     const mobileHeader = document.querySelector('header.mobile-header');
     if (!mobileHeader) return;
+
+    const cleanRoute = normalizeRoute(currentPath);
+    const isAdmin = cleanRoute.startsWith('admin') || currentPath.includes('admin_');
 
     let titleText = document.title.split('-')[0].trim();
     mobileHeader.innerHTML = `
@@ -276,40 +334,41 @@ function renderMobileHeader(currentFilename) {
                     <div class="px-4 py-5 text-center text-slate-400 text-sm">กำลังโหลด...</div>
                 </div>
                 <div class="dropdown-footer px-4 py-2 border-t border-slate-100 text-center bg-slate-50/30">
-                    <a href="${currentFilename.startsWith('admin_') ? 'admin_stock.html' : 'staff_stock.html'}" class="text-xs text-blue-600 hover:text-blue-700 no-underline font-bold transition-colors">จัดการสต็อกทั้งหมด</a>
+                    <a href="${isAdmin ? '/admin/stock' : '/staff/stock'}" class="text-xs text-blue-600 hover:text-blue-700 no-underline font-bold transition-colors">จัดการสต็อกทั้งหมด</a>
                 </div>
             </div>
         </div>
     `;
 }
 
-function renderBottomNav(items, currentFilename) {
+function renderBottomNav(items, currentPath) {
     const bottomNav = document.querySelector('nav.bottom-nav');
     if (!bottomNav) return;
 
-    const isAdmin = currentFilename.startsWith('admin_');
+    const cleanRoute = normalizeRoute(currentPath);
+    const isAdmin = cleanRoute.startsWith('admin') || currentPath.includes('admin_');
     let links = [];
 
     if (isAdmin) {
         links = [
-            { url: 'admin_orders.html', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', i18n: 'nav.orders' },
-            { url: 'admin_stock.html', icon: 'fas fa-warehouse', title: 'คลังสินค้า', i18n: 'nav.stock' },
-            { url: 'admin_customers.html', icon: 'fas fa-users', title: 'ลูกค้า', i18n: 'nav.customers' },
-            { url: 'admin_promotions.html', icon: 'fas fa-gift', title: 'โปรโมชั่น', i18n: 'nav.promotions' }
+            { url: '/admin/orders', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', i18n: 'nav.orders' },
+            { url: '/admin/stock', icon: 'fas fa-warehouse', title: 'คลังสินค้า', i18n: 'nav.stock' },
+            { url: '/admin/customers', icon: 'fas fa-users', title: 'ลูกค้า', i18n: 'nav.customers' },
+            { url: '/admin/promotions', icon: 'fas fa-gift', title: 'โปรโมชั่น', i18n: 'nav.promotions' }
         ];
     } else {
         links = [
-            { url: 'staff_orders.html', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', i18n: 'nav.orders' },
-            { url: 'staff_stock.html', icon: 'fas fa-warehouse', title: 'คลังสินค้า', i18n: 'nav.stock' },
-            { url: 'staff_promotions.html', icon: 'fas fa-gift', title: 'โปรโมชั่น', i18n: 'nav.promotions' },
-            { url: 'staff_customers.html', icon: 'fas fa-users', title: 'ลูกค้า', i18n: 'nav.customers' },
-            { url: 'staff_profile.html', icon: 'fas fa-user-cog', title: 'โปรไฟล์', i18n: 'nav.profile' }
+            { url: '/staff/orders', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', i18n: 'nav.orders' },
+            { url: '/staff/stock', icon: 'fas fa-warehouse', title: 'คลังสินค้า', i18n: 'nav.stock' },
+            { url: '/staff/promotions', icon: 'fas fa-gift', title: 'โปรโมชั่น', i18n: 'nav.promotions' },
+            { url: '/staff/customers', icon: 'fas fa-users', title: 'ลูกค้า', i18n: 'nav.customers' },
+            { url: '/staff/profile', icon: 'fas fa-user-cog', title: 'โปรไฟล์', i18n: 'nav.profile' }
         ];
     }
 
     let navHTML = '';
     links.forEach(link => {
-        const isActive = isUrlActive(currentFilename, link.url) ? 'active' : '';
+        const isActive = isUrlActive(currentPath, link.url) ? 'active' : '';
         navHTML += `
             <a href="${link.url}" class="nav-item ${isActive}">
                 <i class="${link.icon}"></i>
@@ -356,13 +415,17 @@ function bindLayoutEvents() {
 
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
+        logoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+            } catch (err) {}
             localStorage.removeItem('user');
             localStorage.removeItem('userProfileData');
             localStorage.removeItem('productsMenuOpen');
             localStorage.removeItem('staffProductsMenuOpen');
-            window.location.href = '/login.html';
+            localStorage.removeItem('csrf_token');
+            window.location.href = '/login';
         });
     }
 }
@@ -405,7 +468,8 @@ async function initNotifications() {
         const renderListHTML = (items) => {
             const lowStock = items.low_stock || [];
             const nearExpiry = items.near_expiry || [];
-            const targetStockPage = window.location.pathname.startsWith('/admin_') || window.location.pathname.startsWith('admin_') ? 'admin_stock.html' : 'staff_stock.html';
+            const cleanRoute = normalizeRoute(window.location.pathname);
+            const targetStockPage = (cleanRoute.startsWith('admin') || window.location.pathname.includes('admin_')) ? '/admin/stock' : '/staff/stock';
             
             if (lowStock.length === 0 && nearExpiry.length === 0) {
                 return `<div class="px-4 py-8 text-center text-green-600 font-semibold flex flex-col items-center gap-2">

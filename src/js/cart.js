@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fas fa-shopping-basket text-5xl mb-4 text-gray-300"></i>
                     <h2 class="text-xl font-medium text-gray-700">ไม่มีสินค้าในตะกร้าของคุณ</h2>
                     <p class="mt-2 text-gray-400">ดูเหมือนว่าคุณยังไม่ได้เพิ่มสินค้าใด ๆ ลงในตะกร้าเลย</p>
-                    <a href="products.html" class="inline-block mt-6 px-6 py-2 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 transition-colors">เริ่มเลือกซื้อสินค้า</a>
+                    <a href="/products" class="inline-block mt-6 px-6 py-2 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 transition-colors">เริ่มเลือกซื้อสินค้า</a>
                 </div>
             `;
             cartSubtotal.textContent = '฿0.00';
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
-            window.location.href = 'checkout.html';
+            window.location.href = '/checkout';
         });
     }
 

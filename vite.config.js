@@ -23,29 +23,53 @@ export default defineConfig({
         server.middlewares.use((req, res, next) => {
           const url = req.url.split('?')[0];
           const routes = {
-            '/': '/index.html', // Vite typically serves index.html for root, index.html does the redirecting! Wait.
+            '/': '/index.html',
             '/home': '/products.html',
+            '/products': '/products.html',
             '/login': '/login.html',
             '/register': '/register.html',
             '/forgot-password': '/forgot_password.html',
             '/reset-password': '/reset_password.html',
-            '/products': '/products.html',
-            '/profile': '/profile.html',
             '/cart': '/cart.html',
             '/checkout': '/checkout.html',
+            '/orders': '/order-history.html',
             '/order-history': '/order-history.html',
             '/my-pets': '/my-pets.html',
+            '/profile': '/profile.html',
             '/contact': '/contact.html',
-            '/admin/stock': '/admin_stock.html',
+            '/pos': '/pos.html',
+
+            // Admin Clean Routes
+            '/admin': '/admin_dashboard.html',
+            '/admin/dashboard': '/admin_dashboard.html',
             '/admin/products': '/admin_product_management.html',
             '/admin/products/edit': '/admin_product_edit.html',
+            '/admin/stock': '/admin_stock.html',
+            '/admin/categories': '/admin_categories.html',
             '/admin/promotions': '/admin_promotions.html',
-            '/admin/delivery': '/admin_delivery.html',
-            '/staff/profile': '/staff_profile.html',
-            '/staff/orders': '/staff_orders.html',
-            '/staff/customers': '/staff_customers.html',
             '/admin/orders': '/admin_orders.html',
-            '/admin/customers': '/admin_customers.html'
+            '/admin/orders/details': '/admin_order_details.html',
+            '/admin/customers': '/admin_customers.html',
+            '/admin/customers/details': '/admin_customer_details.html',
+            '/admin/delivery': '/admin_delivery.html',
+            '/admin/rewards': '/admin_reward_management.html',
+            '/admin/staff': '/admin_staff.html',
+            '/admin/schedule': '/admin_schedule.html',
+            '/admin/attendance': '/admin_attendance.html',
+            '/admin/payroll': '/admin_payroll.html',
+            '/admin/payroll/settings': '/admin_pay_settings.html',
+            '/admin/transactions': '/admin_transactions.html',
+
+            // Staff Clean Routes
+            '/staff': '/staff_profile.html',
+            '/staff/profile': '/staff_profile.html',
+            '/staff/stock': '/staff_stock.html',
+            '/staff/orders': '/staff_orders.html',
+            '/staff/orders/details': '/staff_order_details.html',
+            '/staff/customers': '/staff_customers.html',
+            '/staff/customers/details': '/staff_customer_details.html',
+            '/staff/promotions': '/staff_promotions.html',
+            '/staff/schedule': '/staff_schedule.html'
           };
           
           if (routes[url]) {
@@ -59,4 +83,3 @@ export default defineConfig({
     }
   ],
 });
-

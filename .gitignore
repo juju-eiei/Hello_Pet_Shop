@@ -4,12 +4,9 @@
 .vite
 /dist
 /tmp
-mail_debug.log
-scratch/
 *.log
+scratch/
+maintenance/
 tmp_*
 scratch_*
 inspect_*
-test_push.php
-debug_buttons.html
-

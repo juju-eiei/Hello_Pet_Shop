@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../utils/Response.php';
+require_once __DIR__ . '/../utils/RateLimiter.php';
 
 class AuthController {
     private $db;
@@ -14,6 +15,14 @@ class AuthController {
     }
 
     public function login() {
+        $ip = RateLimiter::getClientIp();
+        $rateCheck = RateLimiter::check('login:' . $ip, 5, 900);
+        if (!$rateCheck['allowed']) {
+            $minutes = ceil($rateCheck['retry_after'] / 60);
+            Response::json(429, "คุณพยายามเข้าสู่ระบบผิดพลาดหลายครั้งเกินไป กรุณารออีก {$minutes} นาทีแล้วลองใหม่อีกครั้ง");
+            return;
+        }
+
         $data = json_decode(file_get_contents("php://input"), true);
 
         if (empty($data['username']) || empty($data['password'])) {
@@ -24,6 +33,9 @@ class AuthController {
         $user = $this->userModel->findByUsername($data['username']);
 
         if ($user && password_verify($data['password'], $user['password'])) {
+            // Clear rate limits on successful login
+            RateLimiter::clear('login:' . $ip);
+
             // Remove password from response
             unset($user['password']);
             
@@ -58,11 +70,20 @@ class AuthController {
 
             Response::json(200, "เข้าสู่ระบบสำเร็จ", $user);
         } else {
+            RateLimiter::hit('login:' . $ip, 900);
             Response::json(401, "Username หรือ Password ไม่ถูกต้อง");
         }
     }
 
     public function register() {
+        $ip = RateLimiter::getClientIp();
+        $rateCheck = RateLimiter::check('register:' . $ip, 5, 600);
+        if (!$rateCheck['allowed']) {
+            $minutes = ceil($rateCheck['retry_after'] / 60);
+            Response::json(429, "คุณทำรายการสมัครสมาชิกบ่อยเกินไป กรุณารออีก {$minutes} นาทีแล้วลองใหม่อีกครั้ง");
+            return;
+        }
+
         $data = json_decode(file_get_contents("php://input"), true);
 
         if (empty($data['full_name']) || empty($data['email']) || empty($data['password']) || empty($data['username'])) {
@@ -85,6 +106,7 @@ class AuthController {
         $userId = $this->userModel->create($data);
 
         if ($userId) {
+            RateLimiter::hit('register:' . $ip, 600);
             Response::json(201, "สมัครสมาชิกสำเร็จ", ["user_id" => $userId]);
         } else {
             Response::json(500, "เกิดข้อผิดพลาดในการสมัครสมาชิก");

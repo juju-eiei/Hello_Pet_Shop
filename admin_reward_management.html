@@ -115,9 +115,14 @@
                                 <label for="lineTargetId" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #475569;">LINE Target User ID / Group ID</label>
                                 <input type="text" id="lineTargetId" class="form-control" placeholder="ใส่รหัส User ID (ขึ้นต้นด้วยตัว U) หรือ Group ID ที่ต้องการรับข้อความ" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px;">
                             </div>
-                            <button onclick="saveRewardSettings()" class="premium-btn" style="width: 100%; justify-content: center; padding: 12px; background: linear-gradient(135deg, #06c755, #05b04b); border-color: #06c755;">
-                                <i class="fas fa-save"></i> บันทึกการตั้งค่า LINE
-                            </button>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                <button onclick="saveRewardSettings()" class="premium-btn" style="flex: 1; min-width: 160px; justify-content: center; padding: 12px; background: linear-gradient(135deg, #06c755, #05b04b); border-color: #06c755;">
+                                    <i class="fas fa-save"></i> บันทึกการตั้งค่า LINE
+                                </button>
+                                <button id="testLineBtn" onclick="testLineConnection()" class="premium-btn" style="flex: 1; min-width: 160px; justify-content: center; padding: 12px; background: #ffffff; color: #06c755; border: 1.5px solid #06c755;">
+                                    <i class="fab fa-line"></i> ทดสอบส่งข้อความเข้า LINE
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -203,6 +208,46 @@
             } catch (error) {
                 console.error("saveRewardSettings error:", error);
                 showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        async function testLineConnection() {
+            const tokenInput = document.getElementById('lineOaToken');
+            const targetInput = document.getElementById('lineTargetId');
+            const lineToken = tokenInput.value.trim();
+            const lineTarget = targetInput.value.trim();
+
+            if (!lineToken || !lineTarget) {
+                showToast("กรุณากรอกทั้ง LINE Token และ Target ID ก่อนทดสอบ", "error");
+                return;
+            }
+
+            const btn = document.getElementById('testLineBtn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> กำลังส่งข้อความทดสอบ...`;
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/notifications/test-line', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: lineToken,
+                        target_id: lineTarget
+                    })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(result.message || "ส่งข้อความทดสอบเข้า LINE สำเร็จแล้ว!", "success");
+                } else {
+                    showToast(result.message || "ทดสอบไม่สำเร็จ กรุณาตรวจสอบ Token / ID", "error");
+                }
+            } catch (err) {
+                console.error("testLineConnection error:", err);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อทดสอบ LINE", "error");
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
             }
         }
 

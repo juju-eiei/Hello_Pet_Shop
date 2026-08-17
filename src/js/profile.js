@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mainLogoutBtn.addEventListener('click', () => {
             localStorage.removeItem('user');
             localStorage.removeItem('cart');
-            window.location.href = 'login.html';
+            window.location.href = '/login';
         });
     }
 

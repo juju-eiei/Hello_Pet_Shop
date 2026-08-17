@@ -100,7 +100,7 @@
                 </button>
 
                 <div class="text-center pt-2">
-                    <a href="login.html" class="text-gray-500 hover:text-primary-600 transition-colors text-sm">
+                    <a href="/login" class="text-gray-500 hover:text-primary-600 transition-colors text-sm">
                         มีบัญชีอยู่แล้วใช่หรือไม่? <span class="text-primary-600 font-semibold underline underline-offset-4">เข้าสู่ระบบ</span>
                     </a>
                 </div>
@@ -139,7 +139,7 @@
                 if (response.ok) {
                     showToast("สมัครสมาชิกสำเร็จ! กำลังพาไปหน้า Login...", "success");
                     setTimeout(() => {
-                        window.location.href = 'login.html';
+                        window.location.href = '/login';
                     }, 1500);
                 } else {
                     showToast(result.message || "การสมัครสมาชิกไม่สำเร็จ", "error");

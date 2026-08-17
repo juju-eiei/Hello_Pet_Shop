@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/Response.php';
+require_once __DIR__ . '/../utils/LineService.php';
 
 class NotificationController {
     private $db;
@@ -67,120 +68,39 @@ class NotificationController {
      */
     public function sendLineNotification() {
         try {
-            // 1. Fetch LINE settings
-            $stmtToken = $this->db->query("SELECT line_oa_token, line_target_id FROM store_settings LIMIT 1");
-            $setting = $stmtToken->fetch(PDO::FETCH_ASSOC);
-            $token = $setting['line_oa_token'] ?? '';
-            $targetId = $setting['line_target_id'] ?? '';
-
-            if (empty($token) || empty($targetId)) {
-                Response::json(400, "กรุณาตั้งค่า LINE Channel Access Token และ Target ID ในหน้าตั้งค่าร้านค้าก่อนใช้งาน");
-                return;
-            }
-
-            // 2. Fetch alerting items
-            // Low stock
-            $qLow = "SELECT product_name, stock_qty, min_stock_level FROM products 
-                     WHERE is_active = 1 
-                       AND (
-                         (min_stock_level IS NULL OR min_stock_level = 0) AND stock_qty <= 5
-                         OR
-                         (min_stock_level IS NOT NULL AND min_stock_level > 0 AND stock_qty <= min_stock_level)
-                       )";
-            $lowStock = $this->db->query($qLow)->fetchAll(PDO::FETCH_ASSOC);
-
-            // Near expiry
-            $qExp = "SELECT p.product_name, l.quantity as stock_qty, l.expiry_date 
-                     FROM product_lots l
-                     JOIN products p ON l.product_id = p.product_id
-                     WHERE p.is_active = 1 
-                       AND l.expiry_date IS NOT NULL 
-                       AND l.expiry_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY)
-                       AND l.quantity > 0
-                     UNION
-                     SELECT p.product_name, p.stock_qty, p.expiry_date
-                     FROM products p
-                     WHERE p.is_active = 1
-                       AND p.expiry_date IS NOT NULL
-                       AND p.expiry_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY)
-                       AND p.stock_qty > 0
-                       AND p.product_id NOT IN (SELECT DISTINCT product_id FROM product_lots WHERE quantity > 0 AND expiry_date IS NOT NULL)
-                     ORDER BY expiry_date ASC";
-            $nearExpiry = $this->db->query($qExp)->fetchAll(PDO::FETCH_ASSOC);
-
-            if (count($lowStock) === 0 && count($nearExpiry) === 0) {
-                Response::json(200, "ไม่มีข้อมูลสินค้าใกล้หมดหรือหมดอายุที่ต้องแจ้งเตือนในขณะนี้");
-                return;
-            }
-
-            // 3. Format message in Thai
-            $message = "📢 แจ้งเตือนสถานะสินค้า Hello Pet Shop ประจำวัน\n";
-            
-            if (count($nearExpiry) > 0) {
-                $message .= "\n🚨 สินค้าใกล้หมดอายุ / หมดอายุแล้ว:\n";
-                foreach ($nearExpiry as $item) {
-                    $formattedDate = date('d/m/Y', strtotime($item['expiry_date']));
-                    $message .= "- {$item['product_name']} (หมดอายุ: {$formattedDate}) เหลือ {$item['stock_qty']} ชิ้น\n";
-                }
-            }
-
-            if (count($lowStock) > 0) {
-                $message .= "\n📦 สินค้าใกล้หมดสต็อก / หมดสต็อก:\n";
-                foreach ($lowStock as $item) {
-                    $min = $item['min_stock_level'] > 0 ? $item['min_stock_level'] : 5;
-                    $message .= "- {$item['product_name']} (เหลือ {$item['stock_qty']} ชิ้น - ขั้นต่ำ {$min} ชิ้น)\n";
-                }
-            }
-
-            // 4. Post request to LINE Messaging API
-            $lineUrl = "https://api.line.me/v2/bot/message/push";
-            $headers = [
-                "Content-Type: application/json",
-                "Authorization: Bearer " . $token
-            ];
-            $payload = [
-                'to' => $targetId,
-                'messages' => [
-                    [
-                        'type' => 'text',
-                        'text' => trim($message)
-                    ]
-                ]
-            ];
-
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $lineUrl);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            
-            $result = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode === 200) {
-                Response::json(200, "ส่งรายงานไปที่ LINE เรียบร้อยแล้ว");
+            $result = LineService::sendStockSummaryAlert($this->db);
+            if ($result['success']) {
+                Response::json(200, $result['message']);
             } else {
-                $resData = json_decode($result, true);
-                $errorMsg = $resData['message'] ?? 'เกิดข้อผิดพลาดในการเชื่อมต่อ LINE Messaging API';
-                if (!empty($resData['details'])) {
-                    $subErrors = [];
-                    foreach ($resData['details'] as $det) {
-                        if (isset($det['message'])) {
-                            $subErrors[] = $det['message'];
-                        }
-                    }
-                    if (count($subErrors) > 0) {
-                        $errorMsg .= " (" . implode(", ", $subErrors) . ")";
-                    }
-                }
-                Response::json($httpCode, "ส่งข้อความไม่สำเร็จ: " . $errorMsg, ["raw" => $result]);
+                Response::json(400, $result['message'], $result);
             }
-
         } catch (Exception $e) {
             Response::json(500, "Error sending LINE notification: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Test LINE Connection with provided or saved token & target ID
+     */
+    public function testLineConnection() {
+        try {
+            $data = json_decode(file_get_contents("php://input"), true);
+            $token = !empty($data['token']) ? trim($data['token']) : null;
+            $targetId = !empty($data['target_id']) ? trim($data['target_id']) : null;
+
+            $testMsg = "🔔 ทดสอบการเชื่อมต่อ LINE Messaging API สำเร็จ!\n";
+            $testMsg .= "━━━━━━━━━━━━━━━━━━\n";
+            $testMsg .= "ระบบ Hello Pet Shop สามารถส่งการแจ้งเตือนเข้าห้องแชทนี้ได้แล้ว 🎉\n";
+            $testMsg .= "🕒 เวลาทดสอบ: " . date('d/m/Y H:i:s') . " น.";
+
+            $result = LineService::sendPushMessage($testMsg, $token, $targetId);
+            if ($result['success']) {
+                Response::json(200, "เชื่อมต่อและส่งข้อความทดสอบสำเร็จแล้ว! กรุณาเช็คในแอป LINE", $result);
+            } else {
+                Response::json(400, "ทดสอบไม่สำเร็จ: " . $result['message'], $result);
+            }
+        } catch (Exception $e) {
+            Response::json(500, "Error testing LINE connection: " . $e->getMessage());
         }
     }
 }

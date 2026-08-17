@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/Response.php';
+require_once __DIR__ . '/../utils/RateLimiter.php';
 require_once __DIR__ . '/../models/User.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -19,6 +20,16 @@ class PasswordResetController {
     }
 
     public function requestReset() {
+        // 1. Rate limiting (max 5 requests per 15 minutes per IP)
+        $ip = RateLimiter::getClientIp();
+        $rateCheck = RateLimiter::check('forgot_pwd:' . $ip, 5, 900);
+        if (!$rateCheck['allowed']) {
+            $minutes = ceil($rateCheck['retry_after'] / 60);
+            Response::json(429, "คุณทำรายการขอรีเซ็ทรหัสผ่านบ่อยเกินไป กรุณารออีก {$minutes} นาทีแล้วลองใหม่อีกครั้ง");
+            return;
+        }
+        RateLimiter::hit('forgot_pwd:' . $ip, 900);
+
         $data = json_decode(file_get_contents("php://input"), true);
         if (empty($data['email'])) {
             Response::json(400, "กรุณากรอกอีเมล");
@@ -29,28 +40,31 @@ class PasswordResetController {
 
         // Check if user exists with this email
         $user = $this->userModel->findByEmail($email);
+        
+        // Return generic success response even if email doesn't exist to prevent email enumeration
         if (!$user) {
-            Response::json(404, "ไม่พบที่อยู่อีเมลนี้ในระบบ");
+            Response::json(200, "หากอีเมลนี้มีอยู่ในระบบ เราได้ส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปให้แล้ว กรุณาตรวจสอบกล่องข้อความอีเมลของคุณ");
             return;
         }
 
-        // Generate token and expiry time (1 hour from now)
-        $token = bin2hex(random_bytes(32));
+        // Generate raw token and hash for database storage (SHA-256)
+        $rawToken = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $rawToken);
         $expires_at = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
         // Delete any existing tokens for this email
         $deleteStmt = $this->db->prepare("DELETE FROM password_resets WHERE email = :email");
         $deleteStmt->execute([':email' => $email]);
 
-        // Insert new token
+        // Insert new hashed token
         $insertStmt = $this->db->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires_at)");
         $insertStmt->execute([
             ':email' => $email,
-            ':token' => $token,
+            ':token' => $tokenHash,
             ':expires_at' => $expires_at
         ]);
 
-        // Construct reset link
+        // Construct reset link with raw token
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         if (!empty($_SERVER['HTTP_REFERER'])) {
@@ -62,7 +76,7 @@ class PasswordResetController {
                 }
             }
         }
-        $resetLink = $protocol . "://" . $host . "/reset-password?token=" . $token;
+        $resetLink = $protocol . "://" . $host . "/reset-password?token=" . $rawToken;
 
         $subject = "รีเซ็ทรหัสผ่าน - Hello Pet Shop";
 
@@ -97,25 +111,13 @@ class PasswordResetController {
             $mailConfig = require __DIR__ . '/../config/mail.php';
         }
 
-        // Check if config has been modified by user from default placeholder
         $isSmtpConfigured = $mailConfig && 
                              !empty($mailConfig['smtp_user']) && 
                              $mailConfig['smtp_user'] !== 'YOUR_GMAIL_ADDRESS@gmail.com' &&
                              !empty($mailConfig['smtp_pass']) && 
                              $mailConfig['smtp_pass'] !== 'YOUR_GMAIL_APP_PASSWORD';
 
-        // Write to mail_debug.log in the project root
-        $logDir = __DIR__ . '/../';
-        $logFile = $logDir . 'mail_debug.log';
-        $logContent = "[" . date('Y-m-d H:i:s') . "] Reset email sent to: {$email}\n";
-        $logContent .= "Link: {$resetLink}\n";
-        $logContent .= "SMTP User: " . ($mailConfig['smtp_user'] ?? 'NOT SET') . "\n";
-        $logContent .= "SMTP Configured: " . ($isSmtpConfigured ? 'YES' : 'NO') . "\n";
-        $logContent .= "----------------------------------------\n";
-        file_put_contents($logFile, $logContent, FILE_APPEND);
-
         $sentSuccessfully = false;
-        $errorMsg = '';
 
         if ($isSmtpConfigured) {
             try {
@@ -143,14 +145,8 @@ class PasswordResetController {
 
                 $mail->send();
                 $sentSuccessfully = true;
-
-                // Log success
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] SMTP SEND SUCCESS\n----------------------------------------\n", FILE_APPEND);
             } catch (Exception $e) {
                 error_log("PHPMailer SMTP Error: " . $e->getMessage());
-                $errorMsg = $e->getMessage();
-                // Log error
-                file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] SMTP ERROR: {$errorMsg}\n----------------------------------------\n", FILE_APPEND);
             }
         }
 
@@ -161,33 +157,35 @@ class PasswordResetController {
             $headers .= 'From: Hello Pet Shop <noreply@hellopetshop.com>' . "\r\n";
 
             @mail($email, $subject, $message, $headers);
-            file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Used FALLBACK mail() instead of SMTP\n----------------------------------------\n", FILE_APPEND);
         }
 
-        if ($sentSuccessfully) {
-            Response::json(200, "ส่งลิงก์รีเซ็ทรหัสผ่านไปยังอีเมลของคุณแล้ว (ส่งด้วย SMTP สำเร็จ)");
-        } else {
-            if ($isSmtpConfigured) {
-                Response::json(200, "การส่งด้วย SMTP ล้มเหลว ($errorMsg) แต่ได้ส่งไปยังระบบจำลองและบันทึกใน mail_debug.log แล้ว");
-            } else {
-                Response::json(200, "ส่งลิงก์รีเซ็ทรหัสผ่านไปยังระบบจำลองแล้ว (กรุณาตั้งค่า SMTP ใน config/mail.php เพื่อรับอีเมลจริงใน Gmail)");
-            }
-        }
+        Response::json(200, "หากอีเมลนี้มีอยู่ในระบบ เราได้ส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปให้แล้ว กรุณาตรวจสอบกล่องข้อความอีเมลของคุณ");
     }
 
     public function resetPassword() {
+        // Rate limiting (max 10 attempts per 15 minutes per IP)
+        $ip = RateLimiter::getClientIp();
+        $rateCheck = RateLimiter::check('reset_pwd:' . $ip, 10, 900);
+        if (!$rateCheck['allowed']) {
+            $minutes = ceil($rateCheck['retry_after'] / 60);
+            Response::json(429, "คุณทำรายการบ่อยเกินไป กรุณารออีก {$minutes} นาทีแล้วลองใหม่อีกครั้ง");
+            return;
+        }
+        RateLimiter::hit('reset_pwd:' . $ip, 900);
+
         $data = json_decode(file_get_contents("php://input"), true);
         if (empty($data['token']) || empty($data['password'])) {
             Response::json(400, "กรุณากรอกข้อมูลให้ครบถ้วน");
             return;
         }
 
-        $token = trim($data['token']);
+        $rawToken = trim($data['token']);
+        $tokenHash = hash('sha256', $rawToken);
         $newPassword = $data['password'];
 
-        // Find token and check expiry
+        // Find token by hash and check expiry
         $stmt = $this->db->prepare("SELECT * FROM password_resets WHERE token = :token LIMIT 1");
-        $stmt->execute([':token' => $token]);
+        $stmt->execute([':token' => $tokenHash]);
         $record = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$record) {
@@ -200,7 +198,7 @@ class PasswordResetController {
         if (strtotime($record['expires_at']) < strtotime($now)) {
             // Delete expired token
             $deleteStmt = $this->db->prepare("DELETE FROM password_resets WHERE token = :token");
-            $deleteStmt->execute([':token' => $token]);
+            $deleteStmt->execute([':token' => $tokenHash]);
             
             Response::json(400, "ลิงก์รีเซ็ทรหัสผ่านนี้หมดอายุแล้ว");
             return;
@@ -232,6 +230,10 @@ class PasswordResetController {
             // Delete token
             $deleteStmt = $this->db->prepare("DELETE FROM password_resets WHERE email = :email");
             $deleteStmt->execute([':email' => $email]);
+
+            // Clear rate limits for IP
+            RateLimiter::clear('reset_pwd:' . $ip);
+            RateLimiter::clear('forgot_pwd:' . $ip);
 
             Response::json(200, "เปลี่ยนรหัสผ่านใหม่สำเร็จแล้ว");
         } else {

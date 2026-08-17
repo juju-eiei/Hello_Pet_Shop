@@ -81,7 +81,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div>
                     <button class="add-to-cart-btn w-full py-2.5 bg-secondary-600 hover:bg-secondary-700 text-white rounded-xl text-xs font-bold shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                        data-id="${escapeHTML(p.product_id)}" data-name="${escapeHTML(p.product_name)}" data-price="${escapeHTML(p.selling_price)}" data-image="${escapeHTML(p.image_url || '/image/non-image.png')}" data-category="${escapeHTML(p.category_name || '')}">
+                        data-id="${escapeHTML(p.product_id)}" 
+                        data-name="${escapeHTML(p.product_name)}" 
+                        data-price="${escapeHTML(p.selling_price)}" 
+                        data-image="${escapeHTML(p.image_url || '/image/non-image.png')}" 
+                        data-category="${escapeHTML(p.category_name || '')}"
+                        data-weight="${escapeHTML(p.weight || p.weight_value || '0')}"
+                        data-weight-unit="${escapeHTML(p.weight_unit || 'kg')}">
                         <i class="fas fa-cart-plus"></i> หยิบใส่ตะกร้า
                     </button>
                 </div>
@@ -92,8 +98,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const { id, name, price, image, category } = e.currentTarget.dataset;
-                addToCart({ id, name, price, image, category_name: category });
+                const { id, name, price, image, category, weight, weightUnit } = e.currentTarget.dataset;
+                let parsedWeight = parseFloat(weight) || 0;
+                const u = (weightUnit || 'kg').toLowerCase().trim();
+                if (u === 'g' || u === 'ml' || u === 'กรัม' || u === 'มิลลิลิตร') {
+                    parsedWeight = parsedWeight / 1000.0;
+                }
+                addToCart({ 
+                    id, 
+                    name, 
+                    price, 
+                    image, 
+                    category_name: category,
+                    weight: parsedWeight,
+                    weight_unit: weightUnit || 'kg'
+                });
             });
         });
     }
@@ -231,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('user');
-            window.location.href = 'login.html';
+            window.location.href = '/login';
         });
     }
 

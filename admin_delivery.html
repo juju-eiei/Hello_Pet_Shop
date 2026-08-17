@@ -417,7 +417,7 @@
                     <div class="company-item ${isActive}" onclick="selectCompany(${comp.company_id})">
                         <div class="company-info">
                             <h3>${comp.company_name}</h3>
-                            <p>สูตรคำนวณเริ่มต้น: ฿${parseFloat(comp.base_rate).toFixed(2)} + (฿${parseFloat(comp.rate_per_kg).toFixed(2)}/kg)</p>
+                            <p>สูตรคำนวณ: ฿${parseFloat(comp.base_rate).toFixed(2)} (1 กก. แรก) + ฿${parseFloat(comp.rate_per_kg).toFixed(2)}/กก. ถัดไป</p>
                         </div>
                         <div class="action-btns" onclick="event.stopPropagation()">
                             <button class="action-btn edit" onclick="openCompanyModal(${comp.company_id})" title="แก้ไขข้อมูล"><i class="fas fa-edit"></i></button>

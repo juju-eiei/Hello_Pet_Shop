@@ -6,9 +6,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>รายละเอียดคำสั่งซื้อ (พนักงาน) - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .status-pill {
             padding: 6px 16px;
@@ -537,6 +537,76 @@
 
                 <!-- Right Column -->
                 <div class="right-col">
+                    <!-- Payment Slip Card -->
+                    <div class="details-card" id="paymentSlipCard" style="border: 1px solid #e2e8f0;">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span><i class="fas fa-file-invoice-dollar" style="color: #0284c7;"></i> หลักฐานการชำระเงิน</span>
+                            <span id="slipStatusBadge" class="status-pill" style="font-size: 11px; padding: 3px 8px;">-</span>
+                        </div>
+                        <div id="slipContentArea">
+                            <!-- If slip attached -->
+                            <!-- If slip attached -->
+                            <div id="slipAttachedView" style="display: none;">
+                                <div style="position: relative; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; background: #f8fafc; margin-bottom: 12px; cursor: pointer; text-align: center; display: flex; justify-content: center; align-items: center; min-height: 180px; max-height: 300px;" onclick="openSlipModal()">
+                                    <img id="slipImagePreview" src="" alt="Payment Slip" style="max-height: 280px; max-width: 100%; object-fit: contain; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                                    <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(15, 23, 42, 0.75); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; backdrop-filter: blur(4px);">
+                                        <i class="fas fa-search-plus"></i> คลิกดูรูปขนาดเต็ม
+                                    </div>
+                                </div>
+                                <div class="info-row" style="margin-bottom: 6px;">
+                                    <div class="info-label">ช่องทางชำระ</div>
+                                    <div class="info-value" id="slipPayMethodText" style="font-weight: 600; color: #1e293b;">โอนเงิน / PromptPay</div>
+                                </div>
+                                <div class="info-row" id="slipPayDateRow" style="margin-bottom: 6px;">
+                                    <div class="info-label">เวลาชำระเงิน</div>
+                                    <div class="info-value" id="slipPayDateText" style="color: #64748b;">-</div>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                    <button type="button" onclick="openSlipModal()" class="save-btn" style="flex: 1; background: #0284c7; padding: 8px 12px; font-size: 13px; border-radius: 8px; border: none; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-weight: 600;">
+                                        <i class="fas fa-eye"></i> ดูสลิปเต็มจอ
+                                    </button>
+                                    <label for="staffSlipFileInput" style="cursor: pointer; background: #ffffff; color: #334155; padding: 8px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1.5px solid #cbd5e1; display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;">
+                                        <i class="fas fa-upload" style="color: #475569;"></i> <span style="color: #334155; font-weight: 600;">เปลี่ยนรูป</span>
+                                        <input type="file" id="staffSlipFileInput" accept="image/*" style="display: none;" onchange="handleStaffUploadSlip(event)">
+                                    </label>
+                                </div>
+
+                                <!-- Slip Verification Fast Actions -->
+                                <div id="slipActionButtonsContainer" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
+                                    <div style="font-size: 12px; font-weight: 700; color: #475569; display: flex; align-items: center; justify-content: space-between;">
+                                        <span><i class="fas fa-shield-alt" style="color: #6366f1;"></i> การตรวจสอบสลิป:</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <button type="button" onclick="verifyCurrentOrderSlip('approve')" id="btnApproveSlip" style="background: #10b981; color: white; border: none; padding: 9px 10px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(16,185,129,0.25); transition: all 0.2s;">
+                                            <i class="fas fa-check-circle"></i> สลิปจริง (เริ่มแพ็ค)
+                                        </button>
+                                        <button type="button" onclick="verifyCurrentOrderSlip('reject')" id="btnRejectSlip" style="background: #ef4444; color: white; border: none; padding: 9px 10px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(239,68,68,0.25); transition: all 0.2s;">
+                                            <i class="fas fa-times-circle"></i> สลิปปลอม (ยกเลิก)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- If slip missing (Online order) -->
+                            <div id="slipMissingView" style="display: none; padding: 16px; background: #fffbeb; border: 1px dashed #f59e0b; border-radius: 12px; text-align: center;">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 28px; color: #f59e0b; margin-bottom: 8px;"></i>
+                                <div style="font-weight: 600; color: #92400e; font-size: 14px; margin-bottom: 4px;">ยังไม่ได้แนบสลิปชำระเงิน</div>
+                                <p style="font-size: 12px; color: #b45309; margin: 0 0 12px 0;">ลูกค้ารายนี้ยังไม่ได้ส่งหลักฐานการโอนเงิน หรือเลือกชำระเงินภายหลัง</p>
+                                <label for="staffSlipUploadNew" class="save-btn" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; background: #f59e0b; color: white; padding: 8px 14px; font-size: 13px; border-radius: 8px; border: none; margin: 0;">
+                                    <i class="fas fa-cloud-upload-alt"></i> อัปโหลดสลิปแทนลูกค้า
+                                    <input type="file" id="staffSlipUploadNew" accept="image/*" style="display: none;" onchange="handleStaffUploadSlip(event)">
+                                </label>
+                            </div>
+
+                            <!-- If POS / In-store Cash Order -->
+                            <div id="slipPosView" style="display: none; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; text-align: center;">
+                                <i class="fas fa-cash-register" style="font-size: 24px; color: #64748b; margin-bottom: 6px;"></i>
+                                <div style="font-weight: 600; color: #334155; font-size: 14px;">รายการขายหน้าร้าน (POS)</div>
+                                <div style="font-size: 12px; color: #64748b; margin-top: 2px;">ชำระเงินสด / รับเงินที่เคาน์เตอร์แล้ว</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="details-card"
                         style="background-color: #f8fafc; border: 1px solid #e2e8f0; box-shadow: none;">
                         <div class="card-header"><i class="fas fa-receipt" style="color: #8b5cf6;"></i> Payment Summary
@@ -598,6 +668,38 @@
         </main>
     </div>
 
+    <!-- Full Slip Lightbox Modal -->
+    <div id="slipViewModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeSlipModal()">
+        <div class="modal-card" style="width: 90%; max-width: 550px; padding: 20px; max-height: 92vh; display: flex; flex-direction: column; border-radius: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div class="modal-title" style="margin: 0; font-size: 17px; text-align: left; display: flex; align-items: center; gap: 8px; font-weight: 700; color: #1e293b;">
+                    <i class="fas fa-receipt" style="color: #0284c7;"></i> หลักฐานการโอนเงิน (Payment Slip)
+                </div>
+                <button type="button" onclick="closeSlipModal()" style="border: none; background: #f1f5f9; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: #64748b; font-size: 16px;"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="background: #f8fafc; border-radius: 12px; overflow-y: auto; display: flex; justify-content: center; align-items: center; padding: 12px; flex: 1; min-height: 280px; max-height: 60vh; border: 1px solid #cbd5e1;">
+                <img id="modalSlipImage" src="" alt="Full Slip" style="max-width: 100%; max-height: 56vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+            </div>
+            <!-- Fast Action Buttons inside Modal -->
+            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button type="button" onclick="verifyCurrentOrderSlip('approve')" id="modalBtnApproveSlip" style="background: #10b981; color: white; border: none; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(16,185,129,0.25); transition: all 0.2s;">
+                        <i class="fas fa-check-circle"></i> สลิปจริง (เริ่มแพ็คสินค้า)
+                    </button>
+                    <button type="button" onclick="verifyCurrentOrderSlip('reject')" id="modalBtnRejectSlip" style="background: #ef4444; color: white; border: none; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(239,68,68,0.25); transition: all 0.2s;">
+                        <i class="fas fa-times-circle"></i> สลิปปลอม (ยกเลิกออเดอร์)
+                    </button>
+                </div>
+                <div class="modal-btns" style="margin-top: 4px;">
+                    <a id="modalSlipDownloadLink" href="#" target="_blank" download="payment_slip.jpg" class="modal-btn modal-btn-confirm" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; background: #0284c7; font-size: 13px; padding: 8px 14px;">
+                        <i class="fas fa-external-link-alt"></i> เปิดรูปต้นฉบับ
+                    </a>
+                    <button type="button" class="modal-btn modal-btn-cancel" onclick="closeSlipModal()" style="font-size: 13px; padding: 8px 14px;">ปิดหน้าต่าง</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Thermal Receipt Preview Modal -->
     <div id="receiptModal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
@@ -630,7 +732,7 @@
             if (s === 'Pending' || s === 'รอดำเนินการ' || s === 'Pending Payment' || s === 'ที่ต้องชำระ') return 'รอดำเนินการ';
             if (s === 'Processing' || s === 'กำลังแพ็คสินค้า' || s === 'กำลังดำเนินการ' || s === 'Preparing' || s === 'ที่ต้องจัดส่ง') return 'กำลังแพ็คสินค้า';
             if (s === 'In Transit' || s === 'กำลังจัดส่ง' || s === 'กำลังนำส่ง' || s === 'Shipping' || s === 'ที่ต้องได้รับ' || s === 'มอบให้ขนส่งแล้ว') return 'กำลังจัดส่ง';
-            if (s === 'Completed' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'สำเร็จแล้ว';
+            if (s === 'Completed' || s === 'จัดส่งสำเร็จ' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'จัดส่งสำเร็จ';
             if (s === 'Cancelled' || s === 'ยกเลิกแล้ว' || s === 'ยกเลิก') return 'ยกเลิกแล้ว';
             return status;
         }
@@ -735,6 +837,11 @@
                         tracking_number: found.trackingNumber || null,
                         company_id: found.company_id || null,
                         company_name: found.company_name || found.deliveryCompany || found.shipping_provider || null,
+                        shipping_provider: found.company_name || found.deliveryCompany || found.shipping_provider || null,
+                        slip_image: found.slipImage || found.slip_image || null,
+                        has_slip: !!(found.slipImage || found.slip_image),
+                        payment_method: found.paymentMethod || 'transfer',
+                        payment_date: found.paidAt || found.date || null,
                         customer: found.customer || { name: 'Success User', email: 'success@example.com', phone: '0812345678', address: '123 Test Road Bangkok 10110' },
                         items: (found.items || []).map(i => ({ name: i.name, price: i.price, qty: i.quantity, image: i.image })),
                         summary: {
@@ -871,10 +978,52 @@
                 const pointsEarnedRow = document.getElementById('pointsEarnedRow');
                 if (pointsEarnedRow) {
                     if (data.points_earned > 0) {
-                    document.getElementById('sPointsEarned').textContent = '+' + Number(data.points_earned).toLocaleString() + ' แต้ม';
+                        document.getElementById('sPointsEarned').textContent = '+' + Number(data.points_earned).toLocaleString() + ' แต้ม';
                         pointsEarnedRow.style.display = 'flex';
                     } else {
                         pointsEarnedRow.style.display = 'none';
+                    }
+                }
+
+                // Payment Slip Section Handling
+                const slipAttachedView = document.getElementById('slipAttachedView');
+                const slipMissingView = document.getElementById('slipMissingView');
+                const slipPosView = document.getElementById('slipPosView');
+                const slipStatusBadge = document.getElementById('slipStatusBadge');
+
+                if (isPos) {
+                    if (slipAttachedView) slipAttachedView.style.display = 'none';
+                    if (slipMissingView) slipMissingView.style.display = 'none';
+                    if (slipPosView) slipPosView.style.display = 'block';
+                    if (slipStatusBadge) {
+                        slipStatusBadge.textContent = 'เงินสด / POS';
+                        slipStatusBadge.className = 'status-pill completed';
+                    }
+                } else if (data.has_slip && data.slip_image) {
+                    if (slipPosView) slipPosView.style.display = 'none';
+                    if (slipMissingView) slipMissingView.style.display = 'none';
+                    if (slipAttachedView) slipAttachedView.style.display = 'block';
+                    
+                    const slipPreview = document.getElementById('slipImagePreview');
+                    if (slipPreview) slipPreview.src = data.slip_image;
+
+                    const slipDateText = document.getElementById('slipPayDateText');
+                    if (slipDateText) slipDateText.textContent = data.payment_date || data.date || '-';
+
+                    const slipMethodText = document.getElementById('slipPayMethodText');
+                    if (slipMethodText) slipMethodText.textContent = data.payment_method === 'credit_card' ? 'บัตรเครดิต' : 'โอนเงิน / PromptPay';
+
+                    if (slipStatusBadge) {
+                        slipStatusBadge.textContent = 'แนบสลิปแล้ว';
+                        slipStatusBadge.className = 'status-pill completed';
+                    }
+                } else {
+                    if (slipPosView) slipPosView.style.display = 'none';
+                    if (slipAttachedView) slipAttachedView.style.display = 'none';
+                    if (slipMissingView) slipMissingView.style.display = 'block';
+                    if (slipStatusBadge) {
+                        slipStatusBadge.textContent = 'ยังไม่แนบสลิป';
+                        slipStatusBadge.className = 'status-pill pending';
                     }
                 }
 
@@ -884,6 +1033,201 @@
                 showToast("เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
             }
         }
+
+        function openSlipModal() {
+            if (!currentOrderData || !currentOrderData.slip_image) {
+                showToast("ยังไม่มีหลักฐานการชำระเงินในคำสั่งซื้อนี้", "warning");
+                return;
+            }
+            const modal = document.getElementById('slipViewModal');
+            const img = document.getElementById('modalSlipImage');
+            const dl = document.getElementById('modalSlipDownloadLink');
+            if (img) img.src = currentOrderData.slip_image;
+            if (dl) dl.href = currentOrderData.slip_image;
+            if (modal) {
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+            }
+        }
+
+        function closeSlipModal() {
+            const modal = document.getElementById('slipViewModal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.style.display = 'none', 300);
+            }
+        }
+
+        async function handleStaffUploadSlip(event) {
+            const file = event.target.files[0];
+            if (!file || !currentOrderData) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64Data = e.target.result;
+                try {
+                    const res = await fetch('/api/orders/upload-slip', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            order_id: currentOrderData.id,
+                            slip_image: base64Data
+                        })
+                    });
+
+                    if (res.ok) {
+                        currentOrderData.slip_image = base64Data;
+                        currentOrderData.has_slip = true;
+
+                        // Immediately update preview UI
+                        const slipPreview = document.getElementById('slipImagePreview');
+                        if (slipPreview) slipPreview.src = base64Data;
+                        const modalImg = document.getElementById('modalSlipImage');
+                        if (modalImg) modalImg.src = base64Data;
+                        const modalDl = document.getElementById('modalSlipDownloadLink');
+                        if (modalDl) modalDl.href = base64Data;
+
+                        const slipAttachedView = document.getElementById('slipAttachedView');
+                        const slipMissingView = document.getElementById('slipMissingView');
+                        if (slipAttachedView) slipAttachedView.style.display = 'block';
+                        if (slipMissingView) slipMissingView.style.display = 'none';
+
+                        const slipStatusBadge = document.getElementById('slipStatusBadge');
+                        if (slipStatusBadge) {
+                            slipStatusBadge.textContent = 'แนบสลิปแล้ว';
+                            slipStatusBadge.className = 'status-pill completed';
+                        }
+
+                        // Also update in localStorage if present
+                        try {
+                            const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+                            const oIdx = myOrders.findIndex(o => String(o.id) === String(currentOrderData.id));
+                            if (oIdx !== -1) {
+                                myOrders[oIdx].slipImage = base64Data;
+                                localStorage.setItem('myOrders', JSON.stringify(myOrders));
+                            }
+                        } catch(eLoc) {}
+
+                        showToast("อัปโหลดสลิปชำระเงินเรียบร้อยแล้ว", "success");
+                        initData();
+                    } else {
+                        const err = await res.json();
+                        showToast(err.message || "เกิดข้อผิดพลาดในการอัปโหลดสลิป", "error");
+                    }
+                } catch (error) {
+                    console.error("Error uploading slip:", error);
+                    showToast("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่ออัปโหลดสลิปได้", "error");
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function verifyCurrentOrderSlip(action) {
+            if (!currentOrderData) return;
+
+            if (action === 'reject') {
+                const result = await Swal.fire({
+                    title: 'ยืนยันปฏิเสธสลิปหรือไม่?',
+                    html: `ต้องการระบุคำสั่งซื้อ <b>${currentOrderData.number}</b> เป็น <span style="color: #ef4444; font-weight: bold;">"สลิปไม่ถูกต้อง / ปลอม"</span> และยกเลิกคำสั่งซื้อนี้ทันทีหรือไม่?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#94a3b8',
+                    confirmButtonText: '<i class="fas fa-trash-alt"></i> ยืนยันยกเลิกออเดอร์',
+                    cancelButtonText: 'ยกเลิก',
+                    reverseButtons: true,
+                    borderRadius: '16px'
+                });
+                if (!result.isConfirmed) return;
+            }
+
+            const btnApprove = document.getElementById('btnApproveSlip');
+            const btnReject = document.getElementById('btnRejectSlip');
+            const modalBtnApprove = document.getElementById('modalBtnApproveSlip');
+            const modalBtnReject = document.getElementById('modalBtnRejectSlip');
+
+            if (btnApprove) btnApprove.disabled = true;
+            if (btnReject) btnReject.disabled = true;
+            if (modalBtnApprove) modalBtnApprove.disabled = true;
+            if (modalBtnReject) modalBtnReject.disabled = true;
+
+            const csrfToken = localStorage.getItem('csrf_token');
+            const reqHeaders = { 'Content-Type': 'application/json' };
+            if (csrfToken) reqHeaders['X-CSRF-Token'] = csrfToken;
+
+            try {
+                let res = await fetch('/api/orders/verify-slip', {
+                    method: 'POST',
+                    headers: reqHeaders,
+                    body: JSON.stringify({
+                        order_id: currentOrderData.id,
+                        action: action,
+                        reason: action === 'reject' ? 'สลิปไม่ถูกต้อง / ยอดเงินไม่ตรง' : ''
+                    })
+                });
+
+                if (!res.ok) {
+                    // Fallback to update-status
+                    res = await fetch('/api/orders/update-status', {
+                        method: 'POST',
+                        headers: reqHeaders,
+                        body: JSON.stringify({
+                            order_id: currentOrderData.id,
+                            status: action === 'approve' ? 'Processing' : 'Cancelled'
+                        })
+                    });
+                }
+
+                if (res.ok) {
+                    currentOrderData.status = (action === 'approve' ? 'Processing' : 'Cancelled');
+
+                    // Also update in localStorage 'myOrders' if present
+                    try {
+                        const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+                        const oIdx = myOrders.findIndex(o => String(o.id) === String(currentOrderData.id));
+                        if (oIdx !== -1) {
+                            myOrders[oIdx].status = (action === 'approve' ? 'Preparing' : 'Cancelled');
+                            localStorage.setItem('myOrders', JSON.stringify(myOrders));
+                        }
+                    } catch(eLoc) {}
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: action === 'approve' ? 'อนุมัติสลิปสำเร็จ!' : 'ยกเลิกคำสั่งซื้อสำเร็จ',
+                        text: action === 'approve' ? 'เปลี่ยนสถานะเป็น "กำลังแพ็คสินค้า" เรียบร้อยแล้ว' : 'ยกเลิกคำสั่งซื้อเนื่องจากสลิปไม่ถูกต้องเรียบร้อยแล้ว',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        borderRadius: '16px'
+                    });
+
+                    closeSlipModal();
+                    initData();
+                } else {
+                    const json = await res.json().catch(() => ({}));
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: json.message || 'เกิดข้อผิดพลาดในการตรวจสอบสลิป',
+                        borderRadius: '16px'
+                    });
+                }
+            } catch (error) {
+                console.error('Error verifying slip:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เชื่อมต่อไม่สำเร็จ',
+                    text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อตรวจสอบสลิปได้',
+                    borderRadius: '16px'
+                });
+            } finally {
+                if (btnApprove) btnApprove.disabled = false;
+                if (btnReject) btnReject.disabled = false;
+                if (modalBtnApprove) modalBtnApprove.disabled = false;
+                if (modalBtnReject) modalBtnReject.disabled = false;
+            }
+        }
+        window.verifyCurrentOrderSlip = verifyCurrentOrderSlip;
+        window.fetchOrderDetails = initData;
 
         function openReceiptModal() {
             if (!currentOrderData) {
@@ -1018,7 +1362,8 @@
                 if (currentOrderData.items && Array.isArray(currentOrderData.items)) {
                     totalWeight = currentOrderData.items.reduce((sum, item) => sum + (parseFloat(item.weight || 0) * (item.qty || 1)), 0);
                 }
-                let calcShipping = baseRate + (Math.ceil(totalWeight) * ratePerKg);
+                const extraKg = totalWeight > 1.0 ? Math.ceil(totalWeight - 1.0) : 0;
+                let calcShipping = baseRate + (extraKg * ratePerKg);
                 if (calcShipping <= 0) calcShipping = baseRate > 0 ? baseRate : 40.00;
 
                 const subtotal = parseFloat(currentOrderData.summary?.subtotal || 0);
@@ -1059,7 +1404,8 @@
                 if (currentOrderData && currentOrderData.items && Array.isArray(currentOrderData.items)) {
                     totalWeight = currentOrderData.items.reduce((sum, item) => sum + (parseFloat(item.weight || 0) * (item.qty || 1)), 0);
                 }
-                calcShippingFee = baseRate + (Math.ceil(totalWeight) * ratePerKg);
+                const extraKg = totalWeight > 1.0 ? Math.ceil(totalWeight - 1.0) : 0;
+                calcShippingFee = baseRate + (extraKg * ratePerKg);
                 if (calcShippingFee <= 0) calcShippingFee = baseRate > 0 ? baseRate : 40.00;
 
                 const subtotal = parseFloat(currentOrderData?.summary?.subtotal || 0);

@@ -26,7 +26,7 @@ if (file_exists($env_path)) {
 }
 
 // 2. Global Session Security Configuration
-if (session_status() === PHP_SESSION_NONE) {
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
     // Dynamic secure check for HTTPS (supports local development on HTTP and production on HTTPS)
     $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
               (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
@@ -44,4 +44,6 @@ if (session_status() === PHP_SESSION_NONE) {
 // value must make bearer-token authentication unavailable rather than forgeable.
 define('JWT_SECRET', getenv('JWT_SECRET') ?: ($_ENV['JWT_SECRET'] ?? ''));
 define('JWT_ISSUER', getenv('JWT_ISSUER') ?: ($_ENV['JWT_ISSUER'] ?? 'localhost'));
+define('CORS_ALLOWED_ORIGINS', getenv('CORS_ALLOWED_ORIGINS') ?: ($_ENV['CORS_ALLOWED_ORIGINS'] ?? ''));
+define('LINE_CHANNEL_SECRET', getenv('LINE_CHANNEL_SECRET') ?: ($_ENV['LINE_CHANNEL_SECRET'] ?? ''));
 ?>
