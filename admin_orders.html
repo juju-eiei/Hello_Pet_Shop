@@ -489,7 +489,7 @@
                 const searchInput = document.getElementById('searchInput');
                 if (!container || !searchInput) return;
                 
-                const keyword = searchInput.value.toLowerCase();
+                const keyword = searchInput.value.trim().toLowerCase();
                 const statusFilter = document.getElementById('statusFilterSelect').value;
                 const slipFilter = document.getElementById('slipFilterSelect')?.value || 'all';
                 

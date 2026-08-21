@@ -24,6 +24,7 @@ function normalizeRoute(urlOrPath) {
         'admin_pay_settings.html': 'admin/payroll/settings',
         'admin_payroll.html': 'admin/payroll',
         'admin_transactions.html': 'admin/transactions',
+        'admin_payment_settings.html': 'admin/payment-settings',
         'staff_stock.html': 'staff/stock',
         'staff_orders.html': 'staff/orders',
         'staff_order_details.html': 'staff/orders/details',
@@ -130,7 +131,7 @@ export async function initLayout() {
             } else {
                 alert('คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้ (Access Denied)');
             }
-            window.location.href = roleNameLower === 'admin' ? '/admin/stock' : '/staff/profile';
+            window.location.href = roleNameLower === 'admin' ? '/admin/dashboard' : '/staff/profile';
             return;
         }
         
@@ -144,10 +145,6 @@ export async function initLayout() {
         bindLayoutEvents();
         initNotifications();
         bindNotificationEvents();
-        
-        if (window.i18n && typeof window.i18n.applyTranslations === 'function') {
-            window.i18n.applyTranslations();
-        }
     } catch (error) {
         console.error('Error during auth validation:', error);
         window.location.href = '/login';
@@ -208,10 +205,6 @@ export function updateActiveMenu(currentPath) {
             el.classList.add('active');
         }
     });
-
-    if (window.i18n && typeof window.i18n.applyTranslations === 'function') {
-        window.i18n.applyTranslations();
-    }
 }
 
 function renderSidebar(items, currentPath, role) {
@@ -258,7 +251,7 @@ function renderSidebar(items, currentPath, role) {
             menuHTML += `
                 <a href="${item.url}" class="${desktopClass} menu-item ${isActive}">
                     <i class="${item.icon}"></i>
-                    <span data-i18n="${item.i18n}">${item.title}</span>
+                    <span>${item.title}</span>
                 </a>`;
         } else if (item.type === 'group') {
             let groupHasActive = false;
@@ -270,7 +263,7 @@ function renderSidebar(items, currentPath, role) {
                 const desktopClass = sub.desktopOnly ? 'desktop-only-menu' : '';
                 const iconHTML = sub.icon ? `<i class="${sub.icon}"></i>` : `<i class="fas fa-angle-right"></i>`;
                 subItemsHTML += `
-                    <a href="${sub.url}" class="${desktopClass} ${isActive}" data-i18n="${sub.i18n}">
+                    <a href="${sub.url}" class="${desktopClass} ${isActive}">
                         ${iconHTML}
                         <span>${sub.title}</span>
                     </a>`;
@@ -283,7 +276,7 @@ function renderSidebar(items, currentPath, role) {
                 <div class="menu-group ${openClass}" ${item.id ? `data-group-id="${item.id}"` : ''}>
                     <a class="menu-item submenu-toggle">
                         <i class="${item.icon}"></i>
-                        <span data-i18n="${item.i18n}">${item.title}</span>
+                        <span>${item.title}</span>
                         <i class="fas fa-chevron-down menu-arrow"></i>
                     </a>
                     <div class="submenu">
@@ -296,7 +289,7 @@ function renderSidebar(items, currentPath, role) {
     menuHTML += `
         <a href="#" class="menu-item logout-item" id="logoutBtn">
             <i class="fas fa-sign-out-alt"></i>
-            <span data-i18n="nav.logout">ออกจากระบบ</span>
+            <span>ออกจากระบบ</span>
         </a>
     </nav>`;
 
@@ -351,18 +344,18 @@ function renderBottomNav(items, currentPath) {
 
     if (isAdmin) {
         links = [
-            { url: '/admin/orders', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', i18n: 'nav.orders' },
-            { url: '/admin/stock', icon: 'fas fa-warehouse', title: 'คลังสินค้า', i18n: 'nav.stock' },
-            { url: '/admin/customers', icon: 'fas fa-users', title: 'ลูกค้า', i18n: 'nav.customers' },
-            { url: '/admin/promotions', icon: 'fas fa-gift', title: 'โปรโมชั่น', i18n: 'nav.promotions' }
+            { url: '/admin/orders', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ' },
+            { url: '/admin/stock', icon: 'fas fa-warehouse', title: 'คลังสินค้า' },
+            { url: '/admin/customers', icon: 'fas fa-users', title: 'ลูกค้า' },
+            { url: '/admin/promotions', icon: 'fas fa-gift', title: 'โปรโมชั่น' }
         ];
     } else {
         links = [
-            { url: '/staff/orders', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', i18n: 'nav.orders' },
-            { url: '/staff/stock', icon: 'fas fa-warehouse', title: 'คลังสินค้า', i18n: 'nav.stock' },
-            { url: '/staff/promotions', icon: 'fas fa-gift', title: 'โปรโมชั่น', i18n: 'nav.promotions' },
-            { url: '/staff/customers', icon: 'fas fa-users', title: 'ลูกค้า', i18n: 'nav.customers' },
-            { url: '/staff/profile', icon: 'fas fa-user-cog', title: 'โปรไฟล์', i18n: 'nav.profile' }
+            { url: '/staff/orders', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ' },
+            { url: '/staff/stock', icon: 'fas fa-warehouse', title: 'คลังสินค้า' },
+            { url: '/staff/promotions', icon: 'fas fa-gift', title: 'โปรโมชั่น' },
+            { url: '/staff/customers', icon: 'fas fa-users', title: 'ลูกค้า' },
+            { url: '/staff/profile', icon: 'fas fa-user-cog', title: 'โปรไฟล์' }
         ];
     }
 
@@ -372,7 +365,7 @@ function renderBottomNav(items, currentPath) {
         navHTML += `
             <a href="${link.url}" class="nav-item ${isActive}">
                 <i class="${link.icon}"></i>
-                <span data-i18n="${link.i18n}">${link.title}</span>
+                <span>${link.title}</span>
             </a>`;
     });
 

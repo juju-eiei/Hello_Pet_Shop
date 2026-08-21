@@ -2,8 +2,10 @@ import { showToast, escapeHTML } from './utils.js';
 import { updateGlobalCartCount } from './main.js';
 import { getPersonalizedProducts, trackSearchQuery, trackAddToCart } from './recommendationEngine.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initProductsPage() {
     const productGrid = document.getElementById('productGrid');
+    if (!productGrid) return;
+
     const productSearch = document.getElementById('productSearch');
     const categoryBtns = document.querySelectorAll('.category-btn');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -31,7 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Render Products
     function renderProducts() {
-        const query = productSearch ? productSearch.value.toLowerCase().trim() : '';
+        const rawValue = productSearch ? productSearch.value : '';
+        const query = rawValue.trim().toLowerCase();
         
         let displayList = [];
 
@@ -39,11 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Run AI Recommendation Engine
             displayList = getPersonalizedProducts(allProducts);
             if (query) {
-                displayList = displayList.filter(p => p.product_name.toLowerCase().includes(query));
+                displayList = displayList.filter(p => (p.product_name || '').toLowerCase().includes(query));
             }
         } else {
             displayList = allProducts.filter(p => {
-                const matchesSearch = !query || p.product_name.toLowerCase().includes(query);
+                const matchesSearch = !query || (p.product_name || '').toLowerCase().includes(query);
                 const matchesCategory = currentCategory === 'all' || 
                                        (p.category_name && p.category_name.toLowerCase().includes(currentCategory.toLowerCase()));
                 return matchesSearch && matchesCategory;
@@ -137,18 +140,56 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`เพิ่ม ${product.name} ลงในตะกร้าแล้ว`, "success");
     }
 
-    // 4. Promo Banner Carousel
-    function initPromoCarousel() {
+    // 4. Promo Banner Carousel (Dynamic from Backend API)
+    async function initPromoCarousel() {
         const promoSlides = document.getElementById('promoSlides');
-        const promoDots = document.querySelectorAll('.promo-dot');
+        const promoDotsContainer = document.getElementById('promoDots');
         const prevBtn = document.getElementById('promoPrevBtn');
         const nextBtn = document.getElementById('promoNextBtn');
         const carousel = document.getElementById('promoCarousel');
 
-        if (!promoSlides || promoDots.length === 0) return;
+        if (!promoSlides || !promoDotsContainer) return;
 
+        // Fetch active banners dynamically from backend
+        let banners = [];
+        try {
+            const res = await fetch('/api/banners');
+            if (res.ok) {
+                const data = await res.json();
+                banners = data.data || [];
+            }
+        } catch (e) {
+            console.error('Failed to load dynamic banners:', e);
+        }
+
+        // Fallback default banners if none in DB
+        if (banners.length === 0) {
+            banners = [
+                { title: 'โปรโมชั่น New Arrivals', image_url: '/images/promotions/promo1.png', link_url: '' },
+                { title: 'ส่วนลดพิเศษประจำเดือน', image_url: '/images/promotions/promo2.png', link_url: '' },
+                { title: 'อาหารสัตว์เลี้ยงพรีเมียม', image_url: '/images/promotions/promo3.png', link_url: '' }
+            ];
+        }
+
+        // Render dynamic slides
+        promoSlides.innerHTML = banners.map((b) => `
+            <div class="w-full flex-shrink-0 relative ${b.link_url ? 'cursor-pointer' : ''}" ${b.link_url ? `onclick="(window.navigateTo ? window.navigateTo('${escapeHTML(b.link_url)}') : window.location.href='${escapeHTML(b.link_url)}')"` : ''}>
+                <div class="w-full h-48 sm:h-64 md:h-80 relative overflow-hidden">
+                    <img src="${escapeHTML(b.image_url)}" alt="${escapeHTML(b.title || 'โปรโมชั่น')}" 
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onerror="this.src='/images/promotions/promo1.png'">
+                </div>
+            </div>
+        `).join('');
+
+        // Render dynamic dots
+        promoDotsContainer.innerHTML = banners.map((_, idx) => `
+            <button class="promo-dot w-2.5 h-2.5 rounded-full bg-white/50 transition-all duration-300 focus:outline-none" data-slide="${idx}" aria-label="Slide ${idx + 1}"></button>
+        `).join('');
+
+        const promoDots = document.querySelectorAll('.promo-dot');
         let currentSlide = 0;
-        const totalSlides = promoDots.length;
+        const totalSlides = banners.length;
         let slideInterval;
 
         function goToSlide(index) {
@@ -168,9 +209,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function startAutoSlide() {
             stopAutoSlide();
-            slideInterval = setInterval(() => {
-                goToSlide(currentSlide + 1);
-            }, 4000);
+            if (totalSlides > 1) {
+                slideInterval = setInterval(() => {
+                    goToSlide(currentSlide + 1);
+                }, 4000);
+            }
         }
 
         function stopAutoSlide() {
@@ -178,29 +221,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
+            prevBtn.onclick = () => {
                 goToSlide(currentSlide - 1);
                 startAutoSlide();
-            });
+            };
         }
 
         if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
+            nextBtn.onclick = () => {
                 goToSlide(currentSlide + 1);
                 startAutoSlide();
-            });
+            };
         }
 
         promoDots.forEach((dot, idx) => {
-            dot.addEventListener('click', () => {
+            dot.onclick = () => {
                 goToSlide(idx);
                 startAutoSlide();
-            });
+            };
         });
 
         if (carousel) {
-            carousel.addEventListener('mouseenter', stopAutoSlide);
-            carousel.addEventListener('mouseleave', startAutoSlide);
+            carousel.onmouseenter = stopAutoSlide;
+            carousel.onmouseleave = startAutoSlide;
         }
 
         goToSlide(0);
@@ -220,6 +263,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     trackSearchQuery(query);
                 }
             }, 600);
+        });
+
+        productSearch.addEventListener('change', () => {
+            renderProducts();
+        });
+
+        productSearch.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                renderProducts();
+            }
         });
     }
 
@@ -257,4 +311,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     fetchProducts();
     initPromoCarousel();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProductsPage);
+} else {
+    initProductsPage();
+}
+

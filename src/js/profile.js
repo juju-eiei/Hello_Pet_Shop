@@ -1,8 +1,9 @@
 import { showToast, getUserProfileData, saveUserProfileData } from './utils.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initProfilePage() {
     // Elements
     const displayName = document.getElementById('displayName');
+    if (!displayName && !document.getElementById('inputName')) return;
     const profileImage = document.getElementById('profileImage');
     const defaultAvatar = document.getElementById('defaultAvatar');
     const modalProfileImage = document.getElementById('modalProfileImage');
@@ -298,4 +299,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProfile();
 
     window.addEventListener('storage', updateOrderBadges);
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProfilePage);
+} else {
+    initProfilePage();
+}

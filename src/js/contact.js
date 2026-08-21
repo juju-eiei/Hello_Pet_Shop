@@ -1,7 +1,9 @@
 import { showToast } from './utils.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initContactPage() {
     const contactForm = document.getElementById('contactForm');
+    if (!contactForm) return;
+
     const successMessage = document.getElementById('successMessage');
     const resetFormBtn = document.getElementById('resetFormBtn');
     
@@ -14,17 +16,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userStr) {
             try {
                 const userData = JSON.parse(userStr);
-                if (userData.name) contactName.value = userData.name;
-                // email might be different in profile, use login user email if available
+                if (userData.name && contactName) contactName.value = userData.name;
                 const loginUser = JSON.parse(localStorage.getItem('user'));
-                if (loginUser && loginUser.email) contactEmail.value = loginUser.email;
+                if (loginUser && loginUser.email && contactEmail) contactEmail.value = loginUser.email;
             } catch (e) {
                 console.error("Error prefilling contact form", e);
             }
         }
     }
 
-    contactForm.addEventListener('submit', (e) => {
+    contactForm.onsubmit = (e) => {
         e.preventDefault();
         
         // Form simulation
@@ -40,19 +41,31 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.innerHTML = originalBtnText;
             
             // Show success state
-            successMessage.classList.remove('hidden', 'opacity-0');
-            successMessage.classList.add('opacity-100');
+            if (successMessage) {
+                successMessage.classList.remove('hidden', 'opacity-0');
+                successMessage.classList.add('opacity-100');
+            }
             
             showToast("ส่งข้อความสำเร็จแล้ว!", "success");
         }, 1500);
-    });
+    };
 
-    resetFormBtn.addEventListener('click', () => {
-        contactForm.reset();
-        successMessage.classList.add('hidden', 'opacity-0');
-        successMessage.classList.remove('opacity-100');
-        prefillUser();
-    });
+    if (resetFormBtn) {
+        resetFormBtn.onclick = () => {
+            contactForm.reset();
+            if (successMessage) {
+                successMessage.classList.add('hidden', 'opacity-0');
+                successMessage.classList.remove('opacity-100');
+            }
+            prefillUser();
+        };
+    }
 
     prefillUser();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initContactPage);
+} else {
+    initContactPage();
+}

@@ -97,23 +97,23 @@
         <nav class="bottom-nav">
             <a href="admin_dashboard.html" class="nav-item">
                 <i class="fas fa-home"></i>
-                <span data-i18n="nav.dashboard">แดชบอร์ด</span>
+                <span>แดชบอร์ด</span>
             </a>
             <a href="admin_orders.html" class="nav-item">
                 <i class="fas fa-file-invoice"></i>
-                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
+                <span>คำสั่งซื้อ</span>
             </a>
             <a href="admin_stock.html" class="nav-item active">
                 <i class="fas fa-box"></i>
-                <span data-i18n="nav.stock">จัดการคลังสินค้า</span>
+                <span>จัดการคลังสินค้า</span>
             </a>
             <a href="admin_customers.html" class="nav-item">
                 <i class="fas fa-users"></i>
-                <span data-i18n="nav.customers">ลูกค้า</span>
+                <span>ลูกค้า</span>
             </a>
             <a href="admin_promotions.html" class="nav-item">
                 <i class="fas fa-bullhorn"></i>
-                <span data-i18n="nav.promotions">โปรโมชั่น</span>
+                <span>โปรโมชั่น</span>
             </a>
         </nav>
     </div>
@@ -470,7 +470,7 @@
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
-            currentKeyword = e.target.value;
+            currentKeyword = e.target.value.trim();
             currentPage = 1;
             renderCategories();
         });

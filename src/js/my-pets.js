@@ -1,8 +1,9 @@
 import { showToast, escapeHTML } from './utils.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initMyPetsPage() {
     // DOM Elements
     const petsGrid = document.getElementById('petsGrid');
+    if (!petsGrid) return;
     const emptyState = document.getElementById('emptyState');
     const addPetBtn = document.getElementById('addPetBtn');
     
@@ -461,4 +462,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMyPetsPage);
+} else {
+    initMyPetsPage();
+}

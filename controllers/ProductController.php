@@ -76,8 +76,8 @@ class ProductController {
     }
 
     public function index() {
-        $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : "";
-        $filter = isset($_GET['filter']) ? $_GET['filter'] : "all";
+        $keyword = isset($_GET['keyword']) ? trim($_GET['keyword']) : "";
+        $filter = isset($_GET['filter']) ? trim($_GET['filter']) : "all";
         
         $stmt = $this->product->getAll($keyword, $filter);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);

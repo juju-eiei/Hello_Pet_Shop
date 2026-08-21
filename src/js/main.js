@@ -1,9 +1,9 @@
 // Import main styles & core services
 import '../css/style.css';
-import './i18n.js';
 import Swal from 'sweetalert2';
 import { initLayout } from './components/layout.js';
 import { initRouter } from './router.js';
+import { initSpaRouter } from './spa.js';
 
 // Expose Swal globally
 window.Swal = Swal;
@@ -143,6 +143,7 @@ function initApp() {
     // Initialize Centralized Layout & Router
     initLayout();
     initRouter();
+    initSpaRouter();
 
     // Global User state check
     const user = JSON.parse(localStorage.getItem('user'));

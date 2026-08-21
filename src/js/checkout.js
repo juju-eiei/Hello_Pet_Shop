@@ -1,9 +1,11 @@
 import { updateGlobalCartCount } from './main.js';
 import { showToast, getUserProfileData, saveUserProfileData } from './utils.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initCheckoutPage() {
     // Elements
     const summaryItemsContainer = document.getElementById('summaryItemsContainer');
+    if (!summaryItemsContainer) return;
+
     const summarySubtotal = document.getElementById('summarySubtotal');
     const summaryShipping = document.getElementById('summaryShipping');
     const summaryTotal = document.getElementById('summaryTotal');
@@ -44,108 +46,65 @@ document.addEventListener('DOMContentLoaded', () => {
     let shippingFee = 0.00;
     let pendingOrderData = null;
     let attachedSlipData = null;
+    let paymentSettings = null;
 
     // Initialization
     async function init() {
-        // Fetch cart
         cart = JSON.parse(localStorage.getItem('cart') || '[]');
-        
-        // Filter only selected items
         checkoutItems = cart.filter(item => item.selected !== false);
         
         if (checkoutItems.length === 0) {
-            window.location.href = '/cart'; // Redirect back if empty/none selected
+            if (window.navigateTo) {
+                window.navigateTo('/cart');
+            } else {
+                window.location.href = '/cart';
+            }
             return;
         }
 
-        // Pre-fill user profile data automatically
-        const profile = getUserProfileData();
-        if (profile.name) inputFullName.value = profile.name;
-        if (profile.phone) inputPhone.value = profile.phone;
-        if (profile.address) inputAddress.value = profile.address;
-        if (profile.province) inputProvince.value = profile.province;
-        if (profile.zipcode) inputZipcode.value = profile.zipcode;
-
-        // Enrich weights from backend database in case existing cart lacked weights
-        await enrichCartWithProductDetails();
-
-        await loadDeliveryCompanies();
         renderSummary();
+        prefillAddress();
+        await Promise.all([fetchDeliveryCompanies(), fetchPaymentSettings()]);
         attachEvents();
     }
 
-    async function enrichCartWithProductDetails() {
+    async function fetchPaymentSettings() {
         try {
-            const res = await fetch('/api/products');
-            const json = await res.json();
-            if (res.ok && json.data) {
-                const prodMap = {};
-                json.data.forEach(p => {
-                    let w = parseFloat(p.weight !== null && p.weight !== undefined ? p.weight : (p.weight_value || 0)) || 0;
-                    const u = (p.weight_unit || 'kg').toLowerCase().trim();
-                    if (u === 'g' || u === 'ml' || u === 'กรัม' || u === 'มิลลิลิตร') {
-                        w = w / 1000.0;
-                    }
-                    prodMap[String(p.product_id)] = {
-                        weight: w,
-                        weight_unit: p.weight_unit || 'kg'
-                    };
-                });
-
-                let updated = false;
-                cart.forEach(item => {
-                    const match = prodMap[String(item.id)];
-                    if (match && (item.weight === undefined || item.weight === null || item.weight !== match.weight)) {
-                        item.weight = match.weight;
-                        item.weight_unit = match.weight_unit;
-                        updated = true;
-                    }
-                });
-
-                if (updated) {
-                    localStorage.setItem('cart', JSON.stringify(cart));
-                    checkoutItems = cart.filter(item => item.selected !== false);
-                }
+            const res = await fetch('/api/payment/settings');
+            if (res.ok) {
+                const result = await res.json();
+                paymentSettings = result.data;
             }
-        } catch (err) {
-            console.warn("Could not enrich cart products:", err);
+        } catch (e) {
+            console.error("Error fetching payment settings:", e);
         }
-    }
-
-    async function loadDeliveryCompanies() {
-        const container = document.getElementById('deliveryMethodsContainer');
-        if (!container) return;
-
-        try {
-            const res = await fetch('/api/deliveries/companies');
-            const json = await res.json();
-            if (res.ok && json.data && json.data.length > 0) {
-                deliveryCompanies = json.data;
-                renderDeliveryOptions();
-                return;
-            }
-        } catch (err) {
-            console.warn("Failed to fetch delivery companies:", err);
-        }
-
-        // Fallback default options if API has no companies
-        deliveryCompanies = [
-            { company_id: 1, company_name: 'Kerry Express', base_rate: 40, rate_per_kg: 15 },
-            { company_id: 2, company_name: 'Flash Express', base_rate: 35, rate_per_kg: 12 },
-            { company_id: 3, company_name: 'J&T Express', base_rate: 30, rate_per_kg: 10 }
-        ];
-        renderDeliveryOptions();
     }
 
     function calculateTotalWeight() {
-        return checkoutItems.reduce((sum, item) => {
-            let w = parseFloat(item.weight || 0);
-            const u = (item.weight_unit || 'kg').toLowerCase().trim();
+        return checkoutItems.reduce((acc, it) => {
+            let w = parseFloat(it.weight || 0);
+            let u = (it.weight_unit || 'kg').toLowerCase().trim();
             if (u === 'g' || u === 'ml' || u === 'กรัม' || u === 'มิลลิลิตร') {
                 w = w / 1000.0;
             }
-            return sum + (w * (item.quantity || 1));
+            return acc + (w * (it.quantity || 1));
         }, 0);
+    }
+
+    async function fetchDeliveryCompanies() {
+        try {
+            const res = await fetch('/api/delivery/companies');
+            if (res.ok) {
+                const result = await res.json();
+                const data = result.data || [];
+                deliveryCompanies = data.filter(c => c.is_active !== undefined ? c.is_active == 1 : true);
+            }
+        } catch (e) {
+            console.error("Error fetching delivery companies:", e);
+        }
+
+        renderDeliveryOptions();
+        renderSummary();
     }
 
     function calculateShippingForCompany(comp) {
@@ -239,145 +198,189 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Update Totals
-        summarySubtotal.textContent = `฿${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        summaryShipping.textContent = `฿${shippingFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        summaryTotal.textContent = `฿${(subtotal + shippingFee).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        if (summarySubtotal) summarySubtotal.textContent = `฿${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        if (summaryShipping) summaryShipping.textContent = `฿${shippingFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        if (summaryTotal) summaryTotal.textContent = `฿${(subtotal + shippingFee).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
+
+    function prefillAddress() {
+        const profile = getUserProfileData();
+        if (inputFullName && profile.name) inputFullName.value = profile.name;
+        if (inputPhone && profile.phone) inputPhone.value = profile.phone;
+        if (inputAddress && profile.address) inputAddress.value = profile.address;
+        if (inputProvince && profile.province) inputProvince.value = profile.province;
+        if (inputZipcode && profile.zipcode) inputZipcode.value = profile.zipcode;
     }
 
     function attachEvents() {
         // Confirm Order Click -> Open QR Modal
-        confirmOrderBtn.addEventListener('click', () => {
-            // Validate address
-            const requiredFields = [inputFullName, inputPhone, inputAddress, inputProvince, inputZipcode];
-            const isValid = requiredFields.every(field => field.value.trim() !== '');
-            
-            if (!isValid) {
-                showToast("กรุณากรอกข้อมูลจัดส่งให้ครบถ้วน", "error");
-                const emptyField = requiredFields.find(field => field.value.trim() === '');
-                if (emptyField) emptyField.focus();
-                return;
-            }
+        if (confirmOrderBtn) {
+            confirmOrderBtn.onclick = () => {
+                // Validate address
+                const requiredFields = [inputFullName, inputPhone, inputAddress, inputProvince, inputZipcode];
+                const isValid = requiredFields.every(field => field && field.value.trim() !== '');
+                
+                if (!isValid) {
+                    showToast("กรุณากรอกข้อมูลจัดส่งให้ครบถ้วน", "error");
+                    const emptyField = requiredFields.find(field => field && field.value.trim() === '');
+                    if (emptyField) emptyField.focus();
+                    return;
+                }
 
-            // Save user profile address automatically for future checkouts
-            saveUserProfileData({
-                name: inputFullName.value.trim(),
-                phone: inputPhone.value.trim(),
-                address: inputAddress.value.trim(),
-                province: inputProvince.value.trim(),
-                zipcode: inputZipcode.value.trim()
-            });
-
-            const checkedDeliveryInput = document.querySelector('input[name="deliveryMethod"]:checked');
-            const deliveryMethod = checkedDeliveryInput ? checkedDeliveryInput.value : 'standard';
-            const companyName = checkedDeliveryInput?.dataset?.companyName || 'ขนส่งเอกชน';
-            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'transfer';
-            const fakeId = Math.floor(100000 + Math.random() * 900000);
-            const totalAmount = subtotal + shippingFee;
-
-            // Create Pending Order Draft
-            pendingOrderData = {
-                id: fakeId,
-                company_id: selectedCompanyId,
-                company_name: companyName,
-                date: new Date().toISOString(),
-                items: checkoutItems,
-                subtotal: subtotal,
-                shipping: shippingFee,
-                total: totalAmount,
-                deliveryMethod: deliveryMethod,
-                paymentMethod: paymentMethod,
-                shippingAddress: {
-                    fullName: inputFullName.value.trim(),
+                // Save user profile address automatically for future checkouts
+                saveUserProfileData({
+                    name: inputFullName.value.trim(),
                     phone: inputPhone.value.trim(),
                     address: inputAddress.value.trim(),
                     province: inputProvince.value.trim(),
                     zipcode: inputZipcode.value.trim()
-                },
-                status: 'Pending Payment', // Default to 'ที่ต้องชำระ' until paid
-                slipImage: null
+                });
+
+                const checkedDeliveryInput = document.querySelector('input[name="deliveryMethod"]:checked');
+                const deliveryMethod = checkedDeliveryInput ? checkedDeliveryInput.value : 'standard';
+                const companyName = checkedDeliveryInput?.dataset?.companyName || 'ขนส่งเอกชน';
+                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'transfer';
+                const fakeId = Math.floor(100000 + Math.random() * 900000);
+                const totalAmount = subtotal + shippingFee;
+
+                // Create Pending Order Draft
+                pendingOrderData = {
+                    id: fakeId,
+                    company_id: selectedCompanyId,
+                    company_name: companyName,
+                    date: new Date().toISOString(),
+                    items: checkoutItems,
+                    subtotal: subtotal,
+                    shipping: shippingFee,
+                    total: totalAmount,
+                    deliveryMethod: deliveryMethod,
+                    paymentMethod: paymentMethod,
+                    shippingAddress: {
+                        fullName: inputFullName.value.trim(),
+                        phone: inputPhone.value.trim(),
+                        address: inputAddress.value.trim(),
+                        province: inputProvince.value.trim(),
+                        zipcode: inputZipcode.value.trim()
+                    },
+                    status: 'Pending Payment',
+                    slipImage: null
+                };
+
+                // Display in QR Payment Modal
+                if (qrModalOrderId) qrModalOrderId.textContent = fakeId;
+                if (qrModalAmount) qrModalAmount.textContent = `฿${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+                // Show QR Modal
+                openQrModal();
             };
-
-            // Display in QR Payment Modal
-            qrModalOrderId.textContent = fakeId;
-            qrModalAmount.textContent = `฿${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-
-            // Show QR Modal
-            openQrModal();
-        });
+        }
 
         // Slip File Upload Preview
-        slipFileInput?.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    attachedSlipData = event.target.result;
-                    slipFileName.textContent = file.name;
-                    slipUploadPlaceholder.classList.add('hidden');
-                    slipPreviewContainer.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+        if (slipFileInput) {
+            slipFileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        attachedSlipData = event.target.result;
+                        if (slipFileName) slipFileName.textContent = file.name;
+                        if (slipUploadPlaceholder) slipUploadPlaceholder.classList.add('hidden');
+                        if (slipPreviewContainer) slipPreviewContainer.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+        }
 
-        removeSlipBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            slipFileInput.value = '';
-            attachedSlipData = null;
-            slipPreviewContainer.classList.add('hidden');
-            slipUploadPlaceholder.classList.remove('hidden');
-        });
+        if (removeSlipBtn) {
+            removeSlipBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (slipFileInput) slipFileInput.value = '';
+                attachedSlipData = null;
+                if (slipPreviewContainer) slipPreviewContainer.classList.add('hidden');
+                if (slipUploadPlaceholder) slipUploadPlaceholder.classList.remove('hidden');
+            };
+        }
 
         // Submit Payment Button in QR Modal
-        submitPaymentBtn?.addEventListener('click', () => {
-            if (!pendingOrderData) return;
+        if (submitPaymentBtn) {
+            submitPaymentBtn.onclick = () => {
+                if (!pendingOrderData) return;
 
-            submitPaymentBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>กำลังตรวจสอบ...</span>';
-            submitPaymentBtn.disabled = true;
+                submitPaymentBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>กำลังตรวจสอบ...</span>';
+                submitPaymentBtn.disabled = true;
 
-            setTimeout(() => {
-                pendingOrderData.status = 'Pending Payment'; // Keeps as 'ที่ต้องชำระ' (รอแอดมินตรวจสลิป)
-                pendingOrderData.slipImage = attachedSlipData;
-                pendingOrderData.paidAt = new Date().toISOString();
-                
-                finalizeOrder(
-                    "แนบหลักฐานชำระเงินเรียบร้อยแล้ว!",
-                    `เราได้รับหลักฐานการโอนเงินสำหรับคำสั่งซื้อ #${pendingOrderData.id} แล้ว ทางร้านจะดำเนินการตรวจสอบยอดเงินและเริ่มแพ็คสินค้าให้โดยเร็วที่สุด`
-                );
-            }, 1000);
-        });
+                setTimeout(() => {
+                    pendingOrderData.status = 'Pending Payment';
+                    pendingOrderData.slipImage = attachedSlipData;
+                    pendingOrderData.paidAt = new Date().toISOString();
+                    
+                    finalizeOrder(
+                        "แนบหลักฐานชำระเงินเรียบร้อยแล้ว!",
+                        `เราได้รับหลักฐานการโอนเงินสำหรับคำสั่งซื้อ #${pendingOrderData.id} แล้ว ทางร้านจะดำเนินการตรวจสอบยอดเงินและเริ่มแพ็คสินค้าให้โดยเร็วที่สุด`
+                    );
+                }, 1000);
+            };
+        }
 
         // Pay Later Button
-        payLaterBtn?.addEventListener('click', () => {
-            if (!pendingOrderData) return;
-            
-            pendingOrderData.status = 'Pending Payment'; // Keeps as 'ที่ต้องชำระ'
-            finalizeOrder(
-                "บันทึกคำสั่งซื้อเรียบร้อยแล้ว!",
-                `คำสั่งซื้อ #${pendingOrderData.id} ถูกบันทึกไว้ในสถานะ <span class="font-bold text-amber-600 font-sans">'ที่ต้องชำระ'</span> คุณสามารถสแกนจ่ายเงินได้ทุกเมื่อในหน้าประวัติคำสั่งซื้อ`
-            );
-        });
+        if (payLaterBtn) {
+            payLaterBtn.onclick = () => {
+                if (!pendingOrderData) return;
+                
+                pendingOrderData.status = 'Pending Payment';
+                finalizeOrder(
+                    "บันทึกคำสั่งซื้อเรียบร้อยแล้ว!",
+                    `คำสั่งซื้อ #${pendingOrderData.id} ถูกบันทึกไว้ในสถานะ <span class="font-bold text-amber-600 font-sans">'ที่ต้องชำระ'</span> คุณสามารถสแกนจ่ายเงินได้ทุกเมื่อในหน้าประวัติคำสั่งซื้อ`
+                );
+            };
+        }
 
-        closeQrModalBtn?.addEventListener('click', () => {
-            if (!pendingOrderData) return;
-            pendingOrderData.status = 'Pending Payment';
-            finalizeOrder(
-                "บันทึกคำสั่งซื้อเรียบร้อยแล้ว!",
-                `คำสั่งซื้อ #${pendingOrderData.id} ถูกบันทึกไว้ในสถานะ <span class="font-bold text-amber-600 font-sans">'ที่ต้องชำระ'</span> คุณสามารถสแกนจ่ายเงินได้ทุกเมื่อในหน้าประวัติคำสั่งซื้อ`
-            );
-        });
+        if (closeQrModalBtn) {
+            closeQrModalBtn.onclick = () => {
+                if (!pendingOrderData) return;
+                pendingOrderData.status = 'Pending Payment';
+                finalizeOrder(
+                    "บันทึกคำสั่งซื้อเรียบร้อยแล้ว!",
+                    `คำสั่งซื้อ #${pendingOrderData.id} ถูกบันทึกไว้ในสถานะ <span class="font-bold text-amber-600 font-sans">'ที่ต้องชำระ'</span> คุณสามารถสแกนจ่ายเงินได้ทุกเมื่อในหน้าประวัติคำสั่งซื้อ`
+                );
+            };
+        }
     }
 
     function openQrModal() {
-        paymentQrModal.classList.remove('opacity-0', 'pointer-events-none');
-        paymentQrModal.querySelector('div').classList.remove('scale-95');
-        paymentQrModal.querySelector('div').classList.add('scale-100');
+        if (!paymentQrModal) return;
+
+        if (paymentSettings) {
+            const qrImg = document.getElementById('qrCodeDisplayImg');
+            const accName = document.getElementById('qrAccountName');
+            const bankNum = document.getElementById('qrBankAndNumber');
+            const instructions = document.getElementById('qrInstructions');
+
+            if (qrImg && paymentSettings.qr_image_url) qrImg.src = paymentSettings.qr_image_url;
+            if (accName && paymentSettings.account_name) accName.textContent = `ชื่อบัญชี: ${paymentSettings.account_name}`;
+            if (bankNum && paymentSettings.bank_name) bankNum.textContent = `${paymentSettings.bank_name} • บัญชี: ${paymentSettings.account_number}`;
+            if (instructions) instructions.textContent = paymentSettings.instructions || '';
+        }
+
+        paymentQrModal.classList.remove('hidden');
+        paymentQrModal.style.display = 'flex';
+        requestAnimationFrame(() => {
+            paymentQrModal.classList.remove('opacity-0', 'pointer-events-none');
+            paymentQrModal.querySelector('div')?.classList.remove('scale-95');
+            paymentQrModal.querySelector('div')?.classList.add('scale-100');
+        });
     }
 
     function closeQrModal() {
+        if (!paymentQrModal) return;
         paymentQrModal.classList.add('opacity-0', 'pointer-events-none');
-        paymentQrModal.querySelector('div').classList.remove('scale-100');
-        paymentQrModal.querySelector('div').classList.add('scale-95');
+        paymentQrModal.querySelector('div')?.classList.remove('scale-100');
+        paymentQrModal.querySelector('div')?.classList.add('scale-95');
+        setTimeout(() => {
+            paymentQrModal.classList.add('hidden');
+            paymentQrModal.style.display = 'none';
+        }, 300);
     }
 
     async function finalizeOrder(title, message) {
@@ -405,6 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let dbOrderId = pendingOrderData.id;
+
         try {
             const orderPayload = {
                 customer_id: customerId || 1,
@@ -465,23 +469,39 @@ document.addEventListener('DOMContentLoaded', () => {
         updateGlobalCartCount();
 
         // Update Success Modal Content
-        mockOrderId.textContent = dbOrderId;
+        if (mockOrderId) mockOrderId.textContent = dbOrderId;
         if (successModalTitle) successModalTitle.textContent = title;
         if (successModalMessage) successModalMessage.innerHTML = message;
 
         // Show Success Modal
-        successModal.classList.remove('opacity-0', 'pointer-events-none');
-        successModal.querySelector('div').classList.remove('scale-95');
-        successModal.querySelector('div').classList.add('scale-100');
+        if (successModal) {
+            successModal.classList.remove('hidden');
+            successModal.style.display = 'flex';
+            requestAnimationFrame(() => {
+                successModal.classList.remove('opacity-0', 'pointer-events-none');
+                successModal.querySelector('div')?.classList.remove('scale-95');
+                successModal.querySelector('div')?.classList.add('scale-100');
+            });
+        }
 
         const viewOrderBtn = document.getElementById('viewOrderBtn');
         if (viewOrderBtn) {
-            viewOrderBtn.addEventListener('click', () => {
+            viewOrderBtn.onclick = () => {
                 const targetTab = pendingOrderData.status === 'Pending Payment' ? 'pending_payment' : 'preparing';
-                window.location.href = `/orders?tab=${targetTab}`;
-            });
+                if (window.navigateTo) {
+                    window.navigateTo(`/orders?tab=${targetTab}`);
+                } else {
+                    window.location.href = `/orders?tab=${targetTab}`;
+                }
+            };
         }
     }
 
     init();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCheckoutPage);
+} else {
+    initCheckoutPage();
+}

@@ -96,6 +96,13 @@ header.nav-green .bg-white {
     background-color: #ffffff !important;
     color: #1b4332 !important;
 }
+header.nav-green #navProfileDropdown a {
+    color: #1f2937 !important;
+}
+header.nav-green #navProfileDropdown a:hover {
+    color: #000000 !important;
+}
+
 
 /* Premium SweetAlert2 Custom Styling */
 .swal2-container {
@@ -279,4 +286,20 @@ header.nav-green .bg-white {
     .customer-bottom-nav {
         display: none !important;
     }
+}
+
+/* SPA Page Transition */
+@keyframes spaFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.spa-fade-in {
+    animation: spaFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

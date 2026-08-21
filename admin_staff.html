@@ -367,7 +367,7 @@
 
         <main class="main-content">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h1 data-i18n="title.staff_mgmt">จัดการพนักงานและสิทธิ์การจ้าง</h1>
+                <h1>จัดการพนักงานและสิทธิ์การจ้าง</h1>
                 <button class="save-btn" id="addStaffBtn" style="padding: 10px 24px; font-size: 14px;">
                     <i class="fas fa-plus" style="margin-right: 8px;"></i>
                     <span>เพิ่มพนักงานใหม่</span>
@@ -376,7 +376,7 @@
 
             <div class="search-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="ค้นหาตามชื่อ นามสกุล หรืออีเมลพนักงาน..." data-i18n-placeholder="label.search_placeholder">
+                <input type="text" id="searchInput" placeholder="ค้นหาตามชื่อ นามสกุล หรืออีเมลพนักงาน...">
             </div>
 
             <div class="filter-tabs">
@@ -760,7 +760,7 @@
 
         // Search listener
         document.getElementById('searchInput').addEventListener('input', (e) => {
-            currentKeyword = e.target.value;
+            currentKeyword = e.target.value.trim();
             currentPage = 1;
             fetchStaff();
         });

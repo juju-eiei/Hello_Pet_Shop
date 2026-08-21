@@ -1,18 +1,20 @@
 import { updateActiveMenu } from './components/layout.js';
+import { getRouteInfo, navigateTo as spaNavigateTo, updateActiveNavLinks } from './spa.js';
 
 export function initRouter() {
-    // Ensure active menu highlights match the current page location
-    updateActiveMenu(window.location.pathname);
+    const currentPath = window.location.pathname;
+    const info = getRouteInfo(currentPath);
+
+    if (info && (info.category === 'admin' || info.category === 'staff')) {
+        updateActiveMenu(currentPath);
+    } else if (info && info.category === 'customer') {
+        updateActiveNavLinks(currentPath);
+    }
 }
 
 export function navigateTo(url) {
     if (!url) return;
-    const targetUrl = new URL(url, window.location.origin).href;
-    if (window.location.href === targetUrl) {
-        window.location.reload();
-        return;
-    }
-    window.location.href = url;
+    spaNavigateTo(url, true);
 }
 
 if (typeof window !== 'undefined') {

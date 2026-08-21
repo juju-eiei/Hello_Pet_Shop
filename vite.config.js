@@ -59,6 +59,7 @@ export default defineConfig({
             '/admin/payroll': '/admin_payroll.html',
             '/admin/payroll/settings': '/admin_pay_settings.html',
             '/admin/transactions': '/admin_transactions.html',
+            '/admin/payment-settings': '/admin_payment_settings.html',
 
             // Staff Clean Routes
             '/staff': '/staff_profile.html',

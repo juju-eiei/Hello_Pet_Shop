@@ -316,7 +316,7 @@
         <!-- Main Content -->
         <main class="main-content">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h1 data-i18n="title.product_mgmt">จัดการสินค้า</h1>
+                <h1>จัดการสินค้า</h1>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <button type="button" id="deleteSelectedBtn" style="padding: 10px 20px; font-size: 14px; background-color: #ef4444; border: 1px solid #ef4444; border-radius: 12px; font-weight: 600; color: white; display: none; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; outline: none; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); height: 42px; white-space: nowrap; width: auto; font-family: inherit;">
                         <i class="fas fa-trash-alt"></i>
@@ -332,7 +332,7 @@
                     </button>
                     <a href="admin_product_edit.html" class="save-btn" style="padding: 10px 24px; font-size: 14px; display: inline-flex; align-items: center; height: 42px; text-decoration: none;">
                         <i class="fas fa-plus" style="margin-right: 8px;"></i>
-                        <span data-i18n="btn.add_product">เพิ่มสินค้าใหม่</span>
+                        <span>เพิ่มสินค้าใหม่</span>
                     </a>
                 </div>
             </div>
@@ -340,7 +340,7 @@
             <!-- Search -->
             <div class="search-container">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="ค้นหา..." data-i18n-placeholder="label.search_placeholder">
+                <input type="text" id="searchInput" placeholder="ค้นหา...">
             </div>
 
             <!-- Table -->
@@ -349,10 +349,10 @@
                     <div style="width: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                         <input type="checkbox" id="selectAllCheckbox" style="transform: scale(1.2); cursor: pointer;">
                     </div>
-                    <span style="flex: 2;" data-i18n="label.product_name">ชื่อสินค้า</span>
-                    <span style="flex: 1; text-align: center;" data-i18n="label.price">ราคา</span>
-                    <span style="flex: 1; text-align: center;" data-i18n="label.stock_qty">จำนวนในสต็อก</span>
-                    <span style="flex: 1.5; text-align: right;" data-i18n="label.action">การดำเนินการ</span>
+                    <span style="flex: 2;">ชื่อสินค้า</span>
+                    <span style="flex: 1; text-align: center;">ราคา</span>
+                    <span style="flex: 1; text-align: center;">จำนวนในสต็อก</span>
+                    <span style="flex: 1.5; text-align: right;">การดำเนินการ</span>
                 </div>
                 <div id="productContainer">
                     <div class="loading-container">
@@ -610,7 +610,7 @@
                     <div class="stock-actions" style="flex: 1.5; text-align: right; justify-content: flex-end; display: flex; gap: 8px; align-items: center;">
                         <button type="button" onclick="event.preventDefault(); window.openBarcodeModalById(${pId})" class="action-link barcode-link" title="Barcode" style="cursor:pointer; font-family:inherit;">
                             <i class="fas fa-barcode"></i>
-                            <span data-i18n="btn.barcode">บาร์โค้ด</span>
+                            <span>บาร์โค้ด</span>
                         </button>
                         <a href="admin_product_edit.html?id=${pId}" class="action-link edit-link" title="Edit Product">
                             <i class="fas fa-edit"></i>

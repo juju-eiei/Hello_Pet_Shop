@@ -1,7 +1,9 @@
 import { updateGlobalCartCount } from './main.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initCartPage() {
     const cartItemsContainer = document.getElementById('cartItemsContainer');
+    if (!cartItemsContainer) return;
+
     const cartSubtotal = document.getElementById('cartSubtotal');
     
     function renderCart() {
@@ -16,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <a href="/products" class="inline-block mt-6 px-6 py-2 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 transition-colors">เริ่มเลือกซื้อสินค้า</a>
                 </div>
             `;
-            cartSubtotal.textContent = '฿0.00';
+            if (cartSubtotal) cartSubtotal.textContent = '฿0.00';
             updateGlobalCartCount();
             return;
         }
@@ -30,13 +32,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let htmlSnippet = `
             <div class="flex items-center mb-6 pb-5 border-b border-gray-200/60">
                 <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" id="selectAllCheckbox" class="w-[18px] h-[18px] rounded border-gray-300 text-[#16a34a] focus:ring-[#16a34a] cursor-pointer cursor-pointer transition-all" ${allSelected ? 'checked' : ''}>
+                    <input type="checkbox" id="selectAllCheckbox" class="w-[18px] h-[18px] rounded border-gray-300 text-[#16a34a] focus:ring-[#16a34a] cursor-pointer transition-all" ${allSelected ? 'checked' : ''}>
                     <span class="ml-3 text-[#1f2937] font-medium group-hover:text-[#16a34a] transition-colors">เลือกสินค้าทั้งหมด</span>
                 </label>
             </div>
         `;
 
-        htmlSnippet += cart.map((item, index) => {
+        htmlSnippet += cart.map((item) => {
             const isSelected = item.selected !== false;
             const itemTotal = parseFloat(item.price) * item.quantity;
             
@@ -85,7 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         cartItemsContainer.innerHTML = htmlSnippet;
         
-        cartSubtotal.textContent = `฿${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        if (cartSubtotal) {
+            cartSubtotal.textContent = `฿${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
         
         // Attach events
         document.querySelectorAll('.cart-minus').forEach(btn => {
@@ -147,11 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCart();
     }
 
-
-
     const checkoutBtn = document.getElementById('checkoutBtn');
     if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', () => {
+        checkoutBtn.onclick = () => {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             const hasSelected = cart.some(item => item.selected !== false);
             if (!hasSelected || cart.length === 0) {
@@ -166,10 +168,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
-            window.location.href = '/checkout';
-        });
+            if (window.navigateTo) {
+                window.navigateTo('/checkout');
+            } else {
+                window.location.href = '/checkout';
+            }
+        };
     }
 
     // Initial render
     renderCart();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCartPage);
+} else {
+    initCartPage();
+}
+

@@ -15,7 +15,7 @@
             document.documentElement.classList.add('mobile-device');
         }
     </script>
-<script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="/src/js/main.js"></script>
     <style>
         .premium-card {
             background-color: white;
@@ -63,6 +63,7 @@
             border-bottom: 1px solid #f1f5f9;
             font-size: 14px;
             color: #334155;
+            vertical-align: middle;
         }
         .rate-table tr:hover td {
             background-color: #f8fafc;
@@ -84,8 +85,8 @@
             background-color: #f1f5f9;
         }
         .action-btn.edit:hover {
-            color: var(--secondary-berry);
-            background-color: var(--secondary-berry-light);
+            color: var(--secondary-berry, #16a34a);
+            background-color: #f0fdf4;
         }
         .action-btn.delete:hover {
             color: #ef4444;
@@ -113,7 +114,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background-color: var(--secondary-berry);
+            background-color: #16a34a;
             color: white;
             border: none;
             padding: 10px 18px;
@@ -124,14 +125,16 @@
             transition: all 0.2s;
         }
         .premium-btn:hover {
-            background-color: var(--secondary-berry-hover);
+            background-color: #15803d;
             transform: translateY(-1px);
         }
         .premium-btn.secondary {
-            background-color: var(--secondary-berry-light); color: var(--secondary-berry-hover); border: 1px solid var(--secondary-berry-border);
+            background-color: #f0fdf4; 
+            color: #15803d; 
+            border: 1px solid #bbf7d0;
         }
         .premium-btn.secondary:hover {
-            background-color: var(--secondary-berry-border);
+            background-color: #dcfce7;
         }
         .premium-btn.danger {
             background-color: #ef4444;
@@ -152,11 +155,172 @@
             gap: 4px;
             white-space: nowrap;
         }
-        .modal-body {
-            padding: 16px 0;
+        .badge.active {
+            background-color: #dcfce7;
+            color: #15803d;
+            border-color: #86efac;
+        }
+        .badge.inactive {
+            background-color: #f1f5f9;
+            color: #64748b;
+            border-color: #cbd5e1;
         }
 
-        /* Promotions Mobile Responsive: View-Only on Mobile */
+        /* Tabs Styling */
+        .promo-tabs {
+            display: flex;
+            gap: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-top: 20px;
+            margin-bottom: 24px;
+        }
+        .promo-tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .promo-tab-btn:hover {
+            color: #16a34a;
+        }
+        .promo-tab-btn.active {
+            color: #16a34a;
+            border-bottom-color: #16a34a;
+        }
+
+        /* Size Hint Alert Callout */
+        .size-hint-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .size-hint-box i {
+            color: #16a34a;
+            font-size: 22px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        .size-hint-content {
+            font-size: 13px;
+            color: #166534;
+            line-height: 1.6;
+        }
+        .size-hint-content strong {
+            color: #14532d;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .size-hint-content code {
+            background: #dcfce7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            color: #15803d;
+        }
+
+        /* Banner Thumbnail in Table */
+        .banner-thumb {
+            width: 140px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #16a34a;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Image Upload Drop Area */
+        .upload-dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #f8fafc;
+            position: relative;
+        }
+        .upload-dropzone:hover {
+            border-color: #16a34a;
+            background-color: #f0fdf4;
+        }
+        .upload-dropzone.has-image {
+            padding: 10px;
+        }
+        .preview-img-container {
+            max-width: 100%;
+            max-height: 180px;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+            margin: 0 auto;
+            position: relative;
+        }
+        .preview-img-container img {
+            width: 100%;
+            height: auto;
+            max-height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        /* Mobile Responsive */
         @media (max-width: 768px) {
             .premium-card { padding: 14px 12px !important; border-radius: 16px !important; margin-top: 12px !important; }
             .card-header { margin-bottom: 12px !important; }
@@ -167,73 +331,17 @@
                 gap: 6px !important;
             }
             .page-header p { font-size: 12px !important; }
-            
-            /* View-Only on Mobile: Hide Add button and Edit/Delete Action column */
-            #addPromoBtn, #mobileAddBtn, .fab-add, .empty-add-btn,
-            .rate-table th:last-child,
-            .rate-table td:last-child,
-            .action-btns {
-                display: none !important;
+            .banner-thumb {
+                width: 90px;
+                height: 40px;
             }
-            
-            .table-responsive {
-                overflow-x: hidden !important;
-                width: 100% !important;
-            }
-            .rate-table {
-                table-layout: fixed !important;
-                width: 100% !important;
-                min-width: 0 !important;
-            }
-            .rate-table th, .rate-table td {
-                padding: 10px 4px !important;
-                font-size: 12px !important;
-                vertical-align: middle !important;
-                box-sizing: border-box !important;
-            }
-            .rate-table th:first-child, .rate-table td:first-child {
-                width: 32% !important;
-                white-space: nowrap !important;
-            }
-            .rate-table th:nth-child(2), .rate-table td:nth-child(2) {
-                width: 50% !important;
-                word-break: break-word !important;
-            }
-            .rate-table th:nth-child(3), .rate-table td:nth-child(3) {
-                width: 18% !important;
-                text-align: center !important;
-                white-space: nowrap !important;
-            }
-            .badge {
-                font-size: 11px !important;
-                padding: 3px 6px !important;
-                white-space: normal !important;
-                word-break: break-word !important;
-                display: inline-flex !important;
-                align-items: center !important;
-                gap: 4px !important;
-                line-height: 1.3 !important;
-                max-width: 100% !important;
-            }
-        }
-
-        html.mobile-device #addPromoBtn,
-        html.mobile-device #mobileAddBtn,
-        html.mobile-device .fab-add,
-        html.mobile-device .empty-add-btn,
-        html.mobile-device .rate-table th:last-child,
-        html.mobile-device .rate-table td:last-child,
-        html.mobile-device .action-btns {
-            display: none !important;
         }
     </style>
 </head>
 <body class="preload">
     <div class="admin-wrapper">
         <header class="mobile-header"></header>
-
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
         <aside class="sidebar"></aside>
 
         <!-- Main Content -->
@@ -241,59 +349,166 @@
             <div style="max-width: 1000px; margin: 0 auto;">
                 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h1>โปรโมชั่น</h1>
-                        <p style="color: #64748b; margin-top: 6px;">จัดการโปรโมชั่นของแถมตามระดับยอดซื้อสินค้า</p>
+                        <h1>จัดการโปรโมชั่น</h1>
+                        <p style="color: #64748b; margin-top: 6px;">จัดการแบนเนอร์ภาพสไลด์หน้าแรก และของแถมตามระดับยอดซื้อสินค้า</p>
                     </div>
                 </div>
 
-                <div class="premium-card" style="margin-top: 20px;">
-                    <div class="card-header">
-                        <h2><i class="fas fa-gift" style="color: #ef4444;"></i> รายการของแถมตามระดับยอดซื้อ</h2>
-                        <button onclick="openGiftModal()" class="premium-btn" id="addPromoBtn" style="padding: 8px 16px; font-size: 14px;">
-                            <i class="fas fa-plus"></i> เพิ่มโปรโมชั่น
-                        </button>
+                <!-- Tabs -->
+                <div class="promo-tabs">
+                    <button class="promo-tab-btn active" id="tabBtnBanners" onclick="switchPromoTab('banners')">
+                        <i class="fas fa-images"></i> แบนเนอร์ภาพสไลด์
+                    </button>
+                    <button class="promo-tab-btn" id="tabBtnGifts" onclick="switchPromoTab('gifts')">
+                        <i class="fas fa-gift"></i> ของแถมตามยอดซื้อ
+                    </button>
+                </div>
+
+                <!-- ================= TAB 1: BANNERS ================= -->
+                <div id="tabContentBanners">
+                    <!-- Size Recommendation Guide Box -->
+                    <div class="size-hint-box">
+                        <i class="fas fa-lightbulb"></i>
+                        <div class="size-hint-content">
+                            <strong>คำแนะนำขนาดรูปภาพแบนเนอร์ที่เหมาะสม:</strong>
+                            <div style="margin-top: 4px;">
+                                • <strong>ขนาดความละเอียดที่แนะนำ:</strong> <code>1200 x 500 px</code> หรือ <code>1200 x 600 px</code> (สัดส่วน 16:9 หรือ 21:9 แนวนอน)<br>
+                                • <strong>รูปแบบไฟล์:</strong> รองรับ <code>JPG</code>, <code>PNG</code>, <code>WebP</code> (ไม่จำกัดขนาดไฟล์)<br>
+                                • <strong>การจัดวาง:</strong> แนะนำวางข้อความและจุดสำคัญไว้กึ่งกลางภาพ เพื่อให้แสดงผลบนมือถือได้อย่างคมชัดสวยงาม
+                            </div>
+                        </div>
                     </div>
-                    <div id="giftsContainer">
-                        <div class="loading-container">
-                            <div class="spinner-loader"></div>
-                            <span>กำลังโหลดข้อมูล...</span>
+
+                    <div class="premium-card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-images" style="color: #16a34a;"></i> รายการแบนเนอร์ภาพสไลด์โปรโมชั่น</h2>
+                            <button onclick="openBannerModal()" class="premium-btn" id="addBannerBtn" style="padding: 8px 16px; font-size: 14px;">
+                                <i class="fas fa-plus"></i> เพิ่มแบนเนอร์ใหม่
+                            </button>
+                        </div>
+                        <div id="bannersContainer">
+                            <div class="loading-container">
+                                <div class="spinner-loader"></div>
+                                <span>กำลังโหลดข้อมูล...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB 2: GIFTS ================= -->
+                <div id="tabContentGifts" style="display: none;">
+                    <div class="premium-card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-gift" style="color: #ef4444;"></i> รายการของแถมตามระดับยอดซื้อ</h2>
+                            <button onclick="openGiftModal()" class="premium-btn" id="addPromoBtn" style="padding: 8px 16px; font-size: 14px;">
+                                <i class="fas fa-plus"></i> เพิ่มโปรโมชั่น
+                            </button>
+                        </div>
+                        <div id="giftsContainer">
+                            <div class="loading-container">
+                                <div class="spinner-loader"></div>
+                                <span>กำลังโหลดข้อมูล...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
 
-        <!-- Floating Add Button for Mobile -->
-        <button class="fab-add" id="mobileAddBtn" onclick="openGiftModal()" style="border: none;">
-            <i class="fas fa-plus"></i>
-        </button>
-
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <a href="admin_dashboard.html" class="nav-item">
                 <i class="fas fa-home"></i>
-                <span data-i18n="nav.dashboard">แดชบอร์ด</span>
+                <span>แดชบอร์ด</span>
             </a>
             <a href="admin_orders.html" class="nav-item">
                 <i class="fas fa-file-invoice"></i>
-                <span data-i18n="nav.orders">คำสั่งซื้อ</span>
+                <span>คำสั่งซื้อ</span>
             </a>
             <a href="admin_stock.html" class="nav-item">
                 <i class="fas fa-box"></i>
-                <span data-i18n="nav.stock">จัดการคลังสินค้า</span>
+                <span>จัดการคลังสินค้า</span>
             </a>
             <a href="admin_customers.html" class="nav-item">
                 <i class="fas fa-users"></i>
-                <span data-i18n="nav.customers">ลูกค้า</span>
+                <span>ลูกค้า</span>
             </a>
             <a href="admin_promotions.html" class="nav-item active">
                 <i class="fas fa-bullhorn"></i>
-                <span data-i18n="nav.promotions">โปรโมชั่น</span>
+                <span>โปรโมชั่น</span>
             </a>
         </nav>
     </div>
 
-    <!-- Add/Edit Gift Modal -->
+    <!-- ================= MODAL: ADD/EDIT BANNER ================= -->
+    <div id="bannerModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 550px;">
+            <div class="modal-title" id="bannerModalTitle">เพิ่มแบนเนอร์โปรโมชั่นใหม่</div>
+            <div class="modal-body">
+                <input type="hidden" id="modalBannerId">
+
+                <!-- Title -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="bannerTitle" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">
+                        ชื่อโปรโมชั่น / ข้อความกำกับ <span style="color: red;">*</span>
+                    </label>
+                    <input type="text" id="bannerTitle" class="form-control" placeholder="เช่น โปรโมชั่น New Arrivals ประจำเดือน" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                </div>
+
+                <!-- Image Upload -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">
+                        รูปภาพแบนเนอร์ <span style="color: red;">*</span>
+                        <span style="font-size: 12px; font-weight: normal; color: #16a34a; margin-left: 6px;">(แนะนำ 1200 x 500 px)</span>
+                    </label>
+                    
+                    <div class="upload-dropzone" id="bannerDropzone" onclick="document.getElementById('bannerFileInput').click()">
+                        <div id="uploadPrompt">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 36px; color: #94a3b8; margin-bottom: 8px;"></i>
+                            <p style="margin: 0; font-size: 13px; color: #475569; font-weight: 500;">คลิกเพื่อเลือกรูปภาพ หรือลากไฟล์มาวางที่นี่</p>
+                            <span style="font-size: 11px; color: #94a3b8;">รองรับไฟล์ JPG, PNG, WebP</span>
+                        </div>
+                        <div class="preview-img-container" id="bannerPreviewContainer">
+                            <img id="bannerPreviewImg" src="" alt="Preview">
+                        </div>
+                    </div>
+                    <input type="file" id="bannerFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleBannerFileSelect(this)">
+                </div>
+
+                <!-- Target Link (Optional) -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="bannerLinkUrl" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">
+                        ลิงก์ปลายทางเมื่อคลิก (ไม่บังคับ)
+                    </label>
+                    <input type="text" id="bannerLinkUrl" class="form-control" placeholder="เช่น products.html?category=Dog หรือว่างไว้" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                </div>
+
+                <!-- Display Order & Active Status -->
+                <div style="display: flex; gap: 16px; align-items: center; justify-content: space-between;">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="bannerDisplayOrder" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">ลำดับแสดงผล</label>
+                        <input type="number" id="bannerDisplayOrder" class="form-control" min="0" value="0" placeholder="0" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    </div>
+
+                    <div class="form-group" style="flex: 1; padding-top: 18px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            <label class="switch">
+                                <input type="checkbox" id="bannerIsActive" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>เปิดใช้งานแบนเนอร์นี้</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeBannerModal()">ยกเลิก</button>
+                <button class="premium-btn" id="saveBannerBtn" onclick="saveBanner()">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: ADD/EDIT GIFT ================= -->
     <div id="giftModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-title" id="giftModalTitle">เพิ่มระดับของแถมใหม่</div>
@@ -323,7 +538,7 @@
     <div id="deleteModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-title" id="deleteModalTitle">ยืนยันการลบ</div>
-            <div class="modal-text" id="deleteModalText">คุณแน่ใจหรือไม่ว่าต้องการลบโปรโมชั่นรายการนี้?</div>
+            <div class="modal-text" id="deleteModalText">คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?</div>
             <div class="modal-btns">
                 <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">ยกเลิก</button>
                 <button class="premium-btn danger" id="confirmDeleteBtn">ยืนยันการลบ</button>
@@ -335,18 +550,277 @@
 
     <script>
         let allGiftRules = [];
+        let allBanners = [];
+        let deleteType = null; // 'gift' or 'banner'
         let deleteTargetId = null;
+        let selectedBannerFile = null;
 
         checkAuth();
+        fetchBanners();
         fetchGiftRules();
 
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || user.role_name.toLowerCase() !== 'admin') {
+            if (!user || !['admin', 'employee'].includes((user.role_name || '').toLowerCase())) {
                 window.location.href = 'login.html';
             }
         }
 
+        function switchPromoTab(tab) {
+            const btnBanners = document.getElementById('tabBtnBanners');
+            const btnGifts = document.getElementById('tabBtnGifts');
+            const contentBanners = document.getElementById('tabContentBanners');
+            const contentGifts = document.getElementById('tabContentGifts');
+
+            if (tab === 'banners') {
+                btnBanners.classList.add('active');
+                btnGifts.classList.remove('active');
+                contentBanners.style.display = 'block';
+                contentGifts.style.display = 'none';
+            } else {
+                btnBanners.classList.remove('active');
+                btnGifts.classList.add('active');
+                contentBanners.style.display = 'none';
+                contentGifts.style.display = 'block';
+            }
+        }
+
+        // ==========================================
+        // BANNER MANAGEMENT FUNCTIONS
+        // ==========================================
+        async function fetchBanners() {
+            const container = document.getElementById('bannersContainer');
+            try {
+                const response = await fetch('/api/banners?all=true');
+                const result = await response.json();
+                if (response.ok) {
+                    allBanners = result.data || [];
+                    renderBanners();
+                } else {
+                    container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">${result.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล"}</div>`;
+                }
+            } catch (error) {
+                console.error("fetchBanners error:", error);
+                container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>`;
+            }
+        }
+
+        function renderBanners() {
+            const container = document.getElementById('bannersContainer');
+            if (allBanners.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-images" style="font-size: 36px; margin-bottom: 12px; color: #cbd5e1;"></i>
+                        <p style="margin: 0; font-size: 14px; margin-bottom: 12px;">ยังไม่มีแบนเนอร์โปรโมชั่นในระบบ</p>
+                        <button onclick="openBannerModal()" class="premium-btn secondary" style="padding: 6px 12px; font-size: 13px;">
+                            <i class="fas fa-plus"></i> เพิ่มแบนเนอร์แรก
+                        </button>
+                    </div>`;
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                <table class="rate-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 160px;">รูปภาพแบนเนอร์</th>
+                            <th>ชื่อโปรโมชั่น / ข้อความ</th>
+                            <th>ลำดับ</th>
+                            <th>สถานะ</th>
+                            <th style="text-align: right;">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            allBanners.forEach(banner => {
+                const isActive = banner.is_active == 1;
+                html += `
+                    <tr>
+                        <td>
+                            <img src="${banner.image_url}" alt="${banner.title}" class="banner-thumb" onerror="this.src='/images/promotions/promo1.png'">
+                        </td>
+                        <td>
+                            <strong style="color: #1e293b; font-size: 14px;">${banner.title}</strong>
+                            ${banner.link_url ? `<div style="font-size: 12px; color: #16a34a; margin-top: 4px;"><i class="fas fa-link"></i> ${banner.link_url}</div>` : ''}
+                        </td>
+                        <td><span style="font-weight: 600; color: #64748b;">${banner.display_order}</span></td>
+                        <td>
+                            <label class="switch" title="${isActive ? 'คลิกเพื่อปิดการใช้งาน' : 'คลิกเพื่อเปิดใช้งาน'}">
+                                <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleBannerStatus(${banner.id})">
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="action-btns" style="justify-content: flex-end;">
+                                <button class="action-btn edit" onclick="openBannerModal(${banner.id})" title="แก้ไขแบนเนอร์"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn delete" onclick="confirmDeleteBanner(${banner.id})" title="ลบแบนเนอร์"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+        }
+
+        function openBannerModal(bannerId = null) {
+            const modal = document.getElementById('bannerModal');
+            const title = document.getElementById('bannerModalTitle');
+            const idInput = document.getElementById('modalBannerId');
+            const titleInput = document.getElementById('bannerTitle');
+            const linkInput = document.getElementById('bannerLinkUrl');
+            const orderInput = document.getElementById('bannerDisplayOrder');
+            const activeInput = document.getElementById('bannerIsActive');
+            const fileInput = document.getElementById('bannerFileInput');
+            const uploadPrompt = document.getElementById('uploadPrompt');
+            const previewContainer = document.getElementById('bannerPreviewContainer');
+            const previewImg = document.getElementById('bannerPreviewImg');
+
+            fileInput.value = '';
+            selectedBannerFile = null;
+
+            if (bannerId) {
+                title.innerText = 'แก้ไขแบนเนอร์โปรโมชั่น';
+                const b = allBanners.find(x => x.id == bannerId);
+                idInput.value = b.id;
+                titleInput.value = b.title;
+                linkInput.value = b.link_url || '';
+                orderInput.value = b.display_order;
+                activeInput.checked = b.is_active == 1;
+
+                if (b.image_url) {
+                    previewImg.src = b.image_url;
+                    previewContainer.style.display = 'block';
+                    uploadPrompt.style.display = 'none';
+                }
+            } else {
+                title.innerText = 'เพิ่มแบนเนอร์โปรโมชั่นใหม่';
+                idInput.value = '';
+                titleInput.value = '';
+                linkInput.value = '';
+                orderInput.value = allBanners.length + 1;
+                activeInput.checked = true;
+
+                previewImg.src = '';
+                previewContainer.style.display = 'none';
+                uploadPrompt.style.display = 'block';
+            }
+
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeBannerModal() {
+            const modal = document.getElementById('bannerModal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        function handleBannerFileSelect(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                selectedBannerFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('bannerPreviewImg').src = e.target.result;
+                    document.getElementById('bannerPreviewContainer').style.display = 'block';
+                    document.getElementById('uploadPrompt').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function saveBanner() {
+            const id = document.getElementById('modalBannerId').value;
+            const titleInput = document.getElementById('bannerTitle');
+            const linkInput = document.getElementById('bannerLinkUrl');
+            const orderInput = document.getElementById('bannerDisplayOrder');
+            const activeInput = document.getElementById('bannerIsActive');
+            const saveBtn = document.getElementById('saveBannerBtn');
+
+            const title = titleInput.value.trim();
+            if (!title) {
+                showToast("กรุณากรอกชื่อโปรโมชั่น", "error");
+                titleInput.focus();
+                return;
+            }
+
+            if (!id && !selectedBannerFile) {
+                showToast("กรุณาเลือกไฟล์รูปภาพแบนเนอร์", "error");
+                return;
+            }
+
+            const formData = new FormData();
+            if (id) formData.append('id', id);
+            formData.append('title', title);
+            formData.append('link_url', linkInput.value.trim());
+            formData.append('display_order', orderInput.value || 0);
+            formData.append('is_active', activeInput.checked ? 1 : 0);
+            if (selectedBannerFile) {
+                formData.append('image', selectedBannerFile);
+            }
+
+            try {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
+
+                const url = id ? '/api/banners/update' : '/api/banners';
+                const res = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    showToast(id ? "อัปเดตแบนเนอร์เรียบร้อยแล้ว" : "เพิ่มแบนเนอร์เรียบร้อยแล้ว", "success");
+                    closeBannerModal();
+                    fetchBanners();
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาดในการบันทึก", "error");
+                }
+            } catch (err) {
+                console.error("saveBanner error:", err);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = 'บันทึกข้อมูล';
+            }
+        }
+
+        async function toggleBannerStatus(bannerId) {
+            try {
+                const res = await fetch('/api/banners/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: bannerId })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    showToast("เปลี่ยนสถานะแบนเนอร์เรียบร้อยแล้ว", "success");
+                    fetchBanners();
+                } else {
+                    showToast(result.message || "ไม่สามารถเปลี่ยนสถานะได้", "error");
+                }
+            } catch (err) {
+                console.error("toggleBanner error:", err);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        function confirmDeleteBanner(bannerId) {
+            deleteType = 'banner';
+            deleteTargetId = bannerId;
+            document.getElementById('deleteModalTitle').innerText = 'ยืนยันการลบแบนเนอร์';
+            document.getElementById('deleteModalText').innerText = 'คุณแน่ใจหรือไม่ว่าต้องการลบแบนเนอร์โปรโมชั่นนี้?';
+            const modal = document.getElementById('deleteModal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        // ==========================================
+        // GIFT RULES MANAGEMENT FUNCTIONS
+        // ==========================================
         async function fetchGiftRules() {
             const container = document.getElementById('giftsContainer');
             try {
@@ -356,11 +830,6 @@
                     allGiftRules = result.data || [];
                     renderGiftRules();
                 } else {
-                    if (response.status === 401 || response.status === 403) {
-                        localStorage.removeItem('user');
-                        window.location.href = 'login.html';
-                        return;
-                    }
                     container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">${result.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล"}</div>`;
                 }
             } catch (error) {
@@ -405,7 +874,7 @@
                         <td style="text-align: right;">
                             <div class="action-btns" style="justify-content: flex-end;">
                                 <button class="action-btn edit" onclick="openGiftModal(${rule.rule_id})" title="แก้ไขโปรโมชั่น"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn delete" onclick="confirmDelete(${rule.rule_id})" title="ลบโปรโมชั่น"><i class="fas fa-trash-alt"></i></button>
+                                <button class="action-btn delete" onclick="confirmDeleteGift(${rule.rule_id})" title="ลบโปรโมชั่น"><i class="fas fa-trash-alt"></i></button>
                             </div>
                         </td>
                     </tr>`;
@@ -474,9 +943,7 @@
                 gift_qty: gift_qty
             };
 
-            if (id) {
-                payload.rule_id = id;
-            }
+            if (id) payload.rule_id = id;
 
             try {
                 const response = await fetch('/api/rewards/gifts/save', {
@@ -498,8 +965,11 @@
             }
         }
 
-        function confirmDelete(ruleId) {
+        function confirmDeleteGift(ruleId) {
+            deleteType = 'gift';
             deleteTargetId = ruleId;
+            document.getElementById('deleteModalTitle').innerText = 'ยืนยันการลบ';
+            document.getElementById('deleteModalText').innerText = 'คุณแน่ใจหรือไม่ว่าต้องการลบโปรโมชั่นรายการนี้?';
             const modal = document.getElementById('deleteModal');
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('show'), 10);
@@ -515,21 +985,37 @@
             if (!deleteTargetId) return;
 
             try {
-                const response = await fetch('/api/rewards/gifts/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ rule_id: deleteTargetId })
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    showToast("ลบโปรโมชั่นเรียบร้อยแล้ว", "success");
-                    closeDeleteModal();
-                    fetchGiftRules();
+                if (deleteType === 'banner') {
+                    const response = await fetch('/api/banners/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: deleteTargetId })
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        showToast("ลบแบนเนอร์เรียบร้อยแล้ว", "success");
+                        closeDeleteModal();
+                        fetchBanners();
+                    } else {
+                        showToast(result.message || "เกิดข้อผิดพลาดในการลบ", "error");
+                    }
                 } else {
-                    showToast(result.message || "เกิดข้อผิดพลาดในการลบ", "error");
+                    const response = await fetch('/api/rewards/gifts/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rule_id: deleteTargetId })
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        showToast("ลบโปรโมชั่นเรียบร้อยแล้ว", "success");
+                        closeDeleteModal();
+                        fetchGiftRules();
+                    } else {
+                        showToast(result.message || "เกิดข้อผิดพลาดในการลบ", "error");
+                    }
                 }
             } catch (error) {
-                console.error("deleteGiftRule error:", error);
+                console.error("delete error:", error);
                 showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
             }
         });
@@ -543,20 +1029,24 @@
             }, 3000);
         }
 
-        const lBtn = document.getElementById('logoutBtn'); if (lBtn) lBtn.addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('user'); window.location.href = 'login.html'; });
+        const lBtn = document.getElementById('logoutBtn'); 
+        if (lBtn) lBtn.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            localStorage.removeItem('user'); 
+            window.location.href = 'login.html'; 
+        });
 
-        function toggleSidebar() { const sidebar = document.querySelector('.sidebar'); const overlay = document.getElementById('sidebarOverlay'); if (sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } }
+        function toggleSidebar() { 
+            const sidebar = document.querySelector('.sidebar'); 
+            const overlay = document.getElementById('sidebarOverlay'); 
+            if (sidebar && overlay) { 
+                sidebar.classList.toggle('active'); 
+                overlay.classList.toggle('active'); 
+            } 
+        }
 
         const hBtn = document.getElementById('hamburgerBtn'); if (hBtn) hBtn.addEventListener('click', toggleSidebar);
         const sOverlay = document.getElementById('sidebarOverlay'); if (sOverlay) sOverlay.addEventListener('click', toggleSidebar);
-
-        function toggleSubmenu(el) {
-            const group = el.closest('.menu-group');
-            if (group) {
-                group.classList.toggle('open');
-                localStorage.setItem('productsMenuOpen', group.classList.contains('open'));
-            }
-        }
     </script>
 </body>
 </html>

@@ -12,7 +12,6 @@
         body { font-family: 'Outfit', 'Kanit', sans-serif; }
         .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
     </style>
-<script type="module" src="/src/js/i18n.js"></script>
 </head>
 <body class="bg-gradient-to-br from-primary-50 to-primary-100 min-h-screen flex flex-col">
     <!-- Navbar -->
@@ -109,7 +108,7 @@
                     setTimeout(() => {
                         const role = result.data.role_name ? result.data.role_name.toLowerCase() : 'customer';
                         if (role === 'admin') {
-                            window.location.href = '/admin/stock';
+                            window.location.href = '/admin/dashboard';
                         } else if (role === 'customer') {
                             window.location.href = '/products';
                         } else {

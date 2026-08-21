@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตั้งค่าบัญชีรับเงิน & QR Code - Hello Pet Shop</title>
+    <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="/css/staff_mobile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="module" src="/src/js/main.js"></script>
+    <style>
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        @media (min-width: 1024px) {
+            .settings-grid {
+                grid-template-columns: 1.2fr 0.8fr;
+            }
+        }
+        .premium-card {
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .card-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13.5px;
+            color: #334155;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .form-control:focus {
+            border-color: #16a34a;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+        }
+        .upload-dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 14px;
+            padding: 24px;
+            text-align: center;
+            background-color: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .upload-dropzone:hover {
+            border-color: #16a34a;
+            background-color: #f0fdf4;
+        }
+        .btn-save {
+            background-color: #16a34a;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+        }
+        .btn-save:hover {
+            background-color: #15803d;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(22, 163, 74, 0.3);
+        }
+        .btn-save:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Mockup Card (Like Customer View) */
+        .mockup-preview-card {
+            background: linear-gradient(180deg, #003B6A 0%, #002244 100%);
+            border-radius: 20px;
+            padding: 24px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 10px 25px -5px rgba(0, 59, 106, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .mockup-qr-box {
+            background: white;
+            padding: 12px;
+            border-radius: 16px;
+            display: inline-block;
+            margin: 12px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .mockup-qr-img {
+            width: 180px;
+            height: 180px;
+            object-fit: contain;
+            border-radius: 8px;
+            display: block;
+        }
+        .mockup-badge {
+            background: rgba(255, 255, 255, 0.18);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .info-pill {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13.5px;
+            font-weight: 700;
+            display: inline-block;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body class="preload">
+    <div class="admin-wrapper">
+        <!-- Mobile Header (Injected by layout.js) -->
+        <header class="mobile-header"></header>
+        
+        <!-- Sidebar Overlay & Aside (Injected by layout.js) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="sidebar"></aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div style="max-width: 1100px; margin: 0 auto;">
+                <div class="content-header" style="margin-bottom: 24px;">
+                    <div>
+                        <h1 style="font-size: 24px; font-weight: 700; color: #1e293b; margin: 0 0 6px 0;">
+                            <i class="fas fa-qrcode" style="color: #16a34a; margin-right: 8px;"></i>ตั้งค่าบัญชีรับเงิน & PromptPay QR Code
+                        </h1>
+                        <p style="margin: 0; color: #64748b; font-size: 14px;">
+                            กำหนดข้อมูลบัญชีธนาคารและอัปโหลดรูปภาพ QR Code สำหรับรับชำระเงินจากลูกค้าในหน้าสั่งซื้อสินค้า
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Settings Grid -->
+                <div class="settings-grid">
+                    <!-- Left: Form -->
+                    <div class="premium-card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-university" style="color: #0284c7;"></i> ข้อมูลบัญชีรับเงิน</h2>
+                        </div>
+
+                        <form id="paymentSettingsForm" onsubmit="savePaymentSettings(event)">
+                            <!-- Bank Name -->
+                            <div class="form-group">
+                                <label class="form-label" for="bankSelect">
+                                    ชื่อธนาคาร <span style="color: red;">*</span>
+                                </label>
+                                <select id="bankSelect" class="form-control" onchange="handleBankSelectChange(this)" style="margin-bottom: 8px;">
+                                    <option value="ธนาคารกสิกรไทย (KBank)">ธนาคารกสิกรไทย (KBank)</option>
+                                    <option value="ธนาคารไทยพาณิชย์ (SCB)">ธนาคารไทยพาณิชย์ (SCB)</option>
+                                    <option value="ธนาคารกรุงเทพ (BBL)">ธนาคารกรุงเทพ (BBL)</option>
+                                    <option value="ธนาคารกรุงไทย (KTB)">ธนาคารกรุงไทย (KTB)</option>
+                                    <option value="ธนาคารกรุงศรีอยุธยา (BAY)">ธนาคารกรุงศรีอยุธยา (BAY)</option>
+                                    <option value="ธนาคารทหารไทยธนชาต (ttb)">ธนาคารทหารไทยธนชาต (ttb)</option>
+                                    <option value="ธนาคารออมสิน (GSB)">ธนาคารออมสิน (GSB)</option>
+                                    <option value="other">ระบุธนาคารอื่น ๆ...</option>
+                                </select>
+                                <input type="text" id="bankNameCustom" class="form-control" placeholder="พิมพ์ชื่อธนาคาร..." style="display: none;" oninput="updateLivePreview()">
+                            </div>
+
+                            <!-- Account Number -->
+                            <div class="form-group">
+                                <label class="form-label" for="accountNumber">
+                                    เลขที่บัญชีธนาคาร <span style="color: red;">*</span>
+                                </label>
+                                <input type="text" id="accountNumber" class="form-control" placeholder="เช่น 012-3-45678-9" required oninput="updateLivePreview()">
+                            </div>
+
+                            <!-- Account Name -->
+                            <div class="form-group">
+                                <label class="form-label" for="accountName">
+                                    ชื่อเจ้าของบัญชี <span style="color: red;">*</span>
+                                </label>
+                                <input type="text" id="accountName" class="form-control" placeholder="เช่น น.ส. จุฬาลักษณ์ วงค์ม่าน" required oninput="updateLivePreview()">
+                            </div>
+
+                            <!-- PromptPay ID -->
+                            <div class="form-group">
+                                <label class="form-label" for="promptpayId">
+                                    หมายเลขพร้อมเพย์ (เบอร์โทร / เลขบัตรประชาชน / เลขนิติบุคคล)
+                                </label>
+                                <input type="text" id="promptpayId" class="form-control" placeholder="เช่น 081-234-5678 หรือ 1234567890123" oninput="updateLivePreview()">
+                            </div>
+
+                            <!-- Instructions / Note -->
+                            <div class="form-group">
+                                <label class="form-label" for="instructions">
+                                    คำแนะนำการชำระเงินสำหรับลูกค้า (แสดงใต้ QR Code)
+                                </label>
+                                <textarea id="instructions" class="form-control" rows="2" placeholder="เช่น กรุณาโอนเงินตามยอดที่ระบุ และแนบสลิปเพื่อความรวดเร็วในการตรวจสอบ" oninput="updateLivePreview()"></textarea>
+                            </div>
+
+                            <!-- QR Code Image Upload -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    รูปภาพ PromptPay QR Code <span style="color: red;">*</span>
+                                    <span style="font-size: 12px; font-weight: normal; color: #16a34a; margin-left: 6px;">(แนะนำสัดส่วนสี่เหลี่ยม 1:1 หรือ 500x500 px ขึ้นไป)</span>
+                                </label>
+                                
+                                <div class="upload-dropzone" id="qrDropzone" onclick="document.getElementById('qrFileInput').click()">
+                                    <div id="uploadPrompt">
+                                        <i class="fas fa-cloud-arrow-up" style="font-size: 32px; color: #94a3b8; margin-bottom: 8px;"></i>
+                                        <p style="margin: 0; font-size: 13.5px; color: #475569; font-weight: 600;">คลิกเพื่ออัปโหลดรูป QR Code ใหม่</p>
+                                        <span style="font-size: 11.5px; color: #94a3b8;">รองรับไฟล์ JPG, PNG, WebP (ไม่จำกัดขนาดไฟล์)</span>
+                                    </div>
+                                </div>
+                                <input type="file" id="qrFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleQrFileSelect(this)">
+                            </div>
+
+                            <div style="margin-top: 24px; text-align: right;">
+                                <button type="submit" id="saveBtn" class="btn-save">
+                                    <i class="fas fa-save"></i> บันทึกการเปลี่ยนแปลง
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Right: Live Mockup Preview -->
+                    <div>
+                        <div class="premium-card" style="position: sticky; top: 24px;">
+                            <div class="card-header">
+                                <h2><i class="fas fa-eye" style="color: #8b5cf6;"></i> ตัวอย่างมุมมองของลูกค้า</h2>
+                            </div>
+
+                            <p style="font-size: 12.5px; color: #64748b; margin-top: -10px; margin-bottom: 16px;">
+                                แสดงตัวอย่างที่ลูกค้าจะมองเห็นในหน้าชำระเงินและหน้าประวัติคำสั่งซื้อแบบเรียลไทม์:
+                            </p>
+
+                            <div class="mockup-preview-card">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 12px; font-size: 12px; font-weight: 600;">
+                                <span><i class="fas fa-qrcode" style="margin-right: 6px; color: #93c5fd;"></i>PromptPay QR Code</span>
+                                <span class="mockup-badge">พร้อมเพย์</span>
+                            </div>
+
+                            <div class="mockup-qr-box">
+                                <img id="previewQrImg" src="/image/promptpay_qr.png" alt="QR Preview" class="mockup-qr-img">
+                            </div>
+
+                            <div style="font-size: 12.5px; margin-top: 8px;">
+                                <div style="color: #bfdbfe; font-weight: 600;">ชื่อบัญชี: <span id="previewAccountName">น.ส. จุฬาลักษณ์ วงค์ม่าน</span></div>
+                                <div class="info-pill" id="previewBankAndNumber">ธ.กสิกรไทย (KBank) • บัญชี: xxx-x-x1507-x</div>
+                                <div id="previewPromptPay" style="font-size: 11px; color: #cbd5e1; margin-top: 6px;">พร้อมเพย์: 081-xxx-xxxx</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation (Injected by layout.js) -->
+        <nav class="bottom-nav"></nav>
+    </div>
+
+    <script>
+        let currentQrFile = null;
+        let originalQrUrl = '/image/promptpay_qr.png';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPaymentSettings();
+        });
+
+        async function fetchPaymentSettings() {
+            try {
+                const res = await fetch('/api/payment/settings');
+                if (res.ok) {
+                    const result = await res.json();
+                    const data = result.data;
+                    if (data) {
+                        populateForm(data);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching payment settings:", err);
+            }
+        }
+
+        function populateForm(data) {
+            const bankSelect = document.getElementById('bankSelect');
+            const bankCustom = document.getElementById('bankNameCustom');
+            const accountNumber = document.getElementById('accountNumber');
+            const accountName = document.getElementById('accountName');
+            const promptpayId = document.getElementById('promptpayId');
+            const instructions = document.getElementById('instructions');
+
+            accountNumber.value = data.account_number || '';
+            accountName.value = data.account_name || '';
+            promptpayId.value = data.promptpay_id || '';
+            instructions.value = data.instructions || '';
+
+            // Handle Bank Select
+            const bankVal = data.bank_name || 'ธนาคารกสิกรไทย (KBank)';
+            let found = false;
+            for (let opt of bankSelect.options) {
+                if (opt.value === bankVal) {
+                    bankSelect.value = bankVal;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                bankSelect.value = 'other';
+                bankCustom.style.display = 'block';
+                bankCustom.value = bankVal;
+            } else {
+                bankCustom.style.display = 'none';
+            }
+
+            if (data.qr_image_url) {
+                originalQrUrl = data.qr_image_url;
+                document.getElementById('previewQrImg').src = data.qr_image_url;
+            }
+
+            updateLivePreview();
+        }
+
+        function handleBankSelectChange(select) {
+            const customInput = document.getElementById('bankNameCustom');
+            if (select.value === 'other') {
+                customInput.style.display = 'block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+            }
+            updateLivePreview();
+        }
+
+        function getActiveBankName() {
+            const select = document.getElementById('bankSelect');
+            if (select.value === 'other') {
+                return document.getElementById('bankNameCustom').value.trim() || 'ธนาคารอื่น ๆ';
+            }
+            return select.value;
+        }
+
+        function handleQrFileSelect(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                currentQrFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('previewQrImg').src = e.target.result;
+                    document.getElementById('uploadPrompt').innerHTML = `
+                        <i class="fas fa-check-circle" style="font-size: 28px; color: #16a34a; margin-bottom: 6px;"></i>
+                        <p style="margin: 0; font-size: 13px; color: #16a34a; font-weight: 600;">เลือกรูปใหม่แล้ว: ${escapeHTML(file.name)}</p>
+                        <span style="font-size: 11px; color: #64748b;">คลิกเพื่อเปลี่ยนรูปอื่น</span>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateLivePreview() {
+            const bankName = getActiveBankName();
+            const accNum = document.getElementById('accountNumber').value.trim() || 'xxx-x-x1507-x';
+            const accName = document.getElementById('accountName').value.trim() || 'น.ส. จุฬาลักษณ์ วงค์ม่าน';
+            const ppId = document.getElementById('promptpayId').value.trim();
+
+            document.getElementById('previewAccountName').textContent = accName;
+            document.getElementById('previewBankAndNumber').textContent = `${bankName} • บัญชี: ${accNum}`;
+            
+            const ppElem = document.getElementById('previewPromptPay');
+            if (ppId) {
+                ppElem.textContent = `พร้อมเพย์: ${ppId}`;
+                ppElem.style.display = 'block';
+            } else {
+                ppElem.style.display = 'none';
+            }
+        }
+
+        async function savePaymentSettings(event) {
+            event.preventDefault();
+            const saveBtn = document.getElementById('saveBtn');
+            const bankName = getActiveBankName();
+            const accountNumber = document.getElementById('accountNumber').value.trim();
+            const accountName = document.getElementById('accountName').value.trim();
+            const promptpayId = document.getElementById('promptpayId').value.trim();
+            const instructions = document.getElementById('instructions').value.trim();
+
+            if (!bankName || !accountNumber || !accountName) {
+                alert("กรุณากรอกข้อมูลชื่อธนาคาร, เลขที่บัญชี และชื่อเจ้าของบัญชีให้ครบถ้วน");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('bank_name', bankName);
+            formData.append('account_number', accountNumber);
+            formData.append('account_name', accountName);
+            formData.append('promptpay_id', promptpayId);
+            formData.append('instructions', instructions);
+
+            if (currentQrFile) {
+                formData.append('qr_image', currentQrFile);
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...';
+
+            try {
+                const res = await fetch('/api/payment/settings', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    if (window.Swal) {
+                        window.Swal.fire({
+                            title: 'บันทึกสำเร็จ!',
+                            text: 'อัปเดตข้อมูลบัญชีรับเงินและ QR Code เรียบร้อยแล้ว',
+                            icon: 'success',
+                            confirmButtonColor: '#16a34a'
+                        });
+                    } else {
+                        alert('บันทึกสำเร็จ! อัปเดตข้อมูลบัญชีรับเงินและ QR Code เรียบร้อยแล้ว');
+                    }
+                    if (result.data) {
+                        populateForm(result.data);
+                    }
+                } else {
+                    alert(result.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                }
+            } catch (err) {
+                console.error("Error saving payment settings:", err);
+                alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อบันทึกข้อมูลได้");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> บันทึกการเปลี่ยนแปลง';
+            }
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>

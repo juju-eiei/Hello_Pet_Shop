@@ -17,6 +17,7 @@ class Product {
         $conditions = [];
         $params = [];
 
+        $keyword = trim($keyword);
         if (!empty($keyword)) {
             $conditions[] = "p.product_name LIKE :keyword";
             $params[':keyword'] = "%{$keyword}%";
@@ -111,10 +112,65 @@ class Product {
     }
 
     public function delete($id) {
-        $query = "DELETE FROM " . $this->table . " WHERE product_id = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id);
-        return $stmt->execute();
+        $id = (int)$id;
+        $inTransaction = $this->conn->inTransaction();
+        if (!$inTransaction) {
+            $this->conn->beginTransaction();
+        }
+
+        try {
+            // Find all orders containing this product
+            $stmtOrders = $this->conn->prepare("SELECT DISTINCT order_id FROM order_details WHERE product_id = :id");
+            $stmtOrders->execute([':id' => $id]);
+            $orderIds = $stmtOrders->fetchAll(PDO::FETCH_COLUMN);
+
+            foreach ($orderIds as $orderId) {
+                // Check if this order contains only this product or others
+                $stmtCount = $this->conn->prepare("SELECT COUNT(*) FROM order_details WHERE order_id = :order_id AND product_id != :id");
+                $stmtCount->execute([':order_id' => $orderId, ':id' => $id]);
+                $otherCount = (int)$stmtCount->fetchColumn();
+
+                if ($otherCount === 0) {
+                    // This order only had this product, delete the whole order and related records
+                    $this->conn->prepare("DELETE FROM reward_point_logs WHERE order_id = :order_id")->execute([':order_id' => $orderId]);
+                    $this->conn->prepare("DELETE FROM deliveries WHERE order_id = :order_id")->execute([':order_id' => $orderId]);
+                    $this->conn->prepare("DELETE FROM payments WHERE order_id = :order_id")->execute([':order_id' => $orderId]);
+                    $this->conn->prepare("DELETE FROM financial_transactions WHERE reference_type = 'order' AND reference_id = :order_id")->execute([':order_id' => $orderId]);
+                    $this->conn->prepare("DELETE FROM order_details WHERE order_id = :order_id")->execute([':order_id' => $orderId]);
+                    $this->conn->prepare("DELETE FROM orders WHERE order_id = :order_id")->execute([':order_id' => $orderId]);
+                } else {
+                    // Delete just this product's line item from order_details
+                    $this->conn->prepare("DELETE FROM order_details WHERE order_id = :order_id AND product_id = :id")->execute([':order_id' => $orderId, ':id' => $id]);
+                    // Recalculate order subtotal and net_total
+                    $stmtSum = $this->conn->prepare("SELECT COALESCE(SUM(quantity * unit_price), 0) FROM order_details WHERE order_id = :order_id");
+                    $stmtSum->execute([':order_id' => $orderId]);
+                    $newSubtotal = (float)$stmtSum->fetchColumn();
+                    $this->conn->prepare("UPDATE orders SET subtotal = :subtotal, net_total = GREATEST(0, :subtotal + shipping_fee - discount_amount) WHERE order_id = :order_id")
+                        ->execute([':subtotal' => $newSubtotal, ':order_id' => $orderId]);
+                }
+            }
+
+            // Delete from dependent product tables
+            $this->conn->prepare("DELETE FROM order_details WHERE product_id = :id")->execute([':id' => $id]);
+            $this->conn->prepare("DELETE FROM cart_items WHERE product_id = :id")->execute([':id' => $id]);
+            $this->conn->prepare("DELETE FROM inventory_logs WHERE product_id = :id")->execute([':id' => $id]);
+            $this->conn->prepare("DELETE FROM product_lots WHERE product_id = :id")->execute([':id' => $id]);
+            $this->conn->prepare("DELETE FROM restock_details WHERE product_id = :id")->execute([':id' => $id]);
+
+            // Delete product
+            $stmt = $this->conn->prepare("DELETE FROM " . $this->table . " WHERE product_id = :id");
+            $res = $stmt->execute([':id' => $id]);
+
+            if (!$inTransaction) {
+                $this->conn->commit();
+            }
+            return $res;
+        } catch (Exception $e) {
+            if (!$inTransaction && $this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function create($data) {
