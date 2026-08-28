@@ -1,5 +1,5 @@
 import { updateGlobalCartCount } from './main.js';
-import { showToast, getUserProfileData, saveUserProfileData } from './utils.js';
+import { showToast, getUserProfileData, saveUserProfileData, getCartData, saveCartData, getUserOrdersData, saveUserOrdersData } from './utils.js';
 
 export function initCheckoutPage() {
     // Elements
@@ -117,6 +117,17 @@ export function initCheckoutPage() {
         return fee;
     }
 
+    function updateCardUI() {
+        document.querySelectorAll('.option-card').forEach(label => {
+            const radio = label.querySelector('input[type="radio"]');
+            if (radio && radio.checked) {
+                label.classList.add('active-card');
+            } else {
+                label.classList.remove('active-card');
+            }
+        });
+    }
+
     function renderDeliveryOptions() {
         const container = document.getElementById('deliveryMethodsContainer');
         if (!container) return;
@@ -127,13 +138,14 @@ export function initCheckoutPage() {
         container.innerHTML = deliveryCompanies.map((c, idx) => {
             const fee = calculateShippingForCompany(c);
             const isChecked = idx === 0 ? 'checked' : '';
+            const activeClass = idx === 0 ? 'active-card' : '';
             const weightDesc = totalWeight > 1.0
                 ? `น้ำหนัก ${totalWeight.toFixed(2)} กก. (เกิน 1 กก. บวกเพิ่ม ${extraKg} กก.)`
                 : `อัตราปกติเริ่มต้น (น้ำหนัก ${totalWeight > 0 ? totalWeight.toFixed(2) + ' กก.' : 'ไม่เกิน 1 กก.'})`;
 
             return `
-                <label class="option-card block cursor-pointer">
-                    <input type="radio" name="deliveryMethod" value="${c.company_id}" data-fee="${fee}" data-company-name="${c.company_name}" class="hidden" ${isChecked}>
+                <label class="option-card block cursor-pointer ${activeClass}">
+                    <input type="radio" name="deliveryMethod" value="${c.company_id}" data-fee="${fee}" data-company-name="${c.company_name}" class="sr-only" ${isChecked}>
                     <div class="border-2 border-gray-100 rounded-2xl p-4 md:p-5 flex items-center justify-between hover:border-gray-300 hover:bg-gray-50/80 transition-all duration-200">
                         <div class="flex items-center space-x-4">
                             <div class="radio-circle w-5 h-5 rounded-full border-2 border-gray-300 relative flex items-center justify-center transition-all shrink-0">
@@ -156,12 +168,24 @@ export function initCheckoutPage() {
             `;
         }).join('');
 
-        // Bind radio change listeners
+        // Bind radio change listeners for delivery methods
         container.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 selectedCompanyId = parseInt(e.target.value);
                 shippingFee = parseFloat(e.target.dataset.fee);
+                updateCardUI();
                 renderSummary();
+            });
+        });
+
+        // Bind click on label cards
+        container.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const radio = card.querySelector('input[name="deliveryMethod"]');
+                if (radio && !radio.checked) {
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('change'));
+                }
             });
         });
 
@@ -171,6 +195,8 @@ export function initCheckoutPage() {
             selectedCompanyId = parseInt(firstRadio.value);
             shippingFee = parseFloat(firstRadio.dataset.fee);
         }
+
+        updateCardUI();
     }
 
     function renderSummary() {
@@ -212,8 +238,31 @@ export function initCheckoutPage() {
         if (inputZipcode && profile.zipcode) inputZipcode.value = profile.zipcode;
     }
 
+    function updateSubmitButtonState() {
+        if (!submitPaymentBtn) return;
+        if (attachedSlipData) {
+            submitPaymentBtn.disabled = false;
+            submitPaymentBtn.className = "w-full bg-[#4D7C68] hover:bg-[#3D6353] text-white py-3.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer opacity-100";
+        } else {
+            submitPaymentBtn.disabled = true;
+            submitPaymentBtn.className = "w-full bg-gray-300 text-gray-500 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 cursor-not-allowed opacity-60";
+        }
+    }
+
     function attachEvents() {
-        // Confirm Order Click -> Open QR Modal
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const radio = card.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('change'));
+                }
+                updateCardUI();
+            });
+        });
+        updateCardUI();
+
+        // Confirm Order Click -> Open PromptPay QR Modal
         if (confirmOrderBtn) {
             confirmOrderBtn.onclick = () => {
                 // Validate address
@@ -239,11 +288,10 @@ export function initCheckoutPage() {
                 const checkedDeliveryInput = document.querySelector('input[name="deliveryMethod"]:checked');
                 const deliveryMethod = checkedDeliveryInput ? checkedDeliveryInput.value : 'standard';
                 const companyName = checkedDeliveryInput?.dataset?.companyName || 'ขนส่งเอกชน';
-                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'transfer';
                 const fakeId = Math.floor(100000 + Math.random() * 900000);
                 const totalAmount = subtotal + shippingFee;
 
-                // Create Pending Order Draft
+                // Create Order Draft
                 pendingOrderData = {
                     id: fakeId,
                     company_id: selectedCompanyId,
@@ -254,7 +302,7 @@ export function initCheckoutPage() {
                     shipping: shippingFee,
                     total: totalAmount,
                     deliveryMethod: deliveryMethod,
-                    paymentMethod: paymentMethod,
+                    paymentMethod: 'transfer',
                     shippingAddress: {
                         fullName: inputFullName.value.trim(),
                         phone: inputPhone.value.trim(),
@@ -266,11 +314,9 @@ export function initCheckoutPage() {
                     slipImage: null
                 };
 
-                // Display in QR Payment Modal
+                // Display in QR Payment Modal for Bank Transfer / PromptPay
                 if (qrModalOrderId) qrModalOrderId.textContent = fakeId;
                 if (qrModalAmount) qrModalAmount.textContent = `฿${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-
-                // Show QR Modal
                 openQrModal();
             };
         }
@@ -286,8 +332,12 @@ export function initCheckoutPage() {
                         if (slipFileName) slipFileName.textContent = file.name;
                         if (slipUploadPlaceholder) slipUploadPlaceholder.classList.add('hidden');
                         if (slipPreviewContainer) slipPreviewContainer.classList.remove('hidden');
+                        updateSubmitButtonState();
                     };
                     reader.readAsDataURL(file);
+                } else {
+                    attachedSlipData = null;
+                    updateSubmitButtonState();
                 }
             };
         }
@@ -299,6 +349,7 @@ export function initCheckoutPage() {
                 attachedSlipData = null;
                 if (slipPreviewContainer) slipPreviewContainer.classList.add('hidden');
                 if (slipUploadPlaceholder) slipUploadPlaceholder.classList.remove('hidden');
+                updateSubmitButtonState();
             };
         }
 
@@ -306,6 +357,17 @@ export function initCheckoutPage() {
         if (submitPaymentBtn) {
             submitPaymentBtn.onclick = () => {
                 if (!pendingOrderData) return;
+
+                // Validate that slip image is attached
+                if (!attachedSlipData) {
+                    showToast("กรุณาแนบรูปภาพสลิปการโอนเงินก่อนแจ้งชำระ", "error");
+                    const dropzone = document.getElementById('slipUploadPlaceholder')?.parentElement;
+                    if (dropzone) {
+                        dropzone.classList.add('border-red-500', 'bg-red-50/50');
+                        setTimeout(() => dropzone.classList.remove('border-red-500', 'bg-red-50/50'), 2500);
+                    }
+                    return;
+                }
 
                 submitPaymentBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>กำลังตรวจสอบ...</span>';
                 submitPaymentBtn.disabled = true;
@@ -338,18 +400,29 @@ export function initCheckoutPage() {
 
         if (closeQrModalBtn) {
             closeQrModalBtn.onclick = () => {
-                if (!pendingOrderData) return;
-                pendingOrderData.status = 'Pending Payment';
-                finalizeOrder(
-                    "บันทึกคำสั่งซื้อเรียบร้อยแล้ว!",
-                    `คำสั่งซื้อ #${pendingOrderData.id} ถูกบันทึกไว้ในสถานะ <span class="font-bold text-amber-600 font-sans">'ที่ต้องชำระ'</span> คุณสามารถสแกนจ่ายเงินได้ทุกเมื่อในหน้าประวัติคำสั่งซื้อ`
-                );
+                closeQrModal();
+                pendingOrderData = null;
+            };
+        }
+
+        if (paymentQrModal) {
+            paymentQrModal.onclick = (e) => {
+                if (e.target === paymentQrModal) {
+                    closeQrModal();
+                    pendingOrderData = null;
+                }
             };
         }
     }
 
     function openQrModal() {
         if (!paymentQrModal) return;
+
+        attachedSlipData = null;
+        if (slipFileInput) slipFileInput.value = '';
+        if (slipPreviewContainer) slipPreviewContainer.classList.add('hidden');
+        if (slipUploadPlaceholder) slipUploadPlaceholder.classList.remove('hidden');
+        updateSubmitButtonState();
 
         if (paymentSettings) {
             const qrImg = document.getElementById('qrCodeDisplayImg');
@@ -458,14 +531,14 @@ export function initCheckoutPage() {
             return;
         }
 
-        // Save order to localStorage 'myOrders'
-        const orders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+        // Save order to per-user isolated store
+        const orders = getUserOrdersData();
         orders.unshift(pendingOrderData);
-        localStorage.setItem('myOrders', JSON.stringify(orders));
+        saveUserOrdersData(orders);
 
         // Remove checked items from main cart
         const newCart = cart.filter(item => item.selected === false);
-        localStorage.setItem('cart', JSON.stringify(newCart));
+        saveCartData(newCart);
         updateGlobalCartCount();
 
         // Update Success Modal Content

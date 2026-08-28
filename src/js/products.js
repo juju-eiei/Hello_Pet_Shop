@@ -1,4 +1,4 @@
-import { showToast, escapeHTML } from './utils.js';
+import { showToast, escapeHTML, getCartData, saveCartData } from './utils.js';
 import { updateGlobalCartCount } from './main.js';
 import { getPersonalizedProducts, trackSearchQuery, trackAddToCart } from './recommendationEngine.js';
 
@@ -122,7 +122,7 @@ export function initProductsPage() {
 
     // 3. Add to Cart with Behavior Tracking
     function addToCart(product) {
-        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        let cart = getCartData();
         const existing = cart.find(item => item.id === product.id);
         
         if (existing) {
@@ -131,7 +131,7 @@ export function initProductsPage() {
             cart.push({ ...product, quantity: 1 });
         }
         
-        localStorage.setItem('cart', JSON.stringify(cart));
+        saveCartData(cart);
         updateGlobalCartCount();
         
         // Track Add to Cart for AI Model

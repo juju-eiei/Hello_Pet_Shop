@@ -5,30 +5,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ชำระเงิน - Hello Pet Shop</title>
-    <!-- Use Vite to load styles -->
-    <script type="module" src="/src/js/main.js"></script>
-    <script type="module" src="/src/js/checkout.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/css/style.css">
     <style>
+        html { opacity: 0; }
+        html.rendered { opacity: 1; transition: opacity 0.12s ease-in-out; }
         body { font-family: 'Outfit', 'Kanit', sans-serif; }
         .nav-green { background-color: #1b4332; }
         .btn-green { background-color: #16a34a; }
         .btn-green:hover { background-color: #15803d; }
+    </style>
+    <script>
+        (function() {
+            function show() { document.documentElement.classList.add('rendered'); }
+            if (document.readyState !== 'loading') show();
+            else document.addEventListener('DOMContentLoaded', show);
+            setTimeout(show, 200);
+        })();
+    </script>
+    <script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="/src/js/checkout.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
         
         /* Custom Option Cards Active Styling */
-        .option-card input:checked + div {
+        .option-card {
+            display: block;
+            cursor: pointer;
+            user-select: none;
+        }
+        .option-card input:checked + div,
+        .option-card.active-card > div {
             border-color: #16a34a !important;
             background-color: #f0fdf4 !important;
-            box-shadow: 0 4px 14px rgba(22, 163, 74, 0.08);
+            box-shadow: 0 4px 14px rgba(22, 163, 74, 0.12) !important;
         }
-        .option-card input:checked + div .radio-circle {
+        .option-card input:checked + div .radio-circle,
+        .option-card.active-card .radio-circle {
             border-color: #16a34a !important;
             background-color: #16a34a !important;
         }
-        .option-card input:checked + div .radio-circle .radio-dot {
-            transform: scale(1);
-            opacity: 1;
+        .option-card input:checked + div .radio-circle .radio-dot,
+        .option-card.active-card .radio-circle .radio-dot {
+            transform: scale(1) !important;
+            opacity: 1 !important;
+        }
+        .option-card input:checked + div .chevron-icon,
+        .option-card.active-card .chevron-icon {
+            color: #16a34a !important;
+            transform: translateX(2px);
         }
     </style>
 </head>
@@ -185,9 +209,10 @@
                         วิธีชำระเงิน
                     </h2>
                     
-                    <div class="space-y-3">
-                        <label class="option-card block cursor-pointer">
-                            <input type="radio" name="paymentMethod" value="transfer" class="hidden" checked>
+                    <div class="space-y-3" id="paymentOptionsContainer">
+                        <!-- Option 1: PromptPay / Bank Transfer -->
+                        <label class="option-card block cursor-pointer active-card">
+                            <input type="radio" name="paymentMethod" value="transfer" class="sr-only" checked>
                             <div class="border-2 border-gray-100 rounded-2xl p-4 md:p-5 flex items-center justify-between hover:border-gray-300 hover:bg-gray-50/80 transition-all duration-200">
                                 <div class="flex items-center space-x-4">
                                     <div class="radio-circle w-5 h-5 rounded-full border-2 border-gray-300 relative flex items-center justify-center transition-all shrink-0">
@@ -209,7 +234,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                <i class="fas fa-chevron-right chevron-icon text-gray-300 text-xs transition-all"></i>
                             </div>
                         </label>
                     </div>
@@ -314,7 +339,7 @@
             <div class="mt-5 space-y-2">
                 <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
                     <span><i class="fas fa-file-invoice text-emerald-600 mr-1.5"></i>แนบหลักฐานการชำระเงิน (สลิป)</span>
-                    <span class="text-[11px] text-gray-400 font-normal">(ถ้ามี)</span>
+                    <span class="text-[11px] text-red-500 font-bold">*จำเป็นต้องแนบสลิป</span>
                 </label>
                 <div class="relative border-2 border-dashed border-gray-200 hover:border-emerald-500 rounded-2xl p-3.5 text-center transition-all bg-gray-50/50 hover:bg-emerald-50/30 cursor-pointer group">
                     <input type="file" id="slipFileInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
@@ -337,7 +362,7 @@
 
             <!-- Modal Action Buttons -->
             <div class="mt-6 space-y-2.5">
-                <button id="submitPaymentBtn" class="w-full bg-[#4D7C68] hover:bg-[#3D6353] text-white py-3.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center space-x-2">
+                <button id="submitPaymentBtn" disabled class="w-full bg-gray-300 text-gray-500 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 cursor-not-allowed opacity-60">
                     <i class="fas fa-check-circle"></i>
                     <span>ยืนยันการชำระเงิน (แจ้งชำระ)</span>
                 </button>

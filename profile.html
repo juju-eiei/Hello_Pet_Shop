@@ -4,17 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ข้อมูลส่วนตัว - Hello Pet Shop</title>
-    <!-- Use Vite to load styles -->
-    <script type="module" src="/src/js/main.js"></script>
-    <script type="module" src="/src/js/profile.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/css/style.css">
     <style>
+        html { opacity: 0; }
+        html.rendered { opacity: 1; transition: opacity 0.12s ease-in-out; }
         body { font-family: 'Outfit', 'Kanit', sans-serif; }
         .nav-green { background-color: #1b4332; }
         .btn-green { background-color: #16a34a; }
         .btn-green:hover { background-color: #15803d; }
     </style>
+    <script>
+        (function() {
+            function show() { document.documentElement.classList.add('rendered'); }
+            if (document.readyState !== 'loading') show();
+            else document.addEventListener('DOMContentLoaded', show);
+            setTimeout(show, 200);
+        })();
+    </script>
+    <script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="/src/js/profile.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-slate-50 to-green-50/30 min-h-screen flex flex-col">
     <!-- Role Check script -->
@@ -122,7 +132,7 @@
                         </div>
                         <div>
                             <div class="text-[11px] text-amber-100 uppercase tracking-wider font-semibold">แต้มสะสม</div>
-                            <div class="text-xl font-bold leading-none">1,200 <span class="text-xs font-normal opacity-90">คะแนน</span></div>
+                            <div class="text-xl font-bold leading-none"><span id="userPointsValue">0</span> <span class="text-xs font-normal opacity-90">คะแนน</span></div>
                         </div>
                     </div>
                 </div>

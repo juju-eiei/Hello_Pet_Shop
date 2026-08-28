@@ -101,12 +101,50 @@
 
                 const result = await response.json();
                 
-                if (response.ok) {
+                if (response.ok && result && (result.data || result.user_id)) {
                     showToast("เข้าสู่ระบบสำเร็จ! กำลังเปลี่ยนเส้นทาง...", "success");
-                    localStorage.setItem('user', JSON.stringify(result.data));
+                    
+                    const loggedInUser = result.data || result;
+                    const userId = loggedInUser.user_id ? String(loggedInUser.user_id) : String(loggedInUser.username || 'default');
+
+                    // Clear global temporary fallback keys from previous accounts
+                    try { localStorage.removeItem('userProfileData'); } catch(e) {}
+                    
+                    let savedProfile = {};
+                    try {
+                        const accountProfiles = JSON.parse(localStorage.getItem('savedAccountProfiles') || '{}');
+                        savedProfile = accountProfiles[userId] || (loggedInUser.username ? accountProfiles[loggedInUser.username] : {}) || {};
+                    } catch(e) {}
+
+                    if (savedProfile.profileImage) {
+                        loggedInUser.profile_image = savedProfile.profileImage;
+                        loggedInUser.profileImage = savedProfile.profileImage;
+                    }
+                    if (savedProfile.address) loggedInUser.address = savedProfile.address;
+                    if (savedProfile.phone) loggedInUser.phone = savedProfile.phone;
+                    if (savedProfile.name) {
+                        loggedInUser.username = savedProfile.name;
+                        loggedInUser.first_name = savedProfile.name;
+                    }
+
+                    localStorage.setItem('user', JSON.stringify(loggedInUser));
+
+                    // Restore cart strictly for this account
+                    try {
+                        const savedCarts = JSON.parse(localStorage.getItem('savedUserCarts') || '{}');
+                        const userCart = savedCarts[userId] || (loggedInUser.username ? savedCarts[loggedInUser.username] : []);
+                        localStorage.setItem('cart', JSON.stringify(userCart || []));
+                    } catch(e) {}
+
+                    // Restore orders strictly for this account
+                    try {
+                        const savedOrders = JSON.parse(localStorage.getItem('savedUserOrders') || '{}');
+                        const userOrders = savedOrders[userId] || (loggedInUser.username ? savedOrders[loggedInUser.username] : []);
+                        localStorage.setItem('myOrders', JSON.stringify(userOrders || []));
+                    } catch(e) {}
                     
                     setTimeout(() => {
-                        const role = result.data.role_name ? result.data.role_name.toLowerCase() : 'customer';
+                        const role = (loggedInUser && loggedInUser.role_name) ? String(loggedInUser.role_name).toLowerCase() : 'customer';
                         if (role === 'admin') {
                             window.location.href = '/admin/dashboard';
                         } else if (role === 'customer') {
@@ -116,10 +154,11 @@
                         }
                     }, 1000);
                 } else {
-                    showToast(result.message || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง", "error");
+                    showToast((result && result.message) ? result.message : "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง", "error");
                 }
             } catch (error) {
-                showToast("การเชื่อมต่อล้มเหลว", "error");
+                console.error("Login submission error:", error);
+                showToast("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง", "error");
             }
         });
     </script>

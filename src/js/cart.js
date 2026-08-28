@@ -1,4 +1,5 @@
 import { updateGlobalCartCount } from './main.js';
+import { getCartData, saveCartData } from './utils.js';
 
 export function initCartPage() {
     const cartItemsContainer = document.getElementById('cartItemsContainer');
@@ -7,7 +8,7 @@ export function initCartPage() {
     const cartSubtotal = document.getElementById('cartSubtotal');
     
     function renderCart() {
-        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const cart = getCartData();
         
         if (cart.length === 0) {
             cartItemsContainer.innerHTML = `
@@ -15,7 +16,7 @@ export function initCartPage() {
                     <i class="fas fa-shopping-basket text-5xl mb-4 text-gray-300"></i>
                     <h2 class="text-xl font-medium text-gray-700">ไม่มีสินค้าในตะกร้าของคุณ</h2>
                     <p class="mt-2 text-gray-400">ดูเหมือนว่าคุณยังไม่ได้เพิ่มสินค้าใด ๆ ลงในตะกร้าเลย</p>
-                    <a href="/products" class="inline-block mt-6 px-6 py-2 bg-blue-100 text-blue-700 font-medium rounded-lg hover:bg-blue-200 transition-colors">เริ่มเลือกซื้อสินค้า</a>
+                    <a href="/products" class="inline-block mt-6 px-6 py-2 bg-[#4D7C68] text-white font-medium rounded-lg hover:bg-[#3D6353] transition-colors">เริ่มเลือกซื้อสินค้า</a>
                 </div>
             `;
             if (cartSubtotal) cartSubtotal.textContent = '฿0.00';
@@ -23,12 +24,9 @@ export function initCartPage() {
             return;
         }
 
-        // Determine if all are selected
         const allSelected = cart.every(item => item.selected !== false);
-
         let total = 0;
         
-        // Header for Select All
         let htmlSnippet = `
             <div class="flex items-center mb-6 pb-5 border-b border-gray-200/60">
                 <label class="flex items-center cursor-pointer group">
@@ -46,108 +44,103 @@ export function initCartPage() {
                 total += itemTotal;
             }
             
-            // Image fallback logic handling
             const imageUrl = item.image || '/image/non-image.png';
             
             return `
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 pb-8 border-b border-[#e2e8f0] last:border-0 last:pb-0 last:mb-0 relative py-2 transition-opacity ${!isSelected ? 'opacity-60' : ''}">
-                <div class="flex items-center space-x-5">
-                    <!-- Checkbox -->
-                    <input type="checkbox" class="item-checkbox w-[18px] h-[18px] rounded border-gray-300 text-[#16a34a] focus:ring-[#16a34a] cursor-pointer" data-id="${item.id}" ${isSelected ? 'checked' : ''}>
-                    
-                    <!-- Product Image -->
-                    <div class="w-24 h-24 bg-white rounded-2xl flex-shrink-0 flex items-center justify-center p-3 shadow-sm ${!isSelected ? 'grayscale-[30%]' : ''}">
-                        <img src="${imageUrl}" onerror="this.src='/image/non-image.png'" alt="${item.name}" class="w-full h-full object-contain">
+                <div class="flex items-center justify-between py-4 border-b border-gray-100 last:border-0 group">
+                    <div class="flex items-center space-x-4">
+                        <input type="checkbox" class="item-checkbox w-4 h-4 rounded border-gray-300 text-[#16a34a] focus:ring-[#16a34a] cursor-pointer" data-id="${item.id}" ${isSelected ? 'checked' : ''}>
+                        <img src="${imageUrl}" onerror="this.src='/image/non-image.png'" alt="${item.name}" class="w-16 h-16 object-contain rounded-lg border border-gray-100 p-1">
+                        <div>
+                            <h3 class="font-semibold text-gray-800 group-hover:text-[#16a34a] transition-colors">${item.name}</h3>
+                            <p class="text-sm text-gray-500 font-mono mt-0.5">฿${parseFloat(item.price).toFixed(2)}</p>
+                        </div>
                     </div>
-                    <!-- Product Info -->
-                    <div>
-                        <h3 class="text-[#1f2937] font-medium text-[17px]">${item.name}</h3>
-                        <p class="text-[#5e8b7e] text-[15px] mt-1.5 font-normal">จำนวน: ${item.quantity}</p>
-                    </div>
-                </div>
-                
-                <div class="flex items-center justify-between sm:w-auto w-full mt-6 sm:mt-0 px-2 sm:px-0 sm:ml-0 ml-10 sm:space-x-24">
-                    <!-- Price -->
-                    <span class="text-[#1f2937] font-medium text-[17px]">฿${itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                    
-                    <!-- Internal Quantity Adjuster -->
+
                     <div class="flex items-center space-x-6">
-                        <button class="cart-minus w-8 h-8 rounded-full bg-[#f2eef4] flex items-center justify-center hover:bg-gray-200 text-gray-700 transition-colors" data-id="${item.id}">
-                            <i class="fas fa-minus text-[10px] pointer-events-none"></i>
-                        </button>
-                        <span class="w-2 text-center font-medium text-gray-800 text-[15px]">${item.quantity}</span>
-                        <button class="cart-plus w-8 h-8 rounded-full bg-[#f2eef4] flex items-center justify-center hover:bg-gray-200 text-gray-700 transition-colors" data-id="${item.id}">
-                            <i class="fas fa-plus text-[10px] pointer-events-none"></i>
+                        <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                            <button class="decrease-btn px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors" data-id="${item.id}">-</button>
+                            <span class="px-3 py-1 text-sm font-semibold text-gray-700 min-w-[32px] text-center">${item.quantity}</span>
+                            <button class="increase-btn px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors" data-id="${item.id}">+</button>
+                        </div>
+
+                        <span class="font-bold text-gray-800 font-mono min-w-[80px] text-right">฿${itemTotal.toFixed(2)}</span>
+
+                        <button class="remove-btn text-gray-400 hover:text-red-500 transition-colors p-1" data-id="${item.id}">
+                            <i class="fas fa-trash-can text-sm"></i>
                         </button>
                     </div>
                 </div>
-            </div>
             `;
         }).join('');
         
         cartItemsContainer.innerHTML = htmlSnippet;
         
         if (cartSubtotal) {
-            cartSubtotal.textContent = `฿${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            cartSubtotal.textContent = `฿${total.toFixed(2)}`;
         }
         
-        // Attach events
-        document.querySelectorAll('.cart-minus').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                updateQuantity(e.currentTarget.dataset.id, -1);
-            });
-        });
-        document.querySelectorAll('.cart-plus').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                updateQuantity(e.currentTarget.dataset.id, 1);
-            });
+        document.querySelectorAll('.increase-btn').forEach(btn => {
+            btn.onclick = () => updateQuantity(btn.dataset.id, 1);
         });
 
-        // Attach Checkbox Events
-        const selectAllBtn = document.getElementById('selectAllCheckbox');
-        if (selectAllBtn) {
-            selectAllBtn.addEventListener('change', (e) => {
-                toggleAllSelection(e.target.checked);
-            });
-        }
-        
-        document.querySelectorAll('.item-checkbox').forEach(chk => {
-            chk.addEventListener('change', (e) => {
-                toggleItemSelection(e.target.dataset.id, e.target.checked);
-            });
+        document.querySelectorAll('.decrease-btn').forEach(btn => {
+            btn.onclick = () => updateQuantity(btn.dataset.id, -1);
         });
+
+        document.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.onclick = () => removeItem(btn.dataset.id);
+        });
+
+        document.querySelectorAll('.item-checkbox').forEach(chk => {
+            chk.onchange = (e) => toggleItemSelection(e.target.dataset.id, e.target.checked);
+        });
+
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.onchange = (e) => toggleAllSelection(e.target.checked);
+        }
 
         updateGlobalCartCount();
     }
 
     function updateQuantity(id, change) {
-        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        let cart = getCartData();
         const index = cart.findIndex(item => item.id == id);
         if (index > -1) {
             cart[index].quantity += change;
             if (cart[index].quantity <= 0) {
-                // remove item
                 cart.splice(index, 1);
             }
-            localStorage.setItem('cart', JSON.stringify(cart));
+            saveCartData(cart);
+            renderCart();
+        }
+    }
+
+    function removeItem(id) {
+        let cart = getCartData();
+        const index = cart.findIndex(item => item.id == id);
+        if (index > -1) {
+            cart.splice(index, 1);
+            saveCartData(cart);
             renderCart();
         }
     }
 
     function toggleItemSelection(id, isSelected) {
-        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        let cart = getCartData();
         const index = cart.findIndex(item => item.id == id);
         if (index > -1) {
             cart[index].selected = isSelected;
-            localStorage.setItem('cart', JSON.stringify(cart));
+            saveCartData(cart);
             renderCart();
         }
     }
 
     function toggleAllSelection(isSelected) {
-        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        let cart = getCartData();
         cart = cart.map(item => ({ ...item, selected: isSelected }));
-        localStorage.setItem('cart', JSON.stringify(cart));
+        saveCartData(cart);
         renderCart();
     }
 

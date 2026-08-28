@@ -1,4 +1,4 @@
-import { showToast, escapeHTML } from './utils.js';
+import { showToast, escapeHTML, getUserOrdersData, saveUserOrdersData } from './utils.js';
 
 export function initOrderHistoryPage() {
     const ordersContainer = document.getElementById('ordersContainer');
@@ -65,13 +65,13 @@ export function initOrderHistoryPage() {
         seedDemoOrdersIfEmpty();
         fetchPaymentSettings();
         
-        let localOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+        let localOrders = getUserOrdersData();
         
         try {
             const res = await fetch('/api/orders/my');
             if (res.ok) {
                 const apiRes = await res.json();
-                if (apiRes.data && Array.isArray(apiRes.data) && apiRes.data.length > 0) {
+                if (apiRes.data && Array.isArray(apiRes.data)) {
                     const mappedApiOrders = apiRes.data.map(o => ({
                         id: o.order_id || o.id,
                         date: o.order_date || o.created_at || new Date().toISOString(),
@@ -92,7 +92,7 @@ export function initOrderHistoryPage() {
 
                     const merged = [...mappedApiOrders];
                     localOrders.forEach(lo => {
-                        if (!merged.some(mo => mo.id == lo.id)) {
+                        if (!merged.some(mo => String(mo.id) === String(lo.id))) {
                             merged.push(lo);
                         }
                     });
@@ -104,23 +104,26 @@ export function initOrderHistoryPage() {
         }
 
         orders = localOrders;
+        saveUserOrdersData(orders);
         updatePendingBadge();
         renderOrders();
         updateActiveTabUI();
     }
 
     function mapDbStatusToUi(dbStatus) {
-        if (!dbStatus) return 'Pending Payment';
-        const s = dbStatus.toLowerCase();
-        if (s.includes('pending') || s.includes('unpaid') || s.includes('ที่ต้องชำระ')) return 'Pending Payment';
-        if (s.includes('preparing') || s.includes('paid') || s.includes('ที่ต้องจัดส่ง') || s.includes('จัดเตรียม')) return 'Preparing';
-        if (s.includes('shipping') || s.includes('shipped') || s.includes('กำลังจัดส่ง') || s.includes('ส่งแล้ว')) return 'Shipping';
-        if (s.includes('completed') || s.includes('success') || s.includes('สำเร็จ')) return 'Completed';
-        if (s.includes('cancel') || s.includes('ยกเลิก')) return 'Cancelled';
+        if (dbStatus === null || dbStatus === undefined) return 'Pending Payment';
+        const s = String(dbStatus).toLowerCase();
+        if (s === '1' || s.includes('pending') || s.includes('unpaid') || s.includes('ที่ต้องชำระ')) return 'Pending Payment';
+        if (s === '2' || s.includes('preparing') || s.includes('paid') || s.includes('ที่ต้องจัดส่ง') || s.includes('จัดเตรียม')) return 'Preparing';
+        if (s === '3' || s.includes('shipping') || s.includes('shipped') || s.includes('กำลังจัดส่ง') || s.includes('ส่งแล้ว')) return 'Shipping';
+        if (s === '4' || s.includes('completed') || s.includes('success') || s.includes('สำเร็จ')) return 'Completed';
+        if (s === '5' || s.includes('cancel') || s.includes('ยกเลิก')) return 'Cancelled';
         return 'Pending Payment';
     }
 
     function seedDemoOrdersIfEmpty() {
+        const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+        if (userObj.user_id || userObj.username) return; // Real registered user: do NOT seed demo orders!
         const stored = localStorage.getItem('myOrders');
         if (!stored || stored === '[]') {
             const demoOrders = [
@@ -158,11 +161,11 @@ export function initOrderHistoryPage() {
     function updateActiveTabUI() {
         tabBtns.forEach(btn => {
             if (btn.dataset.tab === currentTab) {
-                btn.classList.add('active', 'border-b-2', 'border-[#4D7C68]', 'text-[#4D7C68]', 'font-bold');
-                btn.classList.remove('text-gray-500', 'font-medium');
+                btn.classList.add('bg-[#4D7C68]', 'text-white', 'shadow-sm', 'border-[#4D7C68]');
+                btn.classList.remove('bg-white', 'text-gray-600', 'hover:bg-gray-100', 'border-gray-200');
             } else {
-                btn.classList.remove('active', 'border-b-2', 'border-[#4D7C68]', 'text-[#4D7C68]', 'font-bold');
-                btn.classList.add('text-gray-500', 'font-medium');
+                btn.classList.remove('bg-[#4D7C68]', 'text-white', 'shadow-sm', 'border-[#4D7C68]');
+                btn.classList.add('bg-white', 'text-gray-600', 'hover:bg-gray-100', 'border-gray-200');
             }
         });
     }
@@ -176,9 +179,9 @@ export function initOrderHistoryPage() {
         } else if (currentTab === 'shipping') {
             filtered = orders.filter(o => o.status === 'Shipping');
         } else if (currentTab === 'completed') {
-            filtered = orders.filter(o => o.status === 'Completed');
+            filtered = orders.filter(o => o.status === 'Completed' || o.status === 'สำเร็จแล้ว');
         } else if (currentTab === 'cancelled') {
-            filtered = orders.filter(o => o.status === 'Cancelled');
+            filtered = orders.filter(o => o.status === 'Cancelled' || o.status === 'ยกเลิกแล้ว' || o.status === 'ยกเลิก');
         }
 
         if (filtered.length === 0) {
@@ -239,12 +242,22 @@ export function initOrderHistoryPage() {
                     <button class="view-detail-btn px-4 py-2 rounded-xl text-xs font-semibold bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors" data-id="${order.id}">
                         ดูรายละเอียด
                     </button>
-                    ${order.status === 'Pending Payment' ? `
-                        <button class="pay-now-btn px-4 py-2 rounded-xl text-xs font-bold bg-[#4D7C68] hover:bg-[#3D6353] text-white shadow-sm transition-all flex items-center space-x-1.5" data-id="${order.id}">
-                            <i class="fas fa-qrcode"></i>
-                            <span>ชำระเงิน</span>
-                        </button>
-                    ` : ''}
+                    ${order.status === 'Pending Payment' ? (
+                        !order.slipImage ? `
+                            <button class="cancel-order-btn px-4 py-2 rounded-xl text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-all border border-red-100 flex items-center space-x-1" data-id="${order.id}">
+                                <i class="fas fa-times text-[10px]"></i>
+                                <span>ยกเลิกออเดอร์</span>
+                            </button>
+                            <button class="pay-now-btn px-4 py-2 rounded-xl text-xs font-bold bg-[#4D7C68] hover:bg-[#3D6353] text-white shadow-sm transition-all flex items-center space-x-1.5" data-id="${order.id}">
+                                <i class="fas fa-qrcode"></i>
+                                <span>ชำระเงิน</span>
+                            </button>
+                        ` : `
+                            <span class="text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl font-semibold border border-amber-200/60 flex items-center">
+                                <i class="fas fa-clock mr-1 text-amber-500"></i>รอร้านค้าตรวจสอบสลิป (แจ้งชำระแล้ว - ยกเลิกไม่ได้)
+                            </span>
+                        `
+                    ) : ''}
                 </div>
             </div>
             `;
@@ -262,6 +275,58 @@ export function initOrderHistoryPage() {
             btn.onclick = (e) => {
                 const id = e.currentTarget.dataset.id;
                 openPayNowModal(id);
+            };
+        });
+
+        document.querySelectorAll('.cancel-order-btn').forEach(btn => {
+            btn.onclick = async (e) => {
+                const id = e.currentTarget.dataset.id;
+                const targetOrder = orders.find(o => o.id == id);
+                if (!targetOrder) return;
+
+                if (targetOrder.slipImage || targetOrder.status !== 'Pending Payment') {
+                    showToast("คำสั่งซื้อนี้มีการแจ้งชำระเงินแล้ว ไม่สามารถยกเลิกได้", "error");
+                    return;
+                }
+
+                let isConfirmed = false;
+                if (typeof Swal !== 'undefined') {
+                    const result = await Swal.fire({
+                        title: 'ยืนยันการยกเลิกคำสั่งซื้อ?',
+                        text: `คุณต้องการยกเลิกคำสั่งซื้อ #${id} ใช่หรือไม่?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: 'ใช่, ยกเลิกออเดอร์',
+                        cancelButtonText: 'ย้อนกลับ'
+                    });
+                    isConfirmed = result.isConfirmed;
+                } else {
+                    isConfirmed = confirm(`คุณต้องการยกเลิกคำสั่งซื้อ #${id} ใช่หรือไม่?`);
+                }
+
+                if (isConfirmed) {
+                    try {
+                        await fetch('/api/orders/update-status', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                order_id: id,
+                                status: 5
+                            })
+                        });
+                    } catch (err) {
+                        console.warn("Backend status sync note:", err);
+                    }
+
+                    targetOrder.status = 'Cancelled';
+                    saveUserOrdersData(orders);
+
+                    showToast(`ยกเลิกคำสั่งซื้อ #${id} เรียบร้อยแล้ว`, "success");
+                    updatePendingBadge();
+                    renderOrders();
+                }
             };
         });
     }
@@ -327,12 +392,16 @@ export function initOrderHistoryPage() {
     }
 
     function openPayNowModal(orderId) {
-        const order = orders.find(o => o.id == orderId);
-        if (!order) return;
+        const order = orders.find(o => String(o.id) === String(orderId));
+        if (!order) {
+            showToast("ไม่พบข้อมูลคำสั่งซื้อ", "error");
+            return;
+        }
 
         currentPayingOrder = order;
         if (payModalOrderId) payModalOrderId.textContent = `#${order.id}`;
-        if (payModalAmount) payModalAmount.textContent = `฿${order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const totalNum = parseFloat(order.total || 0);
+        if (payModalAmount) payModalAmount.textContent = `฿${totalNum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
         if (paymentSettings) {
             const qrImg = document.getElementById('payModalQrImg');
@@ -350,6 +419,7 @@ export function initOrderHistoryPage() {
         if (payModalSlipInput) payModalSlipInput.value = '';
         if (payModalPreview) payModalPreview.classList.add('hidden');
         if (payModalPlaceholder) payModalPlaceholder.classList.remove('hidden');
+        updateHistoryPayBtnState();
 
         if (payNowModal) {
             payNowModal.classList.remove('hidden');
@@ -385,6 +455,7 @@ export function initOrderHistoryPage() {
                     if (payModalFileName) payModalFileName.textContent = file.name;
                     if (payModalPlaceholder) payModalPlaceholder.classList.add('hidden');
                     if (payModalPreview) payModalPreview.classList.remove('hidden');
+                    updateHistoryPayBtnState();
                 };
                 reader.readAsDataURL(file);
             }
@@ -404,6 +475,17 @@ export function initOrderHistoryPage() {
     if (confirmPayNowBtn) {
         confirmPayNowBtn.onclick = async () => {
             if (!currentPayingOrder) return;
+
+            // Validate that slip image is attached
+            if (!attachedSlipData) {
+                showToast("กรุณาแนบรูปภาพสลิปการโอนเงินก่อนยืนยันการชำระเงิน", "error");
+                const dropzone = document.getElementById('payModalPlaceholder')?.parentElement;
+                if (dropzone) {
+                    dropzone.classList.add('border-red-500', 'bg-red-50/50');
+                    setTimeout(() => dropzone.classList.remove('border-red-500', 'bg-red-50/50'), 2500);
+                }
+                return;
+            }
 
             confirmPayNowBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>กำลังบันทึก...</span>';
             confirmPayNowBtn.disabled = true;
@@ -427,7 +509,7 @@ export function initOrderHistoryPage() {
             currentPayingOrder.slipImage = attachedSlipData;
             currentPayingOrder.paidAt = new Date().toISOString();
 
-            localStorage.setItem('myOrders', JSON.stringify(orders));
+            saveUserOrdersData(orders);
 
             closePayNowModal();
             confirmPayNowBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>ยืนยันการชำระเงิน</span>';

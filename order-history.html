@@ -4,14 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ประวัติคำสั่งซื้อ - Hello Pet Shop</title>
-    <script type="module" src="/src/js/main.js"></script>
-    <script type="module" src="/src/js/order-history.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/css/style.css">
     <style>
+        html { opacity: 0; }
+        html.rendered { opacity: 1; transition: opacity 0.12s ease-in-out; }
         body { font-family: 'Outfit', 'Kanit', sans-serif; }
         .nav-green { background-color: #1b4332; }
+        .btn-green { background-color: #4D7C68; color: white !important; }
+        .btn-green:hover { background-color: #3D6353; }
     </style>
+    <script>
+        (function() {
+            function show() { document.documentElement.classList.add('rendered'); }
+            if (document.readyState !== 'loading') show();
+            else document.addEventListener('DOMContentLoaded', show);
+            setTimeout(show, 200);
+        })();
+    </script>
+    <script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="/src/js/order-history.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body class="bg-gray-50 min-h-screen">
     <header class="nav-green text-white shadow-md sticky top-0 z-50">
@@ -88,6 +102,9 @@
             <button data-tab="completed" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
                 สำเร็จแล้ว
             </button>
+            <button data-tab="cancelled" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
+                ยกเลิกแล้ว
+            </button>
         </div>
 
         <div id="ordersContainer" class="space-y-6">
@@ -115,7 +132,10 @@
             </div>
             <h2 class="text-xl font-bold text-gray-700">ยังไม่มีรายการสั่งซื้อ</h2>
             <p class="text-gray-500 text-sm mt-1 mb-6">ยังไม่มีประวัติในหมวดหมู่นี้ หรือคุณยังไม่มีรายการสั่งซื้อ</p>
-            <a href="products.html" class="btn-green text-white px-6 py-2.5 rounded-xl font-medium shadow-sm">เริ่มเลือกซื้อสินค้า</a>
+            <a href="products.html" class="bg-[#4D7C68] hover:bg-[#3D6353] text-white px-6 py-3 rounded-xl font-bold shadow-md transition-all inline-flex items-center">
+                <i class="fas fa-store mr-2"></i>
+                <span>เริ่มเลือกซื้อสินค้า</span>
+            </a>
         </div>
     </main>
 
@@ -214,6 +234,7 @@
             <div class="mt-5 space-y-2">
                 <label class="block text-xs font-bold text-gray-700 flex items-center justify-between">
                     <span><i class="fas fa-file-invoice text-emerald-600 mr-1.5"></i>แนบหลักฐานการชำระเงิน (สลิป)</span>
+                    <span class="text-[11px] text-red-500 font-bold">*จำเป็นต้องแนบสลิป</span>
                 </label>
                 <div class="relative border-2 border-dashed border-gray-200 hover:border-emerald-500 rounded-2xl p-3.5 text-center transition-all bg-gray-50/50 hover:bg-emerald-50/30 cursor-pointer group">
                     <input type="file" id="payModalSlipInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
@@ -229,7 +250,7 @@
             </div>
 
             <div class="mt-6">
-                <button id="confirmPayNowBtn" class="w-full bg-[#4D7C68] hover:bg-[#3D6353] text-white py-3.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center space-x-2">
+                <button id="confirmPayNowBtn" disabled class="w-full bg-gray-300 text-gray-500 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 cursor-not-allowed opacity-60">
                     <i class="fas fa-check-circle"></i>
                     <span>ยืนยันการชำระเงิน</span>
                 </button>

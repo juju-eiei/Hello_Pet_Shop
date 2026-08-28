@@ -1,9 +1,12 @@
-// Import main styles & core services
 import '../css/style.css';
 import Swal from 'sweetalert2';
 import { initLayout } from './components/layout.js';
 import { initRouter } from './router.js';
 import { initSpaRouter } from './spa.js';
+import { getUserProfileData, getCartData } from './utils.js';
+
+// Expose Swal globally
+window.Swal = Swal;
 
 // Expose Swal globally
 window.Swal = Swal;
@@ -104,26 +107,23 @@ export function updateNavProfile() {
     
     if (!navProfileImage || !navDefaultAvatar) return;
     
-    const userStr = localStorage.getItem('userProfileData');
-    if (userStr) {
-        try {
-            const userData = JSON.parse(userStr);
-            if (userData.profileImage) {
-                navProfileImage.src = userData.profileImage;
-                navProfileImage.classList.remove('hidden');
-                navDefaultAvatar.classList.add('hidden');
-            } else {
-                navProfileImage.classList.add('hidden');
-                navDefaultAvatar.classList.remove('hidden');
-            }
-        } catch (e) {
-            console.error('Error parsing profile data for nav', e);
+    try {
+        const profile = getUserProfileData();
+        if (profile && profile.profileImage) {
+            navProfileImage.src = profile.profileImage;
+            navProfileImage.classList.remove('hidden');
+            navDefaultAvatar.classList.add('hidden');
+        } else {
+            navProfileImage.classList.add('hidden');
+            navDefaultAvatar.classList.remove('hidden');
         }
+    } catch (e) {
+        console.error('Error updating navbar profile avatar:', e);
     }
 }
 
 export function updateGlobalCartCount() {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const cart = getCartData();
     const count = cart.reduce((sum, item) => sum + item.quantity, 0);
     const badge = document.getElementById('cartCount');
     if (badge) {

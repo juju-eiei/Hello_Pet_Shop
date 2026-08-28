@@ -33,49 +33,181 @@ export function showToast(message, type = 'info') {
 }
 
 /**
- * Get current user profile data with per-user isolation and fallback defaults
+ * Get current user profile data with strict per-user isolation
  */
 export function getUserProfileData() {
     const userObj = JSON.parse(localStorage.getItem('user') || '{}');
-    const userKey = userObj.user_id ? `userProfileData_${userObj.user_id}` : (userObj.username ? `userProfileData_${userObj.username}` : 'userProfileData');
-    
-    let userStr = localStorage.getItem(userKey) || localStorage.getItem('userProfileData');
-    
-    let profile = {
-        name: userObj.username || userObj.first_name || 'Sophia Clark',
-        phone: userObj.phone || '0631234567',
-        address: '123 Green Paw Street',
-        province: 'เชียงใหม่',
-        zipcode: '50200',
-        email: userObj.email || 'user@example.com',
-        profileImage: ''
-    };
-
-    if (userStr) {
-        try {
-            const saved = JSON.parse(userStr);
-            if (saved.name) profile.name = saved.name;
-            if (saved.phone) profile.phone = saved.phone;
-            if (saved.address) profile.address = saved.address;
-            if (saved.province) profile.province = saved.province;
-            if (saved.zipcode) profile.zipcode = saved.zipcode;
-            if (saved.email) profile.email = saved.email;
-            if (saved.profileImage) profile.profileImage = saved.profileImage;
-        } catch(e) {}
+    if (!userObj.user_id && !userObj.username) {
+        return {
+            name: 'ผู้ใช้ทั่วไป',
+            phone: '',
+            address: '',
+            province: '',
+            zipcode: '',
+            email: '',
+            profileImage: ''
+        };
     }
+
+    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
+    const userKey = `userProfileData_${userId}`;
+
+    const accountProfiles = JSON.parse(localStorage.getItem('savedAccountProfiles') || '{}');
+    const accountSaved = accountProfiles[userId] || (userObj.username ? accountProfiles[userObj.username] : {}) || {};
+    
+    let userStr = localStorage.getItem(userKey);
+    let saved = {};
+    if (userStr) {
+        try { saved = JSON.parse(userStr); } catch(e) {}
+    }
+
+    const merged = { ...accountSaved, ...saved };
+
+    let profile = {
+        name: merged.name || userObj.first_name || userObj.username || 'ผู้ใช้ทั่วไป',
+        phone: merged.phone || userObj.phone || '',
+        address: merged.address || userObj.address || '',
+        province: merged.province || userObj.province || '',
+        zipcode: merged.zipcode || userObj.zipcode || '',
+        email: merged.email || userObj.email || '',
+        profileImage: merged.profileImage || userObj.profile_image || userObj.profileImage || ''
+    };
 
     return profile;
 }
 
 /**
- * Save user profile data with per-user isolation
+ * Save user profile data with strict per-user isolation
  */
 export function saveUserProfileData(data) {
     const userObj = JSON.parse(localStorage.getItem('user') || '{}');
-    const userKey = userObj.user_id ? `userProfileData_${userObj.user_id}` : (userObj.username ? `userProfileData_${userObj.username}` : 'userProfileData');
-    
+    if (!userObj.user_id && !userObj.username) return;
+
+    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
+    const userKey = `userProfileData_${userId}`;
+
+    // Save strictly to user-specific key
     localStorage.setItem(userKey, JSON.stringify(data));
-    localStorage.setItem('userProfileData', JSON.stringify(data));
+
+    // Save to persistent account profile store strictly for this account
+    const accountProfiles = JSON.parse(localStorage.getItem('savedAccountProfiles') || '{}');
+    accountProfiles[userId] = { ...(accountProfiles[userId] || {}), ...data };
+    if (userObj.username) {
+        accountProfiles[userObj.username] = { ...(accountProfiles[userObj.username] || {}), ...data };
+    }
+    localStorage.setItem('savedAccountProfiles', JSON.stringify(accountProfiles));
+
+    // Update active user object in localStorage
+    if (userObj) {
+        if (data.name) {
+            userObj.username = data.name;
+            userObj.first_name = data.name;
+        }
+        if (data.phone) userObj.phone = data.phone;
+        if (data.email) userObj.email = data.email;
+        if (data.profileImage) {
+            userObj.profile_image = data.profileImage;
+            userObj.profileImage = data.profileImage;
+        }
+        if (data.address) userObj.address = data.address;
+        localStorage.setItem('user', JSON.stringify(userObj));
+    }
+}
+
+/**
+ * Get current user cart data with strict per-user account persistence
+ */
+export function getCartData() {
+    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!userObj.user_id && !userObj.username) return [];
+
+    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
+    const userCartKey = `cart_${userId}`;
+
+    const savedCarts = JSON.parse(localStorage.getItem('savedUserCarts') || '{}');
+    const userSaved = savedCarts[userId] || (userObj.username ? savedCarts[userObj.username] : null);
+
+    if (userSaved && Array.isArray(userSaved)) {
+        return userSaved;
+    }
+
+    let localCartStr = localStorage.getItem(userCartKey);
+    if (localCartStr) {
+        try { return JSON.parse(localCartStr); } catch(e) {}
+    }
+
+    return [];
+}
+
+/**
+ * Save user cart data with strict per-user account persistence
+ */
+export function saveCartData(cart) {
+    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!userObj.user_id && !userObj.username) return;
+
+    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
+    const userCartKey = `cart_${userId}`;
+
+    const cartArray = Array.isArray(cart) ? cart : [];
+
+    localStorage.setItem('cart', JSON.stringify(cartArray));
+    localStorage.setItem(userCartKey, JSON.stringify(cartArray));
+
+    const savedCarts = JSON.parse(localStorage.getItem('savedUserCarts') || '{}');
+    savedCarts[userId] = cartArray;
+    if (userObj.username) {
+        savedCarts[userObj.username] = cartArray;
+    }
+    localStorage.setItem('savedUserCarts', JSON.stringify(savedCarts));
+}
+
+/**
+ * Get current user orders with strict per-user account persistence
+ */
+export function getUserOrdersData() {
+    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!userObj.user_id && !userObj.username) return [];
+
+    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
+    const userOrdersKey = `myOrders_${userId}`;
+
+    const savedOrders = JSON.parse(localStorage.getItem('savedUserOrders') || '{}');
+    const userSaved = savedOrders[userId] || (userObj.username ? savedOrders[userObj.username] : null);
+
+    if (userSaved && Array.isArray(userSaved)) {
+        return userSaved;
+    }
+
+    let localStr = localStorage.getItem(userOrdersKey);
+    if (localStr) {
+        try { return JSON.parse(localStr); } catch(e) {}
+    }
+
+    return [];
+}
+
+/**
+ * Save user orders with strict per-user account persistence
+ */
+export function saveUserOrdersData(orders) {
+    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!userObj.user_id && !userObj.username) return;
+
+    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
+    const userOrdersKey = `myOrders_${userId}`;
+
+    const ordersArray = Array.isArray(orders) ? orders : [];
+
+    localStorage.setItem('myOrders', JSON.stringify(ordersArray));
+    localStorage.setItem(userOrdersKey, JSON.stringify(ordersArray));
+
+    const savedOrders = JSON.parse(localStorage.getItem('savedUserOrders') || '{}');
+    savedOrders[userId] = ordersArray;
+    if (userObj.username) {
+        savedOrders[userObj.username] = ordersArray;
+    }
+    localStorage.setItem('savedUserOrders', JSON.stringify(savedOrders));
 }
 
 /**

@@ -1,4 +1,5 @@
 import { showToast, getUserProfileData, saveUserProfileData } from './utils.js';
+import { updateNavProfile } from './main.js';
 
 export function initProfilePage() {
     // Elements
@@ -36,6 +37,8 @@ export function initProfilePage() {
 
     // Seed Demo Orders if none exist in localStorage
     function seedDemoOrdersIfEmpty() {
+        const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+        if (userObj.user_id || userObj.username) return; // Real registered user: do NOT seed demo orders!
         const stored = localStorage.getItem('myOrders');
         if (!stored || stored === '[]') {
             const demoOrders = [
@@ -111,6 +114,74 @@ export function initProfilePage() {
         }
 
         updateOrderBadges();
+        loadUserPoints();
+    }
+
+    async function loadUserPoints() {
+        const pointsDisplay = document.getElementById('userPointsValue');
+        if (!pointsDisplay) return;
+
+        let totalPoints = 0;
+        let peBaht = 100;
+        let peQty = 1;
+
+        // 1. Fetch admin reward settings (point_earning_baht, point_earning_qty)
+        try {
+            const settingsRes = await fetch('/api/rewards/settings');
+            if (settingsRes.ok) {
+                const settingsData = await settingsRes.json();
+                const dataObj = settingsData.data || settingsData;
+                if (dataObj && dataObj.point_earning_baht) {
+                    peBaht = parseFloat(dataObj.point_earning_baht) || 100;
+                    peQty = parseInt(dataObj.point_earning_qty) || 1;
+                }
+            }
+        } catch (e) {
+            console.warn("Backend reward settings note:", e);
+        }
+
+        // 2. Fetch customer points directly from backend DB if available
+        let fetchedFromDb = false;
+        try {
+            const userRes = await fetch('/api/customers/details');
+            if (userRes.ok) {
+                const userData = await userRes.json();
+                const cust = userData.data || userData;
+                if (cust && (cust.points !== undefined && cust.points !== null)) {
+                    totalPoints = parseInt(cust.points);
+                    fetchedFromDb = true;
+                }
+            }
+        } catch (e) {}
+
+        // 3. Fallback: Calculate from orders if DB points not present or 0
+        if (!fetchedFromDb || totalPoints === 0) {
+            const storedOrders = localStorage.getItem('myOrders');
+            let orders = [];
+            if (storedOrders) {
+                try { orders = JSON.parse(storedOrders); } catch (e) {}
+            }
+            
+            let calculatedPoints = 0;
+            orders.forEach(o => {
+                const isCancelled = o.status === 'Cancelled' || o.status === 'ยกเลิกแล้ว';
+                if (!isCancelled) {
+                    if (o.points_earned) {
+                        calculatedPoints += parseInt(o.points_earned);
+                    } else {
+                        const amount = parseFloat(o.total || o.subtotal || 0);
+                        if (amount > 0 && peBaht > 0) {
+                            calculatedPoints += Math.floor(amount / peBaht) * peQty;
+                        }
+                    }
+                }
+            });
+            if (!fetchedFromDb || calculatedPoints > totalPoints) {
+                totalPoints = Math.max(totalPoints, calculatedPoints);
+            }
+        }
+
+        pointsDisplay.textContent = Number(totalPoints).toLocaleString();
     }
 
     function updateOrderBadges() {
@@ -162,6 +233,9 @@ export function initProfilePage() {
     }
 
     function updateAvatarDisplays(src) {
+        const navProfileImage = document.getElementById('navProfileImage');
+        const navDefaultAvatar = document.getElementById('navDefaultAvatar');
+
         if (src) {
             if (profileImage) {
                 profileImage.src = src;
@@ -174,12 +248,21 @@ export function initProfilePage() {
                 modalProfileImage.classList.remove('hidden');
             }
             if (modalDefaultAvatar) modalDefaultAvatar.classList.add('hidden');
+
+            if (navProfileImage) {
+                navProfileImage.src = src;
+                navProfileImage.classList.remove('hidden');
+            }
+            if (navDefaultAvatar) navDefaultAvatar.classList.add('hidden');
         } else {
             if (profileImage) profileImage.classList.add('hidden');
             if (defaultAvatar) defaultAvatar.classList.remove('hidden');
 
             if (modalProfileImage) modalProfileImage.classList.add('hidden');
             if (modalDefaultAvatar) modalDefaultAvatar.classList.remove('hidden');
+
+            if (navProfileImage) navProfileImage.classList.add('hidden');
+            if (navDefaultAvatar) navDefaultAvatar.classList.remove('hidden');
         }
     }
 
@@ -255,6 +338,9 @@ export function initProfilePage() {
                 return;
             }
 
+            const currentProfile = getUserProfileData();
+            const finalImage = tempImageSrc || currentProfile.profileImage || '';
+
             // Save to localStorage
             const userData = {
                 name: nameVal,
@@ -263,23 +349,38 @@ export function initProfilePage() {
                 zipcode: inputZipcode.value.trim(),
                 phone: phoneVal,
                 email: inputEmail.value.trim(),
-                profileImage: tempImageSrc
+                profileImage: finalImage
             };
 
             saveUserProfileData(userData);
 
             // Also update global user object if needed
             const userObj = JSON.parse(localStorage.getItem('user') || '{}');
-            if (userObj.username) {
-                userObj.username = nameVal;
-                userObj.phone = phoneVal;
-                userObj.email = inputEmail.value.trim();
-                localStorage.setItem('user', JSON.stringify(userObj));
-            }
+            userObj.username = nameVal;
+            userObj.first_name = nameVal;
+            userObj.phone = phoneVal;
+            userObj.email = inputEmail.value.trim();
+            userObj.address = addressVal;
+            userObj.profile_image = finalImage;
+            userObj.profileImage = finalImage;
+            localStorage.setItem('user', JSON.stringify(userObj));
+
+            // Sync with backend database if available
+            try {
+                fetch('/api/customers/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        first_name: nameVal,
+                        phone: phoneVal,
+                        email: inputEmail.value.trim()
+                    })
+                });
+            } catch (e) {}
 
             // Update Page Header UI
             if (displayName) displayName.textContent = nameVal;
-            updateAvatarDisplays(tempImageSrc);
+            updateAvatarDisplays(finalImage);
 
             showToast("บันทึกข้อมูลส่วนตัวสำเร็จ!", "success");
             closeModal();
