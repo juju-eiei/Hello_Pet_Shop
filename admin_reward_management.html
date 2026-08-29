@@ -115,13 +115,72 @@
                                 <label for="lineTargetId" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #475569;">LINE Target User ID / Group ID</label>
                                 <input type="text" id="lineTargetId" class="form-control" placeholder="ใส่รหัส User ID (ขึ้นต้นด้วยตัว U) หรือ Group ID ที่ต้องการรับข้อความ" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px;">
                             </div>
-                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
                                 <button onclick="saveRewardSettings()" class="premium-btn" style="flex: 1; min-width: 160px; justify-content: center; padding: 12px; background: linear-gradient(135deg, #06c755, #05b04b); border-color: #06c755;">
                                     <i class="fas fa-save"></i> บันทึกการตั้งค่า LINE
                                 </button>
                                 <button id="testLineBtn" onclick="testLineConnection()" class="premium-btn" style="flex: 1; min-width: 160px; justify-content: center; padding: 12px; background: #ffffff; color: #06c755; border: 1.5px solid #06c755;">
-                                    <i class="fab fa-line"></i> ทดสอบส่งข้อความเข้า LINE
+                                    <i class="fab fa-line"></i> ทดสอบเชื่อมต่อ LINE
                                 </button>
+                            </div>
+
+                            <!-- LINE Automatic Alerts Status & Quick Test -->
+                            <div style="border-top: 1px solid #e2e8f0; pt-4; margin-top: 20px; padding-top: 20px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                    <h3 style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0;">
+                                        <i class="fas fa-bell" style="color: #06c755; margin-right: 6px;"></i> ระบบแจ้งเตือนอัตโนมัติ 3 ช่องทางหลัก
+                                    </h3>
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 9999px;">
+                                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span> เปิดใช้งานตลอดเวลา
+                                    </span>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 16px;">
+                                    <!-- Alert 1: Purchase -->
+                                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                                        <div>
+                                            <div style="font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 4px;">
+                                                🛍️ แจ้งเตือนการซื้อสินค้า
+                                            </div>
+                                            <p style="font-size: 12px; color: #64748b; margin: 0 0 12px 0; line-height: 1.45;">
+                                                แจ้งเตือนทันทีเมื่อมีคำสั่งซื้อออนไลน์ใหม่ หรือการขายหน้าร้าน (POS) แสดงสินค้าและยอดเงินครบถ้วน
+                                            </p>
+                                        </div>
+                                        <button onclick="testSpecificAlert('purchase', this)" class="premium-btn" style="width: 100%; justify-content: center; padding: 8px 12px; font-size: 12px; background: white; color: #06c755; border: 1px solid #06c755;">
+                                            <i class="fas fa-paper-plane"></i> ทดสอบส่งแจ้งเตือนการซื้อ
+                                        </button>
+                                    </div>
+
+                                    <!-- Alert 2: Payment -->
+                                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                                        <div>
+                                            <div style="font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 4px;">
+                                                💵 แจ้งเตือนการชำระเงิน
+                                            </div>
+                                            <p style="font-size: 12px; color: #64748b; margin: 0 0 12px 0; line-height: 1.45;">
+                                                แจ้งเตือนเมื่อลูกค้าอัปโหลดสลิปโอนเงิน (รอตรวจสอบ) และแจ้งเตือนเมื่อเจ้าหน้าที่กดยืนยันการชำระเงินสำเร็จ
+                                            </p>
+                                        </div>
+                                        <button onclick="testSpecificAlert('payment', this)" class="premium-btn" style="width: 100%; justify-content: center; padding: 8px 12px; font-size: 12px; background: white; color: #0284c7; border: 1px solid #0284c7;">
+                                            <i class="fas fa-paper-plane"></i> ทดสอบส่งแจ้งเตือนชำระเงิน
+                                        </button>
+                                    </div>
+
+                                    <!-- Alert 3: Cancellation -->
+                                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                                        <div>
+                                            <div style="font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 4px;">
+                                                ❌ แจ้งเตือนการยกเลิกสินค้า
+                                            </div>
+                                            <p style="font-size: 12px; color: #64748b; margin: 0 0 12px 0; line-height: 1.45;">
+                                                แจ้งเตือนเมื่อคำสั่งซื้อถูกยกเลิก หรือสลิปถูกปฏิเสธ พร้อมระบบคืนสต็อกสินค้าเข้าคลังอัตโนมัติ
+                                            </p>
+                                        </div>
+                                        <button onclick="testSpecificAlert('cancel', this)" class="premium-btn" style="width: 100%; justify-content: center; padding: 8px 12px; font-size: 12px; background: white; color: #e11d48; border: 1px solid #e11d48;">
+                                            <i class="fas fa-paper-plane"></i> ทดสอบส่งแจ้งเตือนยกเลิก
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -245,6 +304,44 @@
             } catch (err) {
                 console.error("testLineConnection error:", err);
                 showToast("เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อทดสอบ LINE", "error");
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        }
+
+        async function testSpecificAlert(type, btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> กำลังส่ง...`;
+            btn.disabled = true;
+
+            const endpointMap = {
+                'purchase': '/api/notifications/line/test-purchase',
+                'payment': '/api/notifications/line/test-payment',
+                'cancel': '/api/notifications/line/test-cancel'
+            };
+
+            const endpoint = endpointMap[type];
+            if (!endpoint) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    }
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(result.message || "ส่งแจ้งเตือนเข้า LINE สำเร็จ!", "success");
+                } else {
+                    showToast(result.message || "ไม่สามารถส่งแจ้งเตือนได้", "error");
+                }
+            } catch (err) {
+                console.error("testSpecificAlert error:", err);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", "error");
             } finally {
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;

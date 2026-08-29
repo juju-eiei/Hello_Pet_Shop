@@ -276,6 +276,9 @@ class OrderController {
             try {
                 $affectedProductIds = array_column($order_details, 'product_id');
                 LineService::sendNewOrderAlert($order_id, $this->db);
+                if (!empty($data['slip_image'])) {
+                    LineService::sendPaymentAlert($order_id, 'submitted', $this->db);
+                }
                 LineService::checkAndNotifyLowStock($affectedProductIds, $this->db);
             } catch (Exception $exLine) {
                 error_log("LINE Auto-Notification failed on order #$order_id: " . $exLine->getMessage());
@@ -503,8 +506,9 @@ class OrderController {
 
             $this->db->commit();
 
-            // Trigger Automatic LINE Low Stock Check (Fail-safe)
+            // Trigger Automatic LINE Purchase & Low Stock Check (Fail-safe)
             try {
+                LineService::sendNewOrderAlert($orderId, $this->db);
                 $affectedProductIds = array_column($order_details, 'product_id');
                 LineService::checkAndNotifyLowStock($affectedProductIds, $this->db);
             } catch (Exception $exLine) {
@@ -872,6 +876,12 @@ class OrderController {
                 }
             }
 
+            // Retrieve previous status for comparison
+            $prevStmt = $this->db->prepare("SELECT status, customer_id, points_earned FROM orders WHERE order_id = ?");
+            $prevStmt->execute([$orderId]);
+            $prevOrder = $prevStmt->fetch(PDO::FETCH_ASSOC);
+            $prevStatus = $prevOrder ? (int)$prevOrder['status'] : 1;
+
             if ($updatedShippingFee !== null && $updatedNetTotal !== null) {
                 $stmt = $this->db->prepare("UPDATE orders SET status = ?, shipping_fee = ?, net_total = ? WHERE order_id = ?");
                 $executed = $stmt->execute([$sId, $updatedShippingFee, $updatedNetTotal, $orderId]);
@@ -883,8 +893,54 @@ class OrderController {
             if ($executed) {
                 if ($sId == 2 || $sId == 4) {
                     $this->db->prepare("UPDATE payments SET status = 1 WHERE order_id = ?")->execute([$orderId]);
+                    if ($prevStatus == 1) {
+                        try {
+                            $approverName = $isStaffOrAdmin ? ($user['username'] ?? 'เจ้าหน้าที่ร้าน') : 'ระบบอัตโนมัติ';
+                            LineService::sendPaymentAlert($orderId, 'verified', $this->db, ['approver' => $approverName]);
+                        } catch (Exception $exLine) {
+                            error_log("LINE sendPaymentAlert error on updateStatus: " . $exLine->getMessage());
+                        }
+                    }
                 } else if ($sId == 5) {
                     $this->db->prepare("UPDATE payments SET status = 2 WHERE order_id = ?")->execute([$orderId]);
+
+                    // Restock inventory and reverse points if order was not previously cancelled
+                    if ($prevStatus !== 5) {
+                        try {
+                            $qItems = "SELECT product_id, quantity, unit_cost FROM order_details WHERE order_id = ?";
+                            $stmtItems = $this->db->prepare($qItems);
+                            $stmtItems->execute([$orderId]);
+                            $details = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+
+                            $uStock = $this->db->prepare("UPDATE products SET stock_qty = stock_qty + ? WHERE product_id = ?");
+                            $iLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, employee_id, reference_id, quantity, movement_type, unit_cost) VALUES (?, 1, ?, ?, 1, ?)");
+
+                            foreach ($details as $det) {
+                                $uStock->execute([$det['quantity'], $det['product_id']]);
+                                $iLog->execute([$det['product_id'], $orderId, $det['quantity'], $det['unit_cost']]);
+                            }
+
+                            // Reverse points if earned
+                            if (!empty($prevOrder['customer_id']) && !empty($prevOrder['points_earned']) && (int)$prevOrder['points_earned'] > 0) {
+                                $pts = (int)$prevOrder['points_earned'];
+                                $cid = (int)$prevOrder['customer_id'];
+                                $this->db->prepare("UPDATE customers SET points = GREATEST(0, points - ?) WHERE customer_id = ?")->execute([$pts, $cid]);
+                                $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)")
+                                         ->execute([$cid, $orderId, -$pts, "ดึงแต้มคืนเนื่องจากคำสั่งซื้อ #$orderId ถูกยกเลิก"]);
+                            }
+                        } catch (Exception $exRestock) {
+                            error_log("Restock on cancel order #$orderId error: " . $exRestock->getMessage());
+                        }
+
+                        // Trigger LINE Order Cancelled Notification
+                        try {
+                            $reason = !empty($data['cancel_reason']) ? $data['cancel_reason'] : (!empty($data['reason']) ? $data['reason'] : ($isStaffOrAdmin ? 'เจ้าหน้าที่ยกเลิกคำสั่งซื้อ' : 'ลูกค้ายกเลิกคำสั่งซื้อ'));
+                            $cancelledBy = $isStaffOrAdmin ? ('เจ้าหน้าที่ (' . ($user['username'] ?? 'Staff') . ')') : 'ลูกค้า';
+                            LineService::sendOrderCancelledAlert($orderId, $reason, $cancelledBy, $this->db);
+                        } catch (Exception $exLine) {
+                            error_log("LINE sendOrderCancelledAlert error on updateStatus: " . $exLine->getMessage());
+                        }
+                    }
                 }
 
                 // Allow delivery table insertion even if tracking is blank
@@ -991,6 +1047,13 @@ class OrderController {
 
             // Order status remains Pending (1) awaiting admin/staff verification
 
+            // Trigger Automatic LINE Payment Notification (Slip Submitted)
+            try {
+                LineService::sendPaymentAlert($orderId, 'submitted', $this->db);
+            } catch (Exception $exLine) {
+                error_log("LINE sendPaymentAlert on uploadSlip error: " . $exLine->getMessage());
+            }
+
             Response::json(200, "Slip uploaded and updated successfully", [
                 "order_id" => $orderId,
                 "has_slip" => true
@@ -1022,6 +1085,18 @@ class OrderController {
                 $uPay = $this->db->prepare("UPDATE payments SET status = 1 WHERE order_id = ?");
                 $uPay->execute([$orderId]);
 
+                // Trigger Automatic LINE Payment Verified Notification
+                try {
+                    $approverName = 'เจ้าหน้าที่ร้าน Hello Pet Shop';
+                    if (session_status() === PHP_SESSION_NONE) session_start();
+                    if (!empty($_SESSION['username'])) {
+                        $approverName = 'คุณ ' . $_SESSION['username'];
+                    }
+                    LineService::sendPaymentAlert($orderId, 'verified', $this->db, ['approver' => $approverName]);
+                } catch (Exception $exLine) {
+                    error_log("LINE sendPaymentAlert verified error: " . $exLine->getMessage());
+                }
+
                 Response::json(200, "สลิปถูกต้อง อนุมัติคำสั่งซื้อเรียบร้อยแล้ว (สถานะ: กำลังแพ็คสินค้า)", [
                     "order_id" => $orderId,
                     "status" => "Processing",
@@ -1029,6 +1104,12 @@ class OrderController {
                     "payment_status" => 1
                 ]);
             } else {
+                // Retrieve current order info before cancel
+                $curStmt = $this->db->prepare("SELECT status, customer_id, points_earned FROM orders WHERE order_id = ?");
+                $curStmt->execute([$orderId]);
+                $curOrder = $curStmt->fetch(PDO::FETCH_ASSOC);
+                $prevStatus = $curOrder ? (int)$curOrder['status'] : 1;
+
                 // 1. Update order status to 5 (Cancelled / ยกเลิกแล้ว)
                 $uOrder = $this->db->prepare("UPDATE orders SET status = 5 WHERE order_id = ?");
                 $uOrder->execute([$orderId]);
@@ -1036,6 +1117,42 @@ class OrderController {
                 // 2. Update payment status to 2 (Rejected / Failed)
                 $uPay = $this->db->prepare("UPDATE payments SET status = 2 WHERE order_id = ?");
                 $uPay->execute([$orderId]);
+
+                // 3. Restock inventory if previous status was not already 5 (Cancelled)
+                if ($prevStatus !== 5) {
+                    try {
+                        $qItems = "SELECT product_id, quantity, unit_cost FROM order_details WHERE order_id = ?";
+                        $stmtItems = $this->db->prepare($qItems);
+                        $stmtItems->execute([$orderId]);
+                        $details = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+
+                        $uStock = $this->db->prepare("UPDATE products SET stock_qty = stock_qty + ? WHERE product_id = ?");
+                        $iLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, employee_id, reference_id, quantity, movement_type, unit_cost) VALUES (?, 1, ?, ?, 1, ?)");
+
+                        foreach ($details as $det) {
+                            $uStock->execute([$det['quantity'], $det['product_id']]);
+                            $iLog->execute([$det['product_id'], $orderId, $det['quantity'], $det['unit_cost']]);
+                        }
+
+                        // Reverse points if earned
+                        if (!empty($curOrder['customer_id']) && !empty($curOrder['points_earned']) && (int)$curOrder['points_earned'] > 0) {
+                            $pts = (int)$curOrder['points_earned'];
+                            $cid = (int)$curOrder['customer_id'];
+                            $this->db->prepare("UPDATE customers SET points = GREATEST(0, points - ?) WHERE customer_id = ?")->execute([$pts, $cid]);
+                            $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)")
+                                     ->execute([$cid, $orderId, -$pts, "ดึงแต้มคืนเนื่องจากคำสั่งซื้อ #$orderId ถูกยกเลิก"]);
+                        }
+                    } catch (Exception $exRestock) {
+                        error_log("Restock on reject slip order #$orderId error: " . $exRestock->getMessage());
+                    }
+
+                    // Trigger Automatic LINE Cancellation Notification
+                    try {
+                        LineService::sendOrderCancelledAlert($orderId, $reason ?: 'สลิปการโอนเงินไม่ถูกต้อง', 'เจ้าหน้าที่ตรวจสอบสลิป', $this->db);
+                    } catch (Exception $exLine) {
+                        error_log("LINE sendOrderCancelledAlert on verifySlip error: " . $exLine->getMessage());
+                    }
+                }
 
                 Response::json(200, "ระบุเป็นสลิปไม่ถูกต้อง และยกเลิกคำสั่งซื้อเรียบร้อยแล้ว", [
                     "order_id" => $orderId,

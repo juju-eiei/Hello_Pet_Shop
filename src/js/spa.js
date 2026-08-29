@@ -39,7 +39,7 @@ const routes = {
     '/contact.html': { file: '/contact.html', category: 'customer', init: initContactPage, title: 'ติดต่อเรา - Hello Pet Shop' },
 
     // ===== Admin Routes =====
-    '/admin': { file: '/admin_dashboard.html', category: 'admin', title: 'แดชบอร์ด - Hello Pet Shop' },
+    '/admin': { file: '/admin_orders.html', category: 'admin', title: 'จัดการคำสั่งซื้อ - Hello Pet Shop' },
     '/admin/dashboard': { file: '/admin_dashboard.html', category: 'admin', title: 'แดชบอร์ด - Hello Pet Shop' },
     '/admin_dashboard.html': { file: '/admin_dashboard.html', category: 'admin', title: 'แดชบอร์ด - Hello Pet Shop' },
 
@@ -232,7 +232,28 @@ export async function navigateTo(url, pushState = true) {
             } catch (e) {}
         }
 
-        // 2. Swap Main Content
+        // 2. Synchronize Page-Specific <style> and <link rel="stylesheet"> elements
+        document.querySelectorAll('style[data-spa-style="true"], link[data-spa-style="true"]').forEach(el => el.remove());
+
+        doc.querySelectorAll('style').forEach(styleEl => {
+            const newStyle = document.createElement('style');
+            newStyle.setAttribute('data-spa-style', 'true');
+            newStyle.textContent = styleEl.textContent;
+            document.head.appendChild(newStyle);
+        });
+
+        doc.querySelectorAll('link[rel="stylesheet"]').forEach(linkEl => {
+            const href = linkEl.getAttribute('href');
+            if (href && !document.querySelector(`link[href="${href}"]`)) {
+                const newLink = document.createElement('link');
+                newLink.setAttribute('rel', 'stylesheet');
+                newLink.setAttribute('href', href);
+                newLink.setAttribute('data-spa-style', 'true');
+                document.head.appendChild(newLink);
+            }
+        });
+
+        // 3. Swap Main Content
         const newMain = doc.querySelector('main');
         const currentMain = document.querySelector('main');
 
@@ -241,31 +262,50 @@ export async function navigateTo(url, pushState = true) {
             newMain.classList.add('spa-fade-in');
         }
 
-        // 3. Synchronize Floating Modals
-        // Remove existing overlays in current page that came from previous admin/customer pages
-        document.querySelectorAll('.modal-overlay, .modal-backdrop, #bannerModal, #giftModal, #restockModal, #categoryModal, #paymentQrModal, #successModal, #petFormModal, #deleteModal, #editProfileModal, #orderDetailModal, #payNowModal').forEach(el => {
-            el.remove();
+        // 4. Synchronize Floating Modals & Drawers (those outside <main>)
+        const floatingOverlaysSelector = '.modal, .modal-overlay, .modal-backdrop, .drawer-overlay, .po-modal-overlay, .print-layout-overlay, #drawerOverlay, #attendanceOverlay, #dateDetailOverlay, #inspectOverlay, #bookingOverlay, #bannerModal, #giftModal, #restockModal, #categoryModal, #paymentQrModal, #successModal, #petFormModal, #petModal, #editCustomerModal, #deleteModal, #confirmModal, #editProfileModal, #orderDetailModal, #payNowModal, #createPoModal, #poHistoryModal, #stockHistoryModal, #receivePoModal';
+        
+        // Remove existing overlays in current page that are outside <main>
+        document.querySelectorAll(floatingOverlaysSelector).forEach(el => {
+            if (!el.closest('main')) {
+                el.remove();
+            }
         });
 
-        // Append new modals from the incoming document into live body
-        doc.querySelectorAll('.modal-overlay, .modal-backdrop, #bannerModal, #giftModal, #restockModal, #categoryModal, #paymentQrModal, #successModal, #petFormModal, #deleteModal, #editProfileModal, #orderDetailModal, #payNowModal').forEach(el => {
-            document.body.appendChild(el.cloneNode(true));
+        // Ensure any floating LINE button or stray body elements outside <main> are removed
+        document.querySelectorAll('a[href*="lin.ee"], a[title*="LINE"].fixed, body > footer, body > section.border-t').forEach(el => {
+            if (!el.closest('main')) {
+                el.remove();
+            }
         });
 
-        // 4. Update Document Title
-        if (targetInfo.title) {
-            document.title = targetInfo.title;
+        // Append new modals & drawers from incoming document that are outside <main> into live body
+        doc.querySelectorAll(floatingOverlaysSelector).forEach(el => {
+            if (!el.closest('main')) {
+                document.body.appendChild(el.cloneNode(true));
+            }
+        });
+
+        // 5. Update Document Title & Mobile Header Title
+        const pageTitle = targetInfo.title || doc.title || '';
+        if (pageTitle) {
+            document.title = pageTitle;
+            const mobileHeaderTitle = document.querySelector('header.mobile-header h2');
+            if (mobileHeaderTitle) {
+                const cleanTitle = pageTitle.split('-')[0].trim();
+                if (cleanTitle) mobileHeaderTitle.textContent = cleanTitle;
+            }
         }
 
-        // 5. Update History
+        // 6. Update History
         if (pushState) {
             history.pushState({ path: pathname }, '', pathname + search + hash);
         }
 
-        // 6. Scroll to top
+        // 7. Scroll to top
         window.scrollTo({ top: 0, behavior: 'instant' });
 
-        // 7. Update Active Navigation States
+        // 8. Update Active Navigation States
         if (targetInfo.category === 'customer') {
             updateActiveNavLinks(pathname);
             updateGlobalCartCount();
@@ -279,7 +319,7 @@ export async function navigateTo(url, pushState = true) {
             updateActiveMenu(pathname);
         }
 
-        // 8. Re-execute Page-specific Scripts for Admin/Staff pages
+        // 9. Re-execute Page-specific Scripts for Admin/Staff pages safely
         executePageScripts(doc);
 
     } catch (error) {
@@ -292,21 +332,46 @@ function executePageScripts(doc) {
     const scripts = doc.querySelectorAll('script:not([type="module"])');
     scripts.forEach(oldScript => {
         // Skip main.js or already loaded bundle dependencies
-        if (oldScript.src && (oldScript.src.includes('/src/js/main.js') || oldScript.src.includes('chart.js') || oldScript.src.includes('sweetalert2') || oldScript.src.includes('font-awesome'))) {
+        if (oldScript.src && (oldScript.src.includes('/src/js/main.js') || oldScript.src.includes('chart.js') || oldScript.src.includes('sweetalert2') || oldScript.src.includes('font-awesome') || oldScript.src.includes('tesseract') || oldScript.src.includes('pdf.js'))) {
             return;
         }
 
-        const scriptContent = oldScript.textContent.trim();
+        let scriptContent = oldScript.textContent.trim();
         if (!scriptContent && !oldScript.src) return;
 
         // Skip pure mobile check boilerplate
         if (scriptContent.includes('document.documentElement.classList.add(\'mobile-device\')')) return;
 
-        const newScript = document.createElement('script');
-        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-        newScript.textContent = scriptContent;
-        document.body.appendChild(newScript);
-        newScript.remove(); // Clean up tag after inline execution
+        try {
+            // Find all function declarations to export to window so inline onclick handlers work seamlessly
+            const exposedFunctions = [];
+            const funcMatches = scriptContent.matchAll(/(?:async\s+)?function\s+([a-zA-Z0-9_$]+)\s*\(/g);
+            for (const match of funcMatches) {
+                if (match[1]) {
+                    exposedFunctions.push(`window.${match[1]} = ${match[1]};`);
+                }
+            }
+
+            // Wrap inside IIFE so variables (let/const/var) run in an isolated scope and never collide with existing window globals
+            const wrappedScript = `
+(function() {
+    try {
+        ${scriptContent}
+        ${exposedFunctions.join('\n')}
+    } catch(err) {
+        console.error("SPA Page Script Runtime Error:", err);
+    }
+})();
+`;
+
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+            newScript.textContent = wrappedScript;
+            document.body.appendChild(newScript);
+            newScript.remove(); // Clean up tag after inline execution
+        } catch (e) {
+            console.warn("Script execution error on SPA navigation:", e);
+        }
     });
 
     // Also trigger DOMContentLoaded for any listeners attached inside scripts

@@ -11,11 +11,92 @@
         /* Flat design */
         border-bottom: none !important;
     }
+    .mobile-header i {
+        color: #ffffff !important;
+    }
+    .mobile-header #mobileNotificationBtn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        cursor: pointer;
+    }
+    .mobile-header #mobileNotificationBtn .bell-icon-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .mobile-header #mobileNotificationBtn i {
+        font-size: 22px !important;
+        color: #ffffff !important;
+        padding: 0 !important;
+    }
+    .mobile-header #mobileNotificationBadge {
+        position: absolute !important;
+        top: -6px !important;
+        right: -9px !important;
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        min-width: 18px !important;
+        height: 18px !important;
+        border-radius: 9999px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--primary-green, #1b4332) !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+        padding: 0 3px !important;
+        line-height: 1 !important;
+        z-index: 10 !important;
+        pointer-events: none !important;
+    }
+    .mobile-header #mobileNotificationBadge.hidden {
+        display: none !important;
+    }
 
     /* Bottom Navigation Overrides */
     .bottom-nav {
         background: var(--primary-green) !important;
         border-top: none !important;
+    }
+
+    /* Mobile Drawer: Only show Logout button, hide other menu groups and links */
+    .sidebar-menu > div,
+    .sidebar-menu .menu-item:not(#logoutBtn):not(.logout-item),
+    .sidebar-menu .menu-group {
+        display: none !important;
+    }
+
+    .sidebar-menu {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        height: calc(100% - 64px) !important;
+    }
+
+    .sidebar-menu #logoutBtn,
+    .sidebar-menu .logout-item {
+        display: flex !important;
+        margin-top: auto !important;
+        margin-bottom: 24px !important;
+        margin-left: 12px !important;
+        margin-right: 12px !important;
+        color: #ef4444 !important;
+        font-weight: 600 !important;
+        padding: 14px 20px !important;
+        border-radius: 12px !important;
+        background: #fef2f2 !important;
+        border: 1px solid #fee2e2 !important;
+    }
+
+    .sidebar-menu #logoutBtn i,
+    .sidebar-menu .logout-item i {
+        color: #ef4444 !important;
     }
 
     .nav-item {

@@ -131,7 +131,7 @@ export async function initLayout() {
             } else {
                 alert('คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้ (Access Denied)');
             }
-            window.location.href = roleNameLower === 'admin' ? '/admin/dashboard' : '/staff/profile';
+            window.location.href = roleNameLower === 'admin' ? '/admin/orders' : '/staff/orders';
             return;
         }
         
@@ -220,8 +220,10 @@ function renderSidebar(items, currentPath, role) {
         <!-- Desktop Notification Icon & Dropdown -->
         <div class="notification-container relative cursor-pointer" style="margin-left: auto;">
             <div id="desktopNotificationBtn" class="p-2 hover:bg-slate-100 rounded-xl transition-colors relative flex items-center justify-center">
-                <i class="fas fa-bell text-slate-500 hover:text-slate-800 text-lg transition-colors"></i>
-                <span id="desktopNotificationBadge" class="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white hidden">0</span>
+                <div class="bell-icon-wrapper" style="position: relative; display: inline-flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-bell text-slate-500 hover:text-slate-800 text-lg transition-colors"></i>
+                    <span id="desktopNotificationBadge" class="hidden" style="position: absolute; top: -6px; right: -9px; background-color: #ef4444; color: #ffffff; font-size: 10px; font-weight: 700; min-width: 17px; height: 17px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: 2px solid #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); padding: 0 3px; line-height: 1; z-index: 10; pointer-events: none;">0</span>
+                </div>
             </div>
             
             <!-- Desktop Dropdown -->
@@ -304,15 +306,25 @@ function renderMobileHeader(currentPath) {
     const isAdmin = cleanRoute.startsWith('admin') || currentPath.includes('admin_');
 
     let titleText = document.title.split('-')[0].trim();
+    if (!titleText) {
+        const pageHeaderH1 = document.querySelector('.page-header h1, h1');
+        if (pageHeaderH1) {
+            titleText = pageHeaderH1.textContent.trim();
+        } else if (cleanRoute.includes('order')) {
+            titleText = isAdmin ? 'จัดการคำสั่งซื้อ' : 'คำสั่งซื้อ';
+        }
+    }
     mobileHeader.innerHTML = `
         <i class="fas fa-bars" id="hamburgerBtn"></i>
         <h2>${titleText}</h2>
         
         <!-- Mobile Notification Icon & Dropdown -->
         <div class="notification-container relative cursor-pointer ml-auto flex items-center justify-center">
-            <div id="mobileNotificationBtn" class="p-2 hover:bg-slate-100 rounded-xl transition-colors relative flex items-center justify-center">
-                <i class="fas fa-bell text-slate-700 text-xl"></i>
-                <span id="mobileNotificationBadge" class="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white hidden">0</span>
+            <div id="mobileNotificationBtn" class="p-2 hover:bg-white/10 rounded-xl transition-colors relative flex items-center justify-center text-white" style="color: white !important; width: 44px; height: 44px;">
+                <div class="bell-icon-wrapper" style="position: relative; display: inline-flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-bell text-white text-xl" style="color: white !important; font-size: 22px;"></i>
+                    <span id="mobileNotificationBadge" class="hidden" style="position: absolute; top: -6px; right: -9px; background-color: #ef4444; color: #ffffff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--primary-green, #1b4332); box-shadow: 0 1px 3px rgba(0,0,0,0.3); padding: 0 3px; line-height: 1; z-index: 10; pointer-events: none;">0</span>
+                </div>
             </div>
             
             <!-- Mobile Dropdown -->

@@ -137,7 +137,10 @@ export function updateGlobalCartCount() {
 }
 
 // Common Initialization
+let appInitialized = false;
 function initApp() {
+    if (appInitialized) return;
+    appInitialized = true;
     console.log('Hello Pet Shop - Centralized Layout & SPA Router Initialized');
     
     // Initialize Centralized Layout & Router

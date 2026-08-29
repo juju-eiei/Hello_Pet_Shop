@@ -460,6 +460,373 @@
             }
             .panel-header h2 { font-size: 15px !important; }
         }
+
+        /* Calendar Popover & Period Selector Styles */
+        .dashboard-filter-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 100;
+            flex-wrap: wrap;
+        }
+
+        .period-pill-tabs {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 14px;
+            padding: 4px;
+            display: inline-flex;
+            gap: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        .period-pill-btn {
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.9);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .period-pill-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .period-pill-btn.active {
+            background: white;
+            color: var(--primary-green);
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-picker-wrapper {
+            position: relative;
+        }
+
+        .cal-trigger-btn {
+            background: rgba(255, 255, 255, 0.18);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 9px 18px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: inherit;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .cal-trigger-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .cal-trigger-btn .cal-icon {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .cal-trigger-btn .cal-chevron {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.85);
+            transition: transform 0.25s ease;
+        }
+
+        .cal-trigger-btn.open .cal-chevron {
+            transform: rotate(180deg);
+        }
+
+        /* Thai Calendar Popover Card - Styled after Image 2 */
+        .thai-cal-popover {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 326px;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 45px -8px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.06);
+            padding: 20px 22px;
+            z-index: 1050;
+            animation: calFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            color: #1e293b;
+            font-family: 'Outfit', 'Kanit', sans-serif;
+            text-align: left;
+        }
+
+        @keyframes calFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .cal-pop-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .cal-selects-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .custom-cal-select-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .custom-cal-select-wrap select {
+            appearance: none;
+            -webkit-appearance: none;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 17px;
+            font-weight: 700;
+            color: #1e293b;
+            cursor: pointer;
+            padding: 4px 22px 4px 6px;
+            border-radius: 8px;
+            font-family: inherit;
+            transition: background 0.15s ease;
+        }
+
+        .custom-cal-select-wrap select:hover {
+            background: #f8fafc;
+        }
+
+        .custom-cal-select-wrap .select-arrow {
+            position: absolute;
+            right: 4px;
+            pointer-events: none;
+            font-size: 11px;
+            color: #dc2626; /* Red chevron matching Image 2 */
+        }
+
+        .cal-nav-arrows {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cal-arrow-btn {
+            border: none;
+            background: transparent;
+            color: #dc2626; /* Red arrows matching Image 2 */
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.15s ease;
+        }
+
+        .cal-arrow-btn:hover {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .cal-weekday-row {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .cal-weekday-row span {
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            user-select: none;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            row-gap: 6px;
+            column-gap: 2px;
+            text-align: center;
+        }
+
+        .cal-cell {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 50%;
+            cursor: pointer;
+            user-select: none;
+            color: #334155;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .cal-cell:hover:not(.empty) {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .cal-cell.dimmed {
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .cal-cell.dimmed:hover {
+            background: #f8fafc;
+            color: #94a3b8;
+        }
+
+        /* Selected Date Circle - Exact match to Image 2 */
+        .cal-cell.selected {
+            background: #dc2626 !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+            border-radius: 50% !important;
+        }
+
+        /* Weekly mode range highlight */
+        .cal-cell.in-week-range {
+            background: #fee2e2;
+            color: #991b1b;
+            border-radius: 0;
+        }
+
+        .cal-cell.week-start {
+            border-top-left-radius: 19px !important;
+            border-bottom-left-radius: 19px !important;
+        }
+
+        .cal-cell.week-end {
+            border-top-right-radius: 19px !important;
+            border-bottom-right-radius: 19px !important;
+        }
+
+        .cal-cell.week-active-day {
+            background: #dc2626 !important;
+            color: #ffffff !important;
+            border-radius: 50% !important;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+        }
+
+        .cal-cell.is-today:not(.selected):not(.week-active-day)::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            width: 4px;
+            height: 4px;
+            background: #dc2626;
+            border-radius: 50%;
+        }
+
+        .cal-pop-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 12px;
+        }
+
+        .btn-cal-today {
+            border: none;
+            background: #f8fafc;
+            color: #475569;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.15s ease;
+        }
+
+        .btn-cal-today:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .cal-mode-indicator {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .btn-cal-close {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        .btn-cal-close:hover {
+            color: #0f172a;
+            background: #f1f5f9;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-filter-wrapper {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            .period-pill-tabs {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .period-pill-btn {
+                flex: 1;
+                text-align: center;
+                padding: 7px 8px;
+                font-size: 12px;
+            }
+            .calendar-picker-wrapper {
+                width: 100%;
+            }
+            .cal-trigger-btn {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .thai-cal-popover {
+                right: auto;
+                left: 0;
+                width: 100%;
+                max-width: 330px;
+            }
+        }
     </style>
 
     <!-- Mobile User-Agent Check -->
@@ -479,8 +846,10 @@
         <aside class="sidebar"></aside>
 
         <main class="main-content">
-            <div class="page-header-premium" style="margin-bottom: 32px; background: linear-gradient(135deg, var(--primary-green), #1e361b); padding: 32px; border-radius: 24px; color: white; box-shadow: 0 10px 25px -5px rgba(49, 77, 42, 0.2); position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
-                <div style="position: absolute; right: -20px; bottom: -20px; font-size: 180px; color: rgba(255,255,255,0.03); pointer-events: none; transform: rotate(-15deg);"><i class="fas fa-paw"></i></div>
+            <div class="page-header-premium" style="margin-bottom: 32px; background: linear-gradient(135deg, var(--primary-green), #1e361b); padding: 32px; border-radius: 24px; color: white; box-shadow: 0 10px 25px -5px rgba(49, 77, 42, 0.2); position: relative; overflow: visible; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                <div style="position: absolute; inset: 0; overflow: hidden; border-radius: 24px; pointer-events: none;">
+                    <div style="position: absolute; right: -20px; bottom: -20px; font-size: 180px; color: rgba(255,255,255,0.03); transform: rotate(-15deg);"><i class="fas fa-paw"></i></div>
+                </div>
                 <div>
                     <h1 style="color: white; font-size: 28px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 12px;">
                         <i class="fas fa-chart-pie" style="font-size: 24px; opacity: 0.9;"></i>
@@ -490,11 +859,77 @@
                         ภาพรวมระบบและผลการดำเนินงานทางการขายของ Hello Pet Shop
                     </p>
                 </div>
-                <div class="month-selector-container" style="z-index: 10; display: flex; align-items: center; gap: 10px;">
-                    <label for="monthSelect" style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-calendar-alt"></i> เลือกเดือน:</label>
-                    <select id="monthSelect" onchange="onMonthChange()" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; outline: none; cursor: pointer; backdrop-filter: blur(10px); transition: all 0.3s ease;">
-                        <!-- Options populated via JS -->
-                    </select>
+                <div class="dashboard-filter-wrapper">
+                    <!-- Period Tabs -->
+                    <div class="period-pill-tabs">
+                        <button type="button" class="period-pill-btn" data-period="daily" onclick="setDashboardPeriod('daily')">รายวัน</button>
+                        <button type="button" class="period-pill-btn" data-period="weekly" onclick="setDashboardPeriod('weekly')">รายสัปดาห์</button>
+                        <button type="button" class="period-pill-btn active" data-period="monthly" onclick="setDashboardPeriod('monthly')">รายเดือน</button>
+                        <button type="button" class="period-pill-btn" data-period="yearly" onclick="setDashboardPeriod('yearly')">รายปี</button>
+                    </div>
+
+                    <!-- Calendar Trigger & Popover Widget (Image 2) -->
+                    <div class="calendar-picker-wrapper" id="calendarPickerWrapper">
+                        <button type="button" class="cal-trigger-btn" id="calTriggerBtn" onclick="toggleCalendarPopover(event)" title="คลิกเพื่อเปิดปฏิทินเลือกวันที่/ช่วงเวลา">
+                            <i class="fas fa-calendar-alt cal-icon"></i>
+                            <span id="calTriggerText">สิงหาคม 2569</span>
+                            <i class="fas fa-chevron-down cal-chevron" id="calChevron"></i>
+                        </button>
+
+                        <!-- Custom Thai Calendar Popover Card -->
+                        <div class="thai-cal-popover" id="thaiCalPopover" style="display: none;" onclick="event.stopPropagation()">
+                            <!-- Header: Month select, Year select, and Red arrows < > -->
+                            <div class="cal-pop-header">
+                                <div class="cal-selects-group">
+                                    <div class="custom-cal-select-wrap">
+                                        <select id="calMonthSelect" onchange="onCalMonthSelect(this.value)">
+                                            <!-- Dynamically populated -->
+                                        </select>
+                                        <i class="fas fa-chevron-down select-arrow"></i>
+                                    </div>
+                                    <div class="custom-cal-select-wrap">
+                                        <select id="calYearSelect" onchange="onCalYearSelect(this.value)">
+                                            <!-- Dynamically populated -->
+                                        </select>
+                                        <i class="fas fa-chevron-down select-arrow"></i>
+                                    </div>
+                                </div>
+                                <div class="cal-nav-arrows">
+                                    <button type="button" class="cal-arrow-btn prev" onclick="navigateCalMonth(-1)" title="เดือนก่อนหน้า">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button type="button" class="cal-arrow-btn next" onclick="navigateCalMonth(1)" title="เดือนถัดไป">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Days of Week Header: อา จ อ พ พฤ ศ ส -->
+                            <div class="cal-weekday-row">
+                                <span>อา</span>
+                                <span>จ</span>
+                                <span>อ</span>
+                                <span>พ</span>
+                                <span>พฤ</span>
+                                <span>ศ</span>
+                                <span>ส</span>
+                            </div>
+
+                            <!-- Days Grid -->
+                            <div class="cal-grid" id="calDaysGrid">
+                                <!-- Dynamically populated by JS -->
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="cal-pop-footer">
+                                <button type="button" class="btn-cal-today" onclick="selectCalToday()">
+                                    <i class="fas fa-dot-circle" style="color: #dc2626; font-size: 10px; margin-right: 5px;"></i> วันนี้
+                                </button>
+                                <div class="cal-mode-indicator" id="calModeIndicator">โหมด: รายเดือน</div>
+                                <button type="button" class="btn-cal-close" onclick="closeCalendarPopover()">ปิด</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -503,7 +938,7 @@
                 <h2 style="font-size: 16px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; margin: 0;">
                     <i class="fas fa-coins" style="color: var(--primary-green);"></i> สรุปข้อมูลทางการเงิน (Financial Summary)
                 </h2>
-                <p style="font-size: 13px; color: #64748b; margin-top: 4px; margin-bottom: 0;">ข้อมูลรายรับ รายจ่าย และผลกำไรประจำเดือนนี้</p>
+                <p style="font-size: 13px; color: #64748b; margin-top: 4px; margin-bottom: 0;">ข้อมูลรายรับ รายจ่าย และผลกำไรประจำ<span class="selected-month-label">เดือนนี้</span></p>
             </div>
             
             <div class="dashboard-cards" style="margin-bottom: 32px;">
@@ -597,11 +1032,12 @@
                 <div>
                     <div class="dashboard-panel" style="margin-bottom: 24px;">
                         <div class="panel-header">
-                            <h2 id="chartTitle">สถิติรายรับรายจ่าย</h2>
+                            <h2 id="chartTitle">สถิติยอดขายและกำไรสุทธิ</h2>
                             <div class="period-toggle">
-                                <button class="btn" id="btnPeriodDaily" onclick="changeChartPeriod('daily')">รายวัน</button>
-                                <button class="btn active-toggle" id="btnPeriodMonthly" onclick="changeChartPeriod('monthly')">รายเดือน</button>
-                                <button class="btn" id="btnPeriodYearly" onclick="changeChartPeriod('yearly')">รายปี</button>
+                                <button class="btn" id="btnPeriodDaily" onclick="setDashboardPeriod('daily')">รายวัน</button>
+                                <button class="btn" id="btnPeriodWeekly" onclick="setDashboardPeriod('weekly')">รายสัปดาห์</button>
+                                <button class="btn active-toggle" id="btnPeriodMonthly" onclick="setDashboardPeriod('monthly')">รายเดือน</button>
+                                <button class="btn" id="btnPeriodYearly" onclick="setDashboardPeriod('yearly')">รายปี</button>
                             </div>
                         </div>
                         <div class="chart-container">
@@ -716,59 +1152,350 @@
 
         const lBtn = document.getElementById('logoutBtn'); if (lBtn) lBtn.addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('user'); window.location.href = 'login.html'; });
 
-        let currentPeriod = 'monthly';
+        // ==========================================
+        // Thai Calendar & Sales Analytics System
+        // ==========================================
+        const monthsThai = [
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+        ];
+        const monthsThaiShort = [
+            'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+            'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+        ];
+
+        let currentPeriod = 'monthly'; // 'daily' | 'weekly' | 'monthly' | 'yearly'
         let myChartInstance = null;
 
-        const populateMonthSelector = () => {
-            const select = document.getElementById('monthSelect');
-            if (!select) return;
+        const now = new Date();
+        let calYear = now.getFullYear();
+        let calMonth = now.getMonth(); // 0-11
 
-            const monthsThai = [
-                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-            ];
+        const formatYmd = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth(); // 0-11
+        let selectedDate = formatYmd(now.getFullYear(), now.getMonth(), now.getDate());
+        let selectedMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        let selectedYear = now.getFullYear();
 
-            let optionsHtml = '';
-            for (let m = 11; m >= 0; m--) {
-                const value = `${currentYear}-${String(m + 1).padStart(2, '0')}`;
-                const label = `${monthsThai[m]} ${currentYear + 543}`;
-                const selected = m === currentMonth ? 'selected' : '';
-                optionsHtml += `<option value="${value}" ${selected}>${label}</option>`;
+        function getWeekRange(dateStr) {
+            const parts = dateStr.split('-');
+            const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            const day = d.getDay(); // 0 is Sun, 1 is Mon, ..., 6 is Sat
+            const diffToMon = day === 0 ? -6 : 1 - day; // Monday as start of week
+            const mon = new Date(d);
+            mon.setDate(d.getDate() + diffToMon);
+            const sun = new Date(mon);
+            sun.setDate(mon.getDate() + 6);
+            return {
+                start: formatYmd(mon.getFullYear(), mon.getMonth(), mon.getDate()),
+                end: formatYmd(sun.getFullYear(), sun.getMonth(), sun.getDate()),
+                startObj: mon,
+                endObj: sun
+            };
+        }
+
+        let weekRange = getWeekRange(selectedDate);
+        let selectedWeekStart = weekRange.start;
+        let selectedWeekEnd = weekRange.end;
+
+        // Populate Calendar Popover Header (Months & Buddhist Era Years)
+        const renderCalendarHeader = () => {
+            const mSelect = document.getElementById('calMonthSelect');
+            const ySelect = document.getElementById('calYearSelect');
+            if (!mSelect || !ySelect) return;
+
+            let mHtml = '';
+            for (let i = 0; i < 12; i++) {
+                mHtml += `<option value="${i}" ${i === calMonth ? 'selected' : ''}>${monthsThai[i]}</option>`;
             }
-            select.innerHTML = optionsHtml;
+            mSelect.innerHTML = mHtml;
+
+            let yHtml = '';
+            const baseYear = now.getFullYear();
+            for (let y = baseYear - 4; y <= baseYear + 4; y++) {
+                const be = y + 543;
+                yHtml += `<option value="${be}" ${y === calYear ? 'selected' : ''}>${be}</option>`;
+            }
+            ySelect.innerHTML = yHtml;
+
+            const modeNames = { daily: 'รายวัน', weekly: 'รายสัปดาห์', monthly: 'รายเดือน', yearly: 'รายปี' };
+            const modeEl = document.getElementById('calModeIndicator');
+            if (modeEl) modeEl.textContent = `โหมด: ${modeNames[currentPeriod] || 'รายเดือน'}`;
         };
 
-        const updateSelectedMonthLabels = () => {
-            const select = document.getElementById('monthSelect');
-            if (!select) return;
-            const selectedText = select.options[select.selectedIndex]?.text || 'เดือนนี้';
-            document.querySelectorAll('.selected-month-label').forEach(el => {
-                el.textContent = selectedText;
+        // Render Calendar Days Grid (Exact UI match to Image 2)
+        const renderCalendarGrid = () => {
+            const grid = document.getElementById('calDaysGrid');
+            if (!grid) return;
+
+            const firstDayIndex = new Date(calYear, calMonth, 1).getDay(); // 0=Sun, 1=Mon...
+            const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+            const daysInPrevMonth = new Date(calYear, calMonth, 0).getDate();
+
+            let cellsHtml = '';
+
+            // 1. Trailing days of previous month (dimmed)
+            const prevMonthIndex = calMonth === 0 ? 11 : calMonth - 1;
+            const prevYear = calMonth === 0 ? calYear - 1 : calYear;
+            for (let i = firstDayIndex - 1; i >= 0; i--) {
+                const dayNum = daysInPrevMonth - i;
+                const dStr = formatYmd(prevYear, prevMonthIndex, dayNum);
+                cellsHtml += `<div class="cal-cell dimmed" onclick="onDayCellClick('${dStr}')" title="${dayNum} ${monthsThai[prevMonthIndex]}">${dayNum}</div>`;
+            }
+
+            // 2. Active month days
+            const todayStr = formatYmd(now.getFullYear(), now.getMonth(), now.getDate());
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dStr = formatYmd(calYear, calMonth, day);
+                const isToday = (dStr === todayStr);
+
+                let cellClasses = ['cal-cell'];
+                if (isToday) cellClasses.push('is-today');
+
+                if (currentPeriod === 'daily') {
+                    if (dStr === selectedDate) cellClasses.push('selected');
+                } else if (currentPeriod === 'weekly') {
+                    if (dStr >= selectedWeekStart && dStr <= selectedWeekEnd) {
+                        cellClasses.push('in-week-range');
+                        if (dStr === selectedWeekStart) cellClasses.push('week-start');
+                        if (dStr === selectedWeekEnd) cellClasses.push('week-end');
+                        if (dStr === selectedDate) cellClasses.push('week-active-day');
+                    }
+                } else if (currentPeriod === 'monthly') {
+                    if (dStr === selectedDate || dStr.substring(0, 7) === selectedMonth) {
+                        if (dStr === selectedDate) cellClasses.push('selected');
+                    }
+                } else if (currentPeriod === 'yearly') {
+                    if (dStr === selectedDate) cellClasses.push('selected');
+                }
+
+                cellsHtml += `<div class="${cellClasses.join(' ')}" onclick="onDayCellClick('${dStr}')" title="${day} ${monthsThai[calMonth]} ${calYear + 543}">${day}</div>`;
+            }
+
+            // 3. Leading days of next month (dimmed)
+            const nextMonthIndex = calMonth === 11 ? 0 : calMonth + 1;
+            const nextYear = calMonth === 11 ? calYear + 1 : calYear;
+            const totalCellsSoFar = firstDayIndex + daysInMonth;
+            const remainingCells = (7 - (totalCellsSoFar % 7)) % 7;
+            for (let day = 1; day <= remainingCells; day++) {
+                const dStr = formatYmd(nextYear, nextMonthIndex, day);
+                cellsHtml += `<div class="cal-cell dimmed" onclick="onDayCellClick('${dStr}')" title="${day} ${monthsThai[nextMonthIndex]}">${day}</div>`;
+            }
+
+            grid.innerHTML = cellsHtml;
+        };
+
+        // Day cell click handler
+        const onDayCellClick = (dStr) => {
+            selectedDate = dStr;
+            const parts = dStr.split('-');
+            calYear = parseInt(parts[0]);
+            calMonth = parseInt(parts[1]) - 1;
+
+            if (currentPeriod === 'daily') {
+                closeCalendarPopover();
+                onFilterPeriodChanged();
+            } else if (currentPeriod === 'weekly') {
+                const wr = getWeekRange(dStr);
+                selectedWeekStart = wr.start;
+                selectedWeekEnd = wr.end;
+                closeCalendarPopover();
+                onFilterPeriodChanged();
+            } else if (currentPeriod === 'monthly') {
+                selectedMonth = `${parts[0]}-${parts[1]}`;
+                closeCalendarPopover();
+                onFilterPeriodChanged();
+            } else if (currentPeriod === 'yearly') {
+                selectedYear = parseInt(parts[0]);
+                closeCalendarPopover();
+                onFilterPeriodChanged();
+            }
+        };
+
+        const onCalMonthSelect = (mVal) => {
+            calMonth = parseInt(mVal);
+            renderCalendarGrid();
+            if (currentPeriod === 'monthly') {
+                selectedMonth = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
+                onFilterPeriodChanged();
+            }
+        };
+
+        const onCalYearSelect = (yBe) => {
+            calYear = parseInt(yBe) - 543;
+            renderCalendarGrid();
+            if (currentPeriod === 'yearly') {
+                selectedYear = calYear;
+                onFilterPeriodChanged();
+            } else if (currentPeriod === 'monthly') {
+                selectedMonth = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
+                onFilterPeriodChanged();
+            }
+        };
+
+        const navigateCalMonth = (delta) => {
+            calMonth += delta;
+            if (calMonth < 0) {
+                calMonth = 11;
+                calYear--;
+            } else if (calMonth > 11) {
+                calMonth = 0;
+                calYear++;
+            }
+            renderCalendarHeader();
+            renderCalendarGrid();
+            if (currentPeriod === 'monthly') {
+                selectedMonth = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
+                onFilterPeriodChanged();
+            }
+        };
+
+        const selectCalToday = () => {
+            const d = new Date();
+            calYear = d.getFullYear();
+            calMonth = d.getMonth();
+            selectedDate = formatYmd(calYear, calMonth, d.getDate());
+            selectedMonth = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
+            selectedYear = calYear;
+            const wr = getWeekRange(selectedDate);
+            selectedWeekStart = wr.start;
+            selectedWeekEnd = wr.end;
+
+            renderCalendarHeader();
+            renderCalendarGrid();
+            closeCalendarPopover();
+            onFilterPeriodChanged();
+        };
+
+        const toggleCalendarPopover = (e) => {
+            if (e) e.stopPropagation();
+            const pop = document.getElementById('thaiCalPopover');
+            const btn = document.getElementById('calTriggerBtn');
+            if (!pop) return;
+
+            const isOpen = pop.style.display !== 'none';
+            if (isOpen) {
+                closeCalendarPopover();
+            } else {
+                pop.style.display = 'block';
+                btn.classList.add('open');
+                renderCalendarHeader();
+                renderCalendarGrid();
+            }
+        };
+
+        const closeCalendarPopover = () => {
+            const pop = document.getElementById('thaiCalPopover');
+            const btn = document.getElementById('calTriggerBtn');
+            if (pop) pop.style.display = 'none';
+            if (btn) btn.classList.remove('open');
+        };
+
+        // Close on click outside
+        document.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('calendarPickerWrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                closeCalendarPopover();
+            }
+        });
+
+        // Set Dashboard Period (Daily, Weekly, Monthly, Yearly)
+        const setDashboardPeriod = (period) => {
+            currentPeriod = period;
+
+            // Sync Header period pill buttons
+            document.querySelectorAll('.period-pill-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-period') === period);
             });
+
+            // Sync Chart toggle buttons
+            document.querySelectorAll('.period-toggle button').forEach(btn => {
+                btn.classList.remove('active-toggle');
+            });
+            if (period === 'daily') document.getElementById('btnPeriodDaily')?.classList.add('active-toggle');
+            else if (period === 'weekly') document.getElementById('btnPeriodWeekly')?.classList.add('active-toggle');
+            else if (period === 'yearly') document.getElementById('btnPeriodYearly')?.classList.add('active-toggle');
+            else document.getElementById('btnPeriodMonthly')?.classList.add('active-toggle');
+
+            // Update mode indicator in popover
+            const modeNames = { daily: 'รายวัน', weekly: 'รายสัปดาห์', monthly: 'รายเดือน', yearly: 'รายปี' };
+            const modeEl = document.getElementById('calModeIndicator');
+            if (modeEl) modeEl.textContent = `โหมด: ${modeNames[period] || 'รายเดือน'}`;
+
+            renderCalendarGrid();
+            onFilterPeriodChanged();
         };
 
-        const onMonthChange = () => {
-            updateSelectedMonthLabels();
+        // Update display text on trigger button and stat cards
+        const updateSelectedPeriodLabels = () => {
+            let labelText = '';
+            let triggerText = '';
+
+            if (currentPeriod === 'daily') {
+                const parts = selectedDate.split('-');
+                const y = parseInt(parts[0]) + 543;
+                const m = parseInt(parts[1]) - 1;
+                const d = parseInt(parts[2]);
+                labelText = `${d} ${monthsThaiShort[m]} ${y}`;
+                triggerText = `วันที่ ${d} ${monthsThai[m]} ${y}`;
+            } else if (currentPeriod === 'weekly') {
+                const sParts = selectedWeekStart.split('-');
+                const eParts = selectedWeekEnd.split('-');
+                const y = parseInt(eParts[0]) + 543;
+                const sm = parseInt(sParts[1]) - 1;
+                const em = parseInt(eParts[1]) - 1;
+                const sd = parseInt(sParts[2]);
+                const ed = parseInt(eParts[2]);
+                labelText = `${sd} ${monthsThaiShort[sm]} - ${ed} ${monthsThaiShort[em]} ${y}`;
+                triggerText = `สัปดาห์: ${sd} ${monthsThaiShort[sm]} - ${ed} ${monthsThaiShort[em]} ${y}`;
+            } else if (currentPeriod === 'yearly') {
+                labelText = `ปี ${selectedYear + 543}`;
+                triggerText = `ปี พ.ศ. ${selectedYear + 543}`;
+            } else { // monthly
+                const parts = selectedMonth.split('-');
+                const y = parseInt(parts[0]) + 543;
+                const m = parseInt(parts[1]) - 1;
+                labelText = `${monthsThai[m]} ${y}`;
+                triggerText = `${monthsThai[m]} ${y}`;
+            }
+
+            document.querySelectorAll('.selected-month-label').forEach(el => {
+                el.textContent = labelText;
+            });
+
+            const triggerEl = document.getElementById('calTriggerText');
+            if (triggerEl) triggerEl.textContent = triggerText;
+        };
+
+        const onFilterPeriodChanged = () => {
+            updateSelectedPeriodLabels();
             loadFinancialStats();
             loadFilteredTopProducts();
             loadAndFilterOrders();
         };
 
         const loadFinancialStats = () => {
-            const selectedMonth = document.getElementById('monthSelect')?.value || '';
-            fetch(`/api/dashboard/financials?period=${currentPeriod}&month=${selectedMonth}`)
+            let queryUrl = `/api/dashboard/financials?period=${currentPeriod}`;
+            if (currentPeriod === 'daily') {
+                queryUrl += `&date=${selectedDate}`;
+            } else if (currentPeriod === 'weekly') {
+                queryUrl += `&start_date=${selectedWeekStart}&end_date=${selectedWeekEnd}`;
+            } else if (currentPeriod === 'yearly') {
+                queryUrl += `&year=${selectedYear}`;
+            } else { // monthly
+                queryUrl += `&month=${selectedMonth}`;
+            }
+
+            fetch(queryUrl)
                 .then(res => res.json())
                 .then(result => {
                     if (result.status !== 200) return;
+                    const statSalesEl = document.getElementById('statSales');
+                    if (!statSalesEl) return;
                     const data = result.data;
                     
-                    // Monthly stats
-                    const stats = data.this_month;
-                    document.getElementById('statSales').textContent = '฿' + stats.sales.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    const stats = data.summary || data.this_month;
+                    statSalesEl.textContent = '฿' + stats.sales.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                     document.getElementById('statCogs').textContent = '฿' + (stats.cogs || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                     document.getElementById('statExpensesSalary').textContent = '฿' + stats.salary.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                     
@@ -820,11 +1547,17 @@
                     const salesValues = chartData.map(item => item.sales);
                     const profitValues = chartData.map(item => item.profit);
 
-                    const select = document.getElementById('monthSelect');
                     let titleText = 'สถิติยอดขายและกำไรสุทธิ ';
-                    if (currentPeriod === 'daily') titleText += `(${select ? select.options[select.selectedIndex]?.text : 'เดือนนี้'})`;
-                    else if (currentPeriod === 'yearly') titleText += '(5 ปีล่าสุด)';
-                    else titleText += '(12 เดือนล่าสุด)';
+                    const triggerEl = document.getElementById('calTriggerText');
+                    if (currentPeriod === 'daily') {
+                        titleText += `(รายชั่วโมง ${triggerEl ? triggerEl.textContent : selectedDate})`;
+                    } else if (currentPeriod === 'weekly') {
+                        titleText += `(รายวันประจำสัปดาห์)`;
+                    } else if (currentPeriod === 'yearly') {
+                        titleText += `(12 เดือน ประจำปี ${selectedYear + 543})`;
+                    } else {
+                        titleText += `(รายวัน ประจำเดือน)`;
+                    }
                     document.getElementById('chartTitle').textContent = titleText;
 
                     const ctx = document.getElementById('salesChart').getContext('2d');
@@ -958,30 +1691,30 @@
                 .catch(err => console.error("Error loading financials:", err));
         };
 
-        const changeChartPeriod = (period) => {
-            currentPeriod = period;
-            document.querySelectorAll('.period-toggle button').forEach(btn => {
-                btn.classList.remove('active-toggle');
-            });
-            if (period === 'daily') document.getElementById('btnPeriodDaily').classList.add('active-toggle');
-            else if (period === 'yearly') document.getElementById('btnPeriodYearly').classList.add('active-toggle');
-            else document.getElementById('btnPeriodMonthly').classList.add('active-toggle');
-
-            loadFinancialStats();
-        };
-
         const loadFilteredTopProducts = () => {
-            const selectedMonth = document.getElementById('monthSelect')?.value || '';
-            fetch(`/api/products/top?month=${selectedMonth}`)
+            let queryUrl = `/api/products/top?period=${currentPeriod}`;
+            if (currentPeriod === 'daily') {
+                queryUrl += `&date=${selectedDate}`;
+            } else if (currentPeriod === 'weekly') {
+                queryUrl += `&start_date=${selectedWeekStart}&end_date=${selectedWeekEnd}`;
+            } else if (currentPeriod === 'yearly') {
+                queryUrl += `&year=${selectedYear}`;
+            } else { // monthly
+                queryUrl += `&month=${selectedMonth}`;
+            }
+
+            fetch(queryUrl)
                 .then(res => res.json())
                 .then(result => {
+                    const topList = document.getElementById('topProductsList');
+                    if (!topList) return;
                     const products = result.data || [];
                     if (products.length === 0) {
-                        document.getElementById('topProductsList').innerHTML = '<li style="color: #94a3b8; justify-content: center; padding: 20px 0; border: none;">ยังไม่มีข้อมูลการขายในเดือนนี้</li>';
+                        topList.innerHTML = '<li style="color: #94a3b8; justify-content: center; padding: 20px 0; border: none;">ยังไม่มีข้อมูลการขายในช่วงเวลานี้</li>';
                         return;
                     }
 
-                    document.getElementById('topProductsList').innerHTML = products.map(p => `
+                    topList.innerHTML = products.map(p => `
                         <li>
                             <img src="${p.image_url || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" class="product-img">
                             <div class="product-info">
@@ -993,21 +1726,40 @@
                     `).join('');
                 })
                 .catch(err => {
-                    document.getElementById('topProductsList').innerHTML = '<li style="color: #dc2626; justify-content: center; border: none;">ไม่สามารถโหลดข้อมูลสินค้ายอดฮิตได้</li>';
+                    const topList = document.getElementById('topProductsList');
+                    if (topList) topList.innerHTML = '<li style="color: #dc2626; justify-content: center; border: none;">ไม่สามารถโหลดข้อมูลสินค้ายอดฮิตได้</li>';
                 });
         };
 
         const loadAndFilterOrders = () => {
-            const selectedMonth = document.getElementById('monthSelect')?.value || '';
             fetch('/api/orders')
                 .then(res => res.json())
                 .then(result => {
+                    const statOrders = document.getElementById('statOrders');
+                    const recentOrdersBody = document.getElementById('recentOrdersBody');
+                    if (!statOrders || !recentOrdersBody) return;
+
                     const orders = result.data || [];
-                    const filteredOrders = orders.filter(o => o.date.startsWith(selectedMonth));
-                    document.getElementById('statOrders').textContent = filteredOrders.length.toLocaleString('en-US');
+                    let filteredOrders = [];
+
+                    if (currentPeriod === 'daily') {
+                        filteredOrders = orders.filter(o => o.date && o.date.startsWith(selectedDate));
+                    } else if (currentPeriod === 'weekly') {
+                        filteredOrders = orders.filter(o => {
+                            if (!o.date) return false;
+                            const d = o.date.substring(0, 10);
+                            return d >= selectedWeekStart && d <= selectedWeekEnd;
+                        });
+                    } else if (currentPeriod === 'yearly') {
+                        filteredOrders = orders.filter(o => o.date && o.date.startsWith(String(selectedYear)));
+                    } else { // monthly
+                        filteredOrders = orders.filter(o => o.date && o.date.startsWith(selectedMonth));
+                    }
+
+                    statOrders.textContent = filteredOrders.length.toLocaleString('en-US');
                     
                     if (filteredOrders.length === 0) {
-                        document.getElementById('recentOrdersBody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8;">ยังไม่มีคำสั่งซื้อในเดือนนี้</td></tr>';
+                        recentOrdersBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8;">ยังไม่มีคำสั่งซื้อในช่วงเวลานี้</td></tr>';
                         return;
                     }
                     
@@ -1040,9 +1792,9 @@
         };
 
         const loadMockData = () => {
-            // Populate selector once
-            populateMonthSelector();
-            updateSelectedMonthLabels();
+            renderCalendarHeader();
+            renderCalendarGrid();
+            updateSelectedPeriodLabels();
 
             // Load data
             loadFinancialStats();
@@ -1053,37 +1805,43 @@
             fetch('/api/customers')
                 .then(res => res.json())
                 .then(result => {
+                    const el = document.getElementById('statCustomers');
+                    if (!el) return;
                     const customers = result.data || [];
-                    document.getElementById('statCustomers').textContent = customers.length.toLocaleString('en-US');
+                    el.textContent = customers.length.toLocaleString('en-US');
                 })
                 .catch(err => {
-                    document.getElementById('statCustomers').textContent = '0';
+                    const el = document.getElementById('statCustomers');
+                    if (el) el.textContent = '0';
                 });
 
             // Stock Status - Fetch all to split Low Stock and Out of Stock
             fetch('/api/products')
                 .then(res => res.json())
                 .then(result => {
+                    const lowStockVal = document.getElementById('statLowStock');
+                    const outOfStockVal = document.getElementById('statOutOfStock');
+                    const lowStockList = document.getElementById('lowStockList');
+                    if (!lowStockVal || !outOfStockVal || !lowStockList) return;
+
                     const products = result.data || [];
                     const outOfStock = products.filter(p => !p.stock_qty || p.stock_qty <= 0);
                     const lowStock = products.filter(p => p.stock_qty > 0 && p.stock_qty <= 5);
                     
-                    const lowStockVal = document.getElementById('statLowStock');
                     lowStockVal.textContent = lowStock.length.toLocaleString('en-US');
                     lowStockVal.style.color = lowStock.length > 0 ? '#d97706' : '#1e293b';
 
-                    const outOfStockVal = document.getElementById('statOutOfStock');
                     outOfStockVal.textContent = outOfStock.length.toLocaleString('en-US');
                     outOfStockVal.style.color = outOfStock.length > 0 ? '#dc2626' : '#1e293b';
                     
                     const displayStock = [...outOfStock, ...lowStock].slice(0, 5);
                     
                     if (displayStock.length === 0) {
-                        document.getElementById('lowStockList').innerHTML = '<li style="color: #16a34a; justify-content: center; padding: 20px 0; border: none; font-weight: 600;"><i class="fas fa-check-circle" style="margin-right: 8px;"></i> สต็อกสินค้าปกติทั้งหมด</li>';
+                        lowStockList.innerHTML = '<li style="color: #16a34a; justify-content: center; padding: 20px 0; border: none; font-weight: 600;"><i class="fas fa-check-circle" style="margin-right: 8px;"></i> สต็อกสินค้าปกติทั้งหมด</li>';
                         return;
                     }
 
-                    document.getElementById('lowStockList').innerHTML = displayStock.map(p => {
+                    lowStockList.innerHTML = displayStock.map(p => {
                         const isOut = !p.stock_qty || p.stock_qty <= 0;
                         const label = isOut ? 'สินค้าหมดสต็อก' : `ใกล้หมด (เหลือ ${p.stock_qty} ชิ้น)`;
                         const statusClass = isOut ? 'status-out' : 'status-low';
@@ -1103,9 +1861,12 @@
                     }).join('');
                 })
                 .catch(err => {
-                    document.getElementById('statLowStock').textContent = '0';
-                    document.getElementById('statOutOfStock').textContent = '0';
-                    document.getElementById('lowStockList').innerHTML = '<li style="color: #dc2626; justify-content: center; border: none;">ไม่สามารถโหลดข้อมูลสต็อกได้</li>';
+                    const lowStockVal = document.getElementById('statLowStock');
+                    if (lowStockVal) lowStockVal.textContent = '0';
+                    const outOfStockVal = document.getElementById('statOutOfStock');
+                    if (outOfStockVal) outOfStockVal.textContent = '0';
+                    const lowStockList = document.getElementById('lowStockList');
+                    if (lowStockList) lowStockList.innerHTML = '<li style="color: #dc2626; justify-content: center; border: none;">ไม่สามารถโหลดข้อมูลสต็อกได้</li>';
                 });
         };
 

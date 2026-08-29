@@ -5,17 +5,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>จัดการโปรโมชั่น (พนักงาน) - Hello Pet Shop</title>
+    <title>โปรโมชั่น - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="/css/staff_mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <!-- Mobile User-Agent Check -->
     <script>
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
             document.documentElement.classList.add('mobile-device');
         }
     </script>
-<script type="module" src="/src/js/main.js"></script>
+    <script type="module" src="/src/js/main.js"></script>
     <style>
         .premium-card {
             background-color: white;
@@ -45,24 +46,33 @@
             align-items: center;
             gap: 8px;
         }
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+        }
         .rate-table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 480px;
         }
         .rate-table th {
             text-align: left;
-            padding: 12px;
+            padding: 12px 14px;
             background-color: #f8fafc;
             color: #475569;
             font-weight: 600;
             font-size: 13px;
             border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
         }
         .rate-table td {
-            padding: 14px 12px;
+            padding: 14px;
             border-bottom: 1px solid #f1f5f9;
             font-size: 14px;
             color: #334155;
+            vertical-align: middle;
+            white-space: nowrap;
         }
         .rate-table tr:hover td {
             background-color: #f8fafc;
@@ -98,89 +108,144 @@
             gap: 4px;
             white-space: nowrap;
         }
+        .badge.active {
+            background-color: #dcfce7;
+            color: #15803d;
+            border-color: #86efac;
+        }
+        .badge.inactive {
+            background-color: #f1f5f9;
+            color: #64748b;
+            border-color: #cbd5e1;
+        }
 
-        /* Staff Promotions Mobile */
+        /* Tabs Styling */
+        .promo-tabs {
+            display: flex;
+            gap: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-top: 20px;
+            margin-bottom: 24px;
+        }
+        .promo-tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .promo-tab-btn:hover {
+            color: #16a34a;
+        }
+        .promo-tab-btn.active {
+            color: #16a34a;
+            border-bottom-color: #16a34a;
+        }
+
+        /* Banner Thumbnail in Table */
+        .banner-thumb {
+            width: 140px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
+
+        /* Mobile Responsive */
         @media (max-width: 768px) {
-            .premium-card { padding: 14px 12px !important; border-radius: 16px !important; }
+            .premium-card { padding: 14px 12px !important; border-radius: 16px !important; margin-top: 12px !important; }
+            .card-header { margin-bottom: 12px !important; }
             .card-header h2 { font-size: 15px !important; }
-            .empty-state { padding: 30px 16px !important; }
-            .empty-state i { font-size: 36px !important; }
-            .empty-state p { font-size: 13px !important; }
-            
-            .table-responsive {
-                overflow-x: hidden !important;
-                width: 100% !important;
+            .page-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 6px !important;
             }
-            .rate-table {
-                table-layout: fixed !important;
-                width: 100% !important;
-                min-width: 0 !important;
+            .page-header p { font-size: 12px !important; }
+            .banner-thumb {
+                width: 90px;
+                height: 40px;
             }
-            .rate-table th, .rate-table td {
-                padding: 10px 4px !important;
-                font-size: 12px !important;
-                vertical-align: middle !important;
-                box-sizing: border-box !important;
+            .promo-tabs {
+                margin-top: 14px !important;
+                margin-bottom: 16px !important;
+                gap: 6px !important;
             }
-            .rate-table th:first-child, .rate-table td:first-child {
-                width: 32% !important;
-                white-space: nowrap !important;
-            }
-            .rate-table th:nth-child(2), .rate-table td:nth-child(2) {
-                width: 50% !important;
-                word-break: break-word !important;
-            }
-            .rate-table th:nth-child(3), .rate-table td:nth-child(3) {
-                width: 18% !important;
-                text-align: center !important;
-                white-space: nowrap !important;
-            }
-            .badge {
-                font-size: 11px !important;
-                padding: 3px 6px !important;
-                white-space: normal !important;
-                word-break: break-word !important;
-                display: inline-flex !important;
-                align-items: center !important;
-                gap: 4px !important;
-                line-height: 1.3 !important;
-                max-width: 100% !important;
+            .promo-tab-btn {
+                padding: 10px 14px !important;
+                font-size: 13px !important;
             }
         }
     </style>
 </head>
 <body class="preload">
     <div class="admin-wrapper">
-        <!-- Mobile Header -->
         <header class="mobile-header"></header>
-
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-        <!-- Sidebar -->
         <aside class="sidebar"></aside>
 
         <!-- Main Content -->
-        <main class="main-content" style="background:#ffffff; height: 100%; overflow-y: auto; padding-bottom: 80px;">
-            <div style="max-width: 1000px; margin: 0 auto; padding: 24px;">
-                <div class="page-header">
-                    <h1>โปรโมชั่น</h1>
-                    <p style="color: #64748b; margin-top: 6px;">รายการของแถมตามระดับยอดซื้อสินค้า</p>
+        <main class="main-content">
+            <div style="max-width: 1000px; margin: 0 auto;">
+                <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h1>โปรโมชั่น</h1>
+                        <p style="color: #64748b; margin-top: 6px;">รายการแบนเนอร์ภาพสไลด์ และของแถมตามระดับยอดซื้อสินค้า</p>
+                    </div>
                 </div>
 
-                <div class="premium-card" style="margin-top: 20px;">
-                    <div class="card-header">
-                        <h2><i class="fas fa-gift" style="color: #ef4444;"></i> รายการของแถมตามระดับยอดซื้อ</h2>
+                <!-- Tabs -->
+                <div class="promo-tabs">
+                    <button class="promo-tab-btn active" id="tabBtnBanners" onclick="switchPromoTab('banners')">
+                        <i class="fas fa-images"></i> แบนเนอร์ภาพสไลด์
+                    </button>
+                    <button class="promo-tab-btn" id="tabBtnGifts" onclick="switchPromoTab('gifts')">
+                        <i class="fas fa-gift"></i> ของแถมตามยอดซื้อ
+                    </button>
+                </div>
+
+                <!-- ================= TAB 1: BANNERS ================= -->
+                <div id="tabContentBanners">
+                    <div class="premium-card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-images" style="color: #16a34a;"></i> รายการแบนเนอร์ภาพสไลด์โปรโมชั่น</h2>
+                        </div>
+                        <div id="bannersContainer">
+                            <div class="loading-container" style="padding: 40px 20px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px;"></i>
+                                <div>กำลังโหลดข้อมูล...</div>
+                            </div>
+                        </div>
                     </div>
-                    <div id="giftsContainer">
-                        <div class="loading-container">
-                            <div class="spinner-loader"></div>
-                            <span>กำลังโหลดข้อมูล...</span>
+                </div>
+
+                <!-- ================= TAB 2: GIFTS ================= -->
+                <div id="tabContentGifts" style="display: none;">
+                    <div class="premium-card">
+                        <div class="card-header">
+                            <h2><i class="fas fa-gift" style="color: #ef4444;"></i> รายการของแถมตามระดับยอดซื้อ</h2>
+                        </div>
+                        <div id="giftsContainer">
+                            <div class="loading-container" style="padding: 40px 20px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px;"></i>
+                                <div>กำลังโหลดข้อมูล...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
-        
+
         <!-- Bottom Navigation for Mobile -->
         <nav class="bottom-nav">
             <a href="staff_orders.html" class="nav-item">
@@ -209,41 +274,119 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        function toggleSidebar() { const sidebar = document.querySelector('.sidebar'); const overlay = document.getElementById('sidebarOverlay'); if (sidebar && overlay) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } }
+        let allGiftRules = [];
+        let allBanners = [];
 
-        function toggleSubmenu(el) {
-            const group = el.closest('.menu-group');
-            group.classList.toggle('open');
-            localStorage.setItem('staffProductsMenuOpen', group.classList.contains('open'));
-        }
+        checkAuth();
+        fetchBanners();
+        fetchGiftRules();
 
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
-            const role = user ? (user.role_name || '').toLowerCase() : '';
-            if (!user || role === 'customer') {
-                window.location.href = '/login.html';
-                return null;
+            if (!user || !['admin', 'employee'].includes((user.role_name || '').toLowerCase())) {
+                window.location.href = 'login.html';
             }
-            return user;
         }
 
+        function switchPromoTab(tab) {
+            const btnBanners = document.getElementById('tabBtnBanners');
+            const btnGifts = document.getElementById('tabBtnGifts');
+            const contentBanners = document.getElementById('tabContentBanners');
+            const contentGifts = document.getElementById('tabContentGifts');
+
+            if (tab === 'banners') {
+                btnBanners.classList.add('active');
+                btnGifts.classList.remove('active');
+                contentBanners.style.display = 'block';
+                contentGifts.style.display = 'none';
+            } else {
+                btnBanners.classList.remove('active');
+                btnGifts.classList.add('active');
+                contentBanners.style.display = 'none';
+                contentGifts.style.display = 'block';
+            }
+        }
+
+        // ==========================================
+        // BANNER VIEW FUNCTIONS (STAFF: VIEW ONLY)
+        // ==========================================
+        async function fetchBanners() {
+            const container = document.getElementById('bannersContainer');
+            try {
+                const response = await fetch('/api/banners?all=true');
+                const result = await response.json();
+                if (response.ok) {
+                    allBanners = result.data || [];
+                    renderBanners();
+                } else {
+                    container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">${result.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล"}</div>`;
+                }
+            } catch (error) {
+                console.error("fetchBanners error:", error);
+                container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">เกิดข้อผิดพลาดในการเชื่อมต่อ</div>`;
+            }
+        }
+
+        function renderBanners() {
+            const container = document.getElementById('bannersContainer');
+            if (allBanners.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-images" style="font-size: 36px; margin-bottom: 12px; color: #cbd5e1;"></i>
+                        <p style="margin: 0; font-size: 14px;">ยังไม่มีแบนเนอร์โปรโมชั่นในระบบ</p>
+                    </div>`;
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                <table class="rate-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 160px;">รูปภาพแบนเนอร์</th>
+                            <th>ชื่อโปรโมชั่น / ข้อความ</th>
+                            <th>ลำดับ</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            allBanners.forEach(banner => {
+                const isActive = banner.is_active == 1;
+                html += `
+                    <tr>
+                        <td>
+                            <img src="${banner.image_url}" alt="${banner.title}" class="banner-thumb" onerror="this.src='/images/promotions/promo1.png'">
+                        </td>
+                        <td>
+                            <strong style="color: #1e293b; font-size: 14px;">${banner.title}</strong>
+                            ${banner.link_url ? `<div style="font-size: 12px; color: #16a34a; margin-top: 4px;"><i class="fas fa-link"></i> ${banner.link_url}</div>` : ''}
+                        </td>
+                        <td><span style="font-weight: 600; color: #64748b;">${banner.display_order}</span></td>
+                        <td>
+                            ${isActive 
+                                ? '<span class="badge active"><i class="fas fa-check-circle"></i> เปิดใช้งาน</span>' 
+                                : '<span class="badge inactive"><i class="fas fa-times-circle"></i> ปิดใช้งาน</span>'}
+                        </td>
+                    </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+        }
+
+        // ==========================================
+        // GIFT RULES VIEW FUNCTIONS (STAFF: VIEW ONLY)
+        // ==========================================
         async function fetchGiftRules() {
             const container = document.getElementById('giftsContainer');
             try {
                 const response = await fetch('/api/rewards/gifts');
                 const result = await response.json();
                 if (response.ok) {
-                    renderGiftRules(result.data || []);
+                    allGiftRules = result.data || [];
+                    renderGiftRules();
                 } else {
-                    if (response.status === 401) {
-                        localStorage.removeItem('user');
-                        window.location.href = 'login.html';
-                        return;
-                    }
-                    if (response.status === 403) {
-                        container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">คุณไม่มีสิทธิ์เข้าถึงข้อมูลโปรโมชั่นนี้</div>`;
-                        return;
-                    }
                     container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">${result.message || "เกิดข้อผิดพลาดในการโหลดข้อมูล"}</div>`;
                 }
             } catch (error) {
@@ -252,9 +395,9 @@
             }
         }
 
-        function renderGiftRules(rules) {
+        function renderGiftRules() {
             const container = document.getElementById('giftsContainer');
-            if (rules.length === 0) {
+            if (allGiftRules.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-gift" style="font-size: 36px; margin-bottom: 12px; color: #cbd5e1;"></i>
@@ -275,7 +418,7 @@
                     </thead>
                     <tbody>`;
 
-            rules.forEach(rule => {
+            allGiftRules.forEach(rule => {
                 html += `
                     <tr>
                         <td><strong>฿${parseFloat(rule.min_spend).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
@@ -288,33 +431,24 @@
             container.innerHTML = html;
         }
 
-        const menuGroup = document.querySelector('.menu-group');
-        if (menuGroup) {
-            const isOpen = localStorage.getItem('staffProductsMenuOpen');
-            if (isOpen === 'true') menuGroup.classList.add('open');
-            else if (isOpen === 'false') menuGroup.classList.remove('open');
+        const lBtn = document.getElementById('logoutBtn'); 
+        if (lBtn) lBtn.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            localStorage.removeItem('user'); 
+            window.location.href = 'login.html'; 
+        });
+
+        function toggleSidebar() { 
+            const sidebar = document.querySelector('.sidebar'); 
+            const overlay = document.getElementById('sidebarOverlay'); 
+            if (sidebar && overlay) { 
+                sidebar.classList.toggle('active'); 
+                overlay.classList.toggle('active'); 
+            } 
         }
 
-        const user = checkAuth();
-        if (user) {
-            fetchGiftRules();
-        }
-
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                localStorage.removeItem('user');
-                window.location.href = '/login.html';
-            });
-        }
-
-        function showToast(message, type) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            setTimeout(() => toast.className = 'toast', 3000);
-        }
+        const hBtn = document.getElementById('hamburgerBtn'); if (hBtn) hBtn.addEventListener('click', toggleSidebar);
+        const sOverlay = document.getElementById('sidebarOverlay'); if (sOverlay) sOverlay.addEventListener('click', toggleSidebar);
     </script>
 </body>
 </html>

@@ -12,8 +12,21 @@ class DashboardController {
 
     public function getFinancials() {
         try {
-            $period = $_GET['period'] ?? 'monthly'; // 'daily', 'monthly', 'yearly'
-            $selectedMonth = $_GET['month'] ?? date('Y-m'); // format YYYY-MM, defaults to current month
+            $period = $_GET['period'] ?? 'monthly'; // 'daily', 'weekly', 'monthly', 'yearly'
+            $selectedDate = $_GET['date'] ?? date('Y-m-d');
+            $selectedMonth = $_GET['month'] ?? date('Y-m'); // format YYYY-MM
+            $selectedYear = (int)($_GET['year'] ?? date('Y'));
+            $startDate = $_GET['start_date'] ?? null;
+            $endDate = $_GET['end_date'] ?? null;
+
+            // Normalize weekly dates if not provided
+            if ($period === 'weekly' && (!$startDate || !$endDate)) {
+                $ts = strtotime($selectedDate);
+                // Monday as start of week, Sunday as end of week
+                $dayOfWeek = (int)date('N', $ts); // 1 (Mon) to 7 (Sun)
+                $startDate = date('Y-m-d', strtotime('-' . ($dayOfWeek - 1) . ' days', $ts));
+                $endDate = date('Y-m-d', strtotime('+' . (7 - $dayOfWeek) . ' days', $ts));
+            }
             
             // 1. Fetch all orders (excluding cancelled/status = 5)
             $qOrders = "SELECT order_id, net_total, order_date, status FROM orders WHERE status != 5";
@@ -33,39 +46,181 @@ class DashboardController {
             // 4. Fetch all active employees
             $employees = $this->db->query("SELECT employee_id, base_salary, payment_frequency FROM employees")->fetchAll(PDO::FETCH_ASSOC);
  
-            // Calculate selected month's financials
-            $thisMonthSales = 0;
-            $thisMonthCogs = 0;
-            foreach ($orders as $o) {
-                if (strpos($o['order_date'], $selectedMonth) === 0) {
-                    $thisMonthSales += (float)$o['net_total'];
-                    $oId = (int)$o['order_id'];
-                    $thisMonthCogs += (float)($orderCogs[$oId] ?? 0);
+            // Calculate summary financials based on selected period
+            $summarySales = 0;
+            $summaryCogs = 0;
+            $summaryRestocks = 0;
+            $summarySalaries = 0;
+
+            if ($period === 'daily') {
+                foreach ($orders as $o) {
+                    if (date('Y-m-d', strtotime($o['order_date'])) === $selectedDate) {
+                        $summarySales += (float)$o['net_total'];
+                        $oId = (int)$o['order_id'];
+                        $summaryCogs += (float)($orderCogs[$oId] ?? 0);
+                    }
                 }
+                foreach ($restocks as $r) {
+                    if (date('Y-m-d', strtotime($r['order_date'])) === $selectedDate) {
+                        $summaryRestocks += (float)$r['total_cost'];
+                    }
+                }
+                $summarySalaries = $this->getSalaryExpenseForDate($selectedDate, $employees);
+            } elseif ($period === 'weekly') {
+                foreach ($orders as $o) {
+                    $od = date('Y-m-d', strtotime($o['order_date']));
+                    if ($od >= $startDate && $od <= $endDate) {
+                        $summarySales += (float)$o['net_total'];
+                        $oId = (int)$o['order_id'];
+                        $summaryCogs += (float)($orderCogs[$oId] ?? 0);
+                    }
+                }
+                foreach ($restocks as $r) {
+                    $rd = date('Y-m-d', strtotime($r['order_date']));
+                    if ($rd >= $startDate && $rd <= $endDate) {
+                        $summaryRestocks += (float)$r['total_cost'];
+                    }
+                }
+                $cur = strtotime($startDate);
+                $endTs = strtotime($endDate);
+                while ($cur <= $endTs) {
+                    $summarySalaries += $this->getSalaryExpenseForDate(date('Y-m-d', $cur), $employees);
+                    $cur = strtotime('+1 day', $cur);
+                }
+            } elseif ($period === 'yearly') {
+                foreach ($orders as $o) {
+                    if ((int)date('Y', strtotime($o['order_date'])) === $selectedYear) {
+                        $summarySales += (float)$o['net_total'];
+                        $oId = (int)$o['order_id'];
+                        $summaryCogs += (float)($orderCogs[$oId] ?? 0);
+                    }
+                }
+                foreach ($restocks as $r) {
+                    if ((int)date('Y', strtotime($r['order_date'])) === $selectedYear) {
+                        $summaryRestocks += (float)$r['total_cost'];
+                    }
+                }
+                $summarySalaries = $this->getSalaryExpenseForYear($selectedYear, $employees);
+            } else { // monthly (default)
+                foreach ($orders as $o) {
+                    if (strpos($o['order_date'], $selectedMonth) === 0) {
+                        $summarySales += (float)$o['net_total'];
+                        $oId = (int)$o['order_id'];
+                        $summaryCogs += (float)($orderCogs[$oId] ?? 0);
+                    }
+                }
+                foreach ($restocks as $r) {
+                    if (strpos($r['order_date'], $selectedMonth) === 0) {
+                        $summaryRestocks += (float)$r['total_cost'];
+                    }
+                }
+                $summarySalaries = $this->getSalaryExpenseForMonth($selectedMonth, $employees);
             }
             
-            $thisMonthRestocks = 0;
-            foreach ($restocks as $r) {
-                if (strpos($r['order_date'], $selectedMonth) === 0) {
-                    $thisMonthRestocks += (float)$r['total_cost'];
-                }
-            }
-            
-            $thisMonthSalaries = $this->getSalaryExpenseForMonth($selectedMonth, $employees);
-            $thisMonthGrossProfit = $thisMonthSales - $thisMonthCogs;
-            $thisMonthProfit = $thisMonthGrossProfit - $thisMonthSalaries; // Net Profit
+            $summaryGrossProfit = $summarySales - $summaryCogs;
+            $summaryProfit = $summaryGrossProfit - $summarySalaries; // Net Profit
  
             // Generate chart data based on period
             $chartData = [];
+            $thaiMonthsShort = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            $thaiDaysShort = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
             
             if ($period === 'daily') {
-                // Loop through all days of $selectedMonth
+                // Hourly breakdown for all 24 hours (00:00 to 23:00)
+                $dayOrders = [];
+                foreach ($orders as $o) {
+                    if (date('Y-m-d', strtotime($o['order_date'])) === $selectedDate) {
+                        $h = (int)date('H', strtotime($o['order_date']));
+                        if (!isset($dayOrders[$h])) {
+                            $dayOrders[$h] = ['sales' => 0, 'cogs' => 0];
+                        }
+                        $dayOrders[$h]['sales'] += (float)$o['net_total'];
+                        $oId = (int)$o['order_id'];
+                        $dayOrders[$h]['cogs'] += (float)($orderCogs[$oId] ?? 0);
+                    }
+                }
+
+                $hourlySalary = $summarySalaries > 0 ? ($summarySalaries / 24.0) : 0;
+                for ($hour = 0; $hour <= 23; $hour++) {
+                    $sales = $dayOrders[$hour]['sales'] ?? 0;
+                    $cogs = $dayOrders[$hour]['cogs'] ?? 0;
+                    $gross = $sales - $cogs;
+                    $profit = $gross - ($sales > 0 ? $hourlySalary : 0);
+                    $chartData[] = [
+                        'label' => sprintf('%02d:00', $hour),
+                        'sales' => $sales,
+                        'cogs' => $cogs,
+                        'gross_profit' => $gross,
+                        'profit' => $profit
+                    ];
+                }
+            } elseif ($period === 'weekly') {
+                // 7 days of the week (Monday to Sunday)
+                $cur = strtotime($startDate);
+                $endTs = strtotime($endDate);
+                while ($cur <= $endTs) {
+                    $d = date('Y-m-d', $cur);
+                    $dayNum = (int)date('w', $cur); // 0 (Sun) to 6 (Sat)
+                    $dayLabel = $thaiDaysShort[$dayNum] . ' ' . (int)date('d', $cur) . ' ' . ($thaiMonthsShort[(int)date('n', $cur)] ?? '');
+                    
+                    $sales = 0;
+                    $cogs = 0;
+                    foreach ($orders as $o) {
+                        if (date('Y-m-d', strtotime($o['order_date'])) === $d) {
+                            $sales += (float)$o['net_total'];
+                            $oId = (int)$o['order_id'];
+                            $cogs += (float)($orderCogs[$oId] ?? 0);
+                        }
+                    }
+                    $salary = $this->getSalaryExpenseForDate($d, $employees);
+                    $gross = $sales - $cogs;
+                    $profit = $gross - $salary;
+                    
+                    $chartData[] = [
+                        'label' => $dayLabel,
+                        'date' => $d,
+                        'sales' => $sales,
+                        'cogs' => $cogs,
+                        'gross_profit' => $gross,
+                        'profit' => $profit
+                    ];
+                    $cur = strtotime('+1 day', $cur);
+                }
+            } elseif ($period === 'yearly') {
+                // 12 months of $selectedYear
+                for ($m = 1; $m <= 12; $m++) {
+                    $mStr = sprintf('%04d-%02d', $selectedYear, $m);
+                    $mLabel = ($thaiMonthsShort[$m] ?? '') . ' ' . ($selectedYear + 543);
+                    $sales = 0;
+                    $cogs = 0;
+                    foreach ($orders as $o) {
+                        if (strpos($o['order_date'], $mStr) === 0) {
+                            $sales += (float)$o['net_total'];
+                            $oId = (int)$o['order_id'];
+                            $cogs += (float)($orderCogs[$oId] ?? 0);
+                        }
+                    }
+                    $salary = $this->getSalaryExpenseForMonth($mStr, $employees);
+                    $gross = $sales - $cogs;
+                    $profit = $gross - $salary;
+
+                    $chartData[] = [
+                        'label' => $mLabel,
+                        'month' => $mStr,
+                        'sales' => $sales,
+                        'cogs' => $cogs,
+                        'gross_profit' => $gross,
+                        'profit' => $profit
+                    ];
+                }
+            } else { // monthly (default)
+                // All days of $selectedMonth
                 $selectedMonthDate = strtotime("$selectedMonth-01");
                 $numDays = (int)date('t', $selectedMonthDate);
-                $isCurrentMonth = ($selectedMonth === date('Y-m'));
-                $maxDay = $isCurrentMonth ? (int)date('d') : $numDays;
-                
-                for ($day = 1; $day <= $maxDay; $day++) {
+                $mNum = (int)date('n', $selectedMonthDate);
+                $shortMonthName = $thaiMonthsShort[$mNum] ?? '';
+
+                for ($day = 1; $day <= $numDays; $day++) {
                     $d = sprintf('%s-%02d', $selectedMonth, $day);
                     $sales = 0;
                     $cogs = 0;
@@ -76,113 +231,39 @@ class DashboardController {
                             $cogs += (float)($orderCogs[$oId] ?? 0);
                         }
                     }
-                    $restock = 0;
-                    foreach ($restocks as $r) {
-                        if (date('Y-m-d', strtotime($r['order_date'])) === $d) {
-                            $restock += (float)$r['total_cost'];
-                        }
-                    }
-                    // Salary calculated daily based on check-ins
                     $salary = $this->getSalaryExpenseForDate($d, $employees);
-                    $grossProfit = $sales - $cogs;
-                    $profit = $grossProfit - $salary; // Net Profit
-                    
-                    $label = date('d M', strtotime($d));
-                    
+                    $gross = $sales - $cogs;
+                    $profit = $gross - $salary;
+
                     $chartData[] = [
-                        'label' => $label,
+                        'label' => "$day $shortMonthName",
+                        'date' => $d,
                         'sales' => $sales,
                         'cogs' => $cogs,
-                        'expenses' => $cogs + $salary,
-                        'restock' => $restock,
-                        'salary' => $salary,
-                        'gross_profit' => $grossProfit,
-                        'profit' => $profit
-                    ];
-                }
-            } elseif ($period === 'yearly') {
-                // 5 years ending at the year of $selectedMonth
-                $selectedYear = (int)date('Y', strtotime("$selectedMonth-01"));
-                for ($i = 4; $i >= 0; $i--) {
-                    $yr = $selectedYear - $i;
-                    $sales = 0;
-                    $cogs = 0;
-                    foreach ($orders as $o) {
-                        if (date('Y', strtotime($o['order_date'])) == $yr) {
-                            $sales += (float)$o['net_total'];
-                            $oId = (int)$o['order_id'];
-                            $cogs += (float)($orderCogs[$oId] ?? 0);
-                        }
-                    }
-                    $restock = 0;
-                    foreach ($restocks as $r) {
-                        if (date('Y', strtotime($r['order_date'])) == $yr) {
-                            $restock += (float)$r['total_cost'];
-                        }
-                    }
-                    $salary = $this->getSalaryExpenseForYear($yr, $employees);
-                    $grossProfit = $sales - $cogs;
-                    $profit = $grossProfit - $salary;
-                    
-                    $chartData[] = [
-                        'label' => (string)$yr,
-                        'sales' => $sales,
-                        'cogs' => $cogs,
-                        'expenses' => $cogs + $salary,
-                        'restock' => $restock,
-                        'salary' => $salary,
-                        'gross_profit' => $grossProfit,
-                        'profit' => $profit
-                    ];
-                }
-            } else {
-                // Monthly: last 12 months ending at $selectedMonth
-                $firstDayOfSelectedMonth = "$selectedMonth-01";
-                for ($i = 11; $i >= 0; $i--) {
-                    $m = date('Y-m', strtotime("-$i months", strtotime($firstDayOfSelectedMonth)));
-                    $sales = 0;
-                    $cogs = 0;
-                    foreach ($orders as $o) {
-                        if (strpos($o['order_date'], $m) === 0) {
-                            $sales += (float)$o['net_total'];
-                            $oId = (int)$o['order_id'];
-                            $cogs += (float)($orderCogs[$oId] ?? 0);
-                        }
-                    }
-                    $restock = 0;
-                    foreach ($restocks as $r) {
-                        if (strpos($r['order_date'], $m) === 0) {
-                            $restock += (float)$r['total_cost'];
-                        }
-                    }
-                    $salary = $this->getSalaryExpenseForMonth($m, $employees);
-                    $grossProfit = $sales - $cogs;
-                    $profit = $grossProfit - $salary;
-                    
-                    $label = date('M Y', strtotime($m . '-01'));
-                    
-                    $chartData[] = [
-                        'label' => $label,
-                        'sales' => $sales,
-                        'cogs' => $cogs,
-                        'expenses' => $cogs + $salary,
-                        'restock' => $restock,
-                        'salary' => $salary,
-                        'gross_profit' => $grossProfit,
+                        'gross_profit' => $gross,
                         'profit' => $profit
                     ];
                 }
             }
   
+            $summaryPayload = [
+                'sales' => $summarySales,
+                'restock' => $summaryRestocks,
+                'cogs' => $summaryCogs,
+                'salary' => $summarySalaries,
+                'gross_profit' => $summaryGrossProfit,
+                'profit' => $summaryProfit
+            ];
+
             $response = [
-                'this_month' => [
-                    'sales' => $thisMonthSales,
-                    'restock' => $thisMonthRestocks,
-                    'cogs' => $thisMonthCogs,
-                    'salary' => $thisMonthSalaries,
-                    'gross_profit' => $thisMonthGrossProfit,
-                    'profit' => $thisMonthProfit
-                ],
+                'period' => $period,
+                'date' => $selectedDate,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'month' => $selectedMonth,
+                'year' => $selectedYear,
+                'summary' => $summaryPayload,
+                'this_month' => $summaryPayload, // Backward-compatibility
                 'chart' => $chartData
             ];
   

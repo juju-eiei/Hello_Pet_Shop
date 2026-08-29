@@ -93,3 +93,39 @@ export function escapeHTML(str) {
         .replace(/'/g, '&#039;');
 }
 
+/**
+ * Prompts a guest user to register or login when attempting member-restricted actions
+ * @param {string} customMessage - Message to display
+ */
+export function showRegisterPrompt(customMessage = 'กรุณาสมัครสมาชิกเพื่อสั่งซื้อสินค้า') {
+    if (window.Swal) {
+        window.Swal.fire({
+            title: 'กรุณาสมัครสมาชิก',
+            text: customMessage,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-user-plus mr-1.5"></i> สมัครสมาชิก',
+            cancelButtonText: 'ยกเลิก',
+            showDenyButton: true,
+            denyButtonText: '<i class="fas fa-sign-in-alt mr-1.5"></i> เข้าสู่ระบบ',
+            confirmButtonColor: '#16a34a',
+            denyButtonColor: '#1b4332',
+            cancelButtonColor: '#9ca3af',
+            customClass: {
+                popup: 'rounded-2xl shadow-2xl font-sans',
+                confirmButton: 'rounded-xl font-bold px-4 py-2.5',
+                denyButton: 'rounded-xl font-bold px-4 py-2.5',
+                cancelButton: 'rounded-xl font-medium px-4 py-2.5'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'register.html';
+            } else if (result.isDenied) {
+                window.location.href = 'login.html';
+            }
+        });
+    } else {
+        alert(customMessage);
+    }
+}
+

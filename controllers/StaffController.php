@@ -9,6 +9,7 @@ class StaffController {
     }
 
     public function index() {
+        header('Content-Type: application/json; charset=utf-8');
         $keyword = $_GET['keyword'] ?? '';
         $staff = $this->model->getAll($keyword);
         echo json_encode(["data" => $staff]);
@@ -106,6 +107,7 @@ class StaffController {
     }
 
     public function roles() {
+        header('Content-Type: application/json; charset=utf-8');
         $roles = $this->model->getRoles();
         echo json_encode(["data" => $roles]);
     }

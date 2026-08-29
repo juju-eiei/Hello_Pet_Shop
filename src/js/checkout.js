@@ -2,6 +2,8 @@ import { updateGlobalCartCount } from './main.js';
 import { showToast, getUserProfileData, saveUserProfileData } from './utils.js';
 
 export function initCheckoutPage() {
+    const cleanPath = (window.location.pathname || '').toLowerCase();
+    if (cleanPath.includes('/staff') || cleanPath.includes('/admin') || cleanPath.includes('staff_') || cleanPath.includes('admin_')) return;
     // Elements
     const summaryItemsContainer = document.getElementById('summaryItemsContainer');
     if (!summaryItemsContainer) return;

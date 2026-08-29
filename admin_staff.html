@@ -394,8 +394,6 @@
             </div>
             <!-- Pagination -->
             <div id="paginationContainer" class="pagination-container"></div>
-        </main>
-    </div>
 
     <!-- Center Modal / Drawer for Form -->
     <div class="drawer-overlay" id="drawerOverlay">
@@ -535,6 +533,8 @@
     </div>
 
     <div id="toast" class="toast"></div>
+        </main>
+    </div>
 
     <script>
         let currentKeyword = '';
@@ -545,17 +545,130 @@
         let payRightsList = [];
         let activeTab = 'info';
 
+        function bindStaffEvents() {
+            const staffContainer = document.getElementById('staffContainer');
+            if (staffContainer && !staffContainer.dataset.bound) {
+                staffContainer.dataset.bound = 'true';
+                staffContainer.addEventListener('click', (event) => {
+                    const button = event.target.closest('button[data-action][data-employee-id]');
+                    if (!button) return;
+
+                    const employeeId = button.dataset.employeeId;
+                    if (!employeeId) return;
+
+                    if (button.dataset.action === 'edit') editStaff(employeeId);
+                    if (button.dataset.action === 'delete') deleteStaff(employeeId);
+                    if (button.dataset.action === 'attendance') openAttendanceModal(employeeId);
+                });
+            }
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    activeTab = e.currentTarget.dataset.tab;
+                    renderHeaders();
+                };
+            });
+
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && !searchInput.dataset.bound) {
+                searchInput.dataset.bound = 'true';
+                searchInput.addEventListener('input', (e) => {
+                    currentKeyword = e.target.value.trim();
+                    currentPage = 1;
+                    fetchStaff();
+                });
+            }
+
+            const addStaffBtn = document.getElementById('addStaffBtn');
+            if (addStaffBtn && !addStaffBtn.dataset.bound) {
+                addStaffBtn.dataset.bound = 'true';
+                addStaffBtn.addEventListener('click', () => {
+                    const form = document.getElementById('staffForm');
+                    if (form) form.reset();
+                    const empId = document.getElementById('employee_id');
+                    if (empId) empId.value = '';
+                    const pwd = document.getElementById('password');
+                    if (pwd) pwd.setAttribute('required', 'true');
+                    const freq = document.getElementById('payment_frequency');
+                    if (freq) freq.value = 'Monthly';
+                    
+                    const secInfo = document.getElementById('sectionEmployeeInfo');
+                    const secSalary = document.getElementById('sectionSalaryPayRights');
+                    const secRole = document.getElementById('sectionSystemRole');
+                    if (secInfo) secInfo.style.display = 'block';
+                    if (secSalary) secSalary.style.display = 'block';
+                    if (secRole) secRole.style.display = 'block';
+
+                    const attSection = document.getElementById('editModalAttendanceSection');
+                    if (attSection) attSection.style.display = 'none';
+                    updatePayRateLabel(true);
+                    openDrawer("เพิ่มพนักงานใหม่");
+                });
+            }
+
+            const freqEl = document.getElementById('payment_frequency');
+            if (freqEl && !freqEl.dataset.bound) {
+                freqEl.dataset.bound = 'true';
+                freqEl.addEventListener('change', () => {
+                    updatePayRateLabel(true);
+                });
+            }
+
+            const saveBtn = document.getElementById('saveStaffBtn');
+            if (saveBtn && !saveBtn.dataset.bound) {
+                saveBtn.dataset.bound = 'true';
+                saveBtn.addEventListener('click', async () => {
+                    const form = document.getElementById('staffForm');
+                    if (!form) return;
+                    if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+
+                    const formData = new FormData(form);
+                    const data = Object.fromEntries(formData.entries());
+                    
+                    const isUpdate = !!data.id;
+                    const url = isUpdate ? `/api/staff/update?id=${data.id}` : `/api/staff/create`;
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        
+                        if (response.ok) {
+                            showToast(isUpdate ? "อัปเดตข้อมูลพนักงานสำเร็จ" : "เพิ่มพนักงานสำเร็จ", "success");
+                            closeDrawer();
+                            fetchStaff();
+                        } else {
+                            const res = await response.json();
+                            showToast(res.message || "เกิดข้อผิดพลาดในการบันทึก", "error");
+                        }
+                    } catch (error) { 
+                        console.error("saveStaffBtn error:", error);
+                        showToast("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ", "error"); 
+                    }
+                });
+            }
+        }
+
         function checkAuth() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || user.role_name.toLowerCase() !== 'admin') {
-                window.location.href = 'login.html';
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const role = (user?.role_name || user?.role || '').toLowerCase();
+                if (!user || role !== 'admin') {
+                    window.location.href = 'login.html';
+                }
+            } catch (e) {
+                console.error("Auth check error", e);
             }
         }
 
         async function init() {
-            // A sidebar backdrop may retain an `active` class after navigating from
-            // another admin page. It is a full-screen transparent layer and blocks
-            // every button, so always reset it when this page opens.
             const sidebarOverlay = document.getElementById('sidebarOverlay');
             if (sidebarOverlay) {
                 sidebarOverlay.classList.remove('active', 'show');
@@ -565,10 +678,12 @@
             }
 
             checkAuth();
-            await fetchRoles();
-            await fetchPayRights();
-            await fetchStaff();
+            bindStaffEvents();
             renderHeaders();
+
+            fetchRoles();
+            fetchPayRights();
+            await fetchStaff();
         }
 
         async function fetchRoles() {
@@ -578,7 +693,9 @@
                 if (res.ok) {
                     rolesList = result.data || [];
                     const select = document.getElementById('role_id');
-                    select.innerHTML = rolesList.map(r => `<option value="${r.role_id}">${r.role_name}</option>`).join('');
+                    if (select) {
+                        select.innerHTML = rolesList.map(r => `<option value="${r.role_id}">${r.role_name}</option>`).join('');
+                    }
                 }
             } catch (error) { console.error("Error fetching roles", error); }
         }
@@ -588,8 +705,6 @@
                 const res = await fetch('/api/payroll/rights');
                 const json = await res.json();
                 if (res.ok) {
-                    // The API can return either an array or a keyed object. Always
-                    // normalise it because the form relies on Array.prototype.find.
                     payRightsList = Array.isArray(json.data)
                         ? json.data
                         : Object.values(json.data || {});
@@ -601,6 +716,7 @@
         }
 
         async function fetchStaff() {
+            const container = document.getElementById('staffContainer');
             try {
                 const response = await fetch(`/api/staff?keyword=${encodeURIComponent(currentKeyword)}`);
                 const result = await response.json();
@@ -613,10 +729,16 @@
                         window.location.href = 'login.html';
                         return;
                     }
+                    if (container) {
+                        container.innerHTML = `<div style="padding: 50px; text-align: center; color: #dc2626;">${result.message || "เกิดข้อผิดพลาดในการดึงข้อมูล"}</div>`;
+                    }
                     showToast(result.message || "เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
                 }
             } catch (error) {
                 console.error("fetchStaff error:", error);
+                if (container) {
+                    container.innerHTML = `<div style="padding: 50px; text-align: center; color: #dc2626;">เกิดข้อผิดพลาดในการดึงข้อมูลพนักงาน</div>`;
+                }
                 showToast("เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
             }
         }
@@ -698,20 +820,6 @@
             renderPagination(currentStaff.length);
         }
 
-        // The rows are re-rendered after every search, tab change, and pagination.
-        // Delegate their actions once from the stable container so edit always works.
-        document.getElementById('staffContainer').addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action][data-employee-id]');
-            if (!button) return;
-
-            const employeeId = button.dataset.employeeId;
-            if (!employeeId) return;
-
-            if (button.dataset.action === 'edit') editStaff(employeeId);
-            if (button.dataset.action === 'delete') deleteStaff(employeeId);
-            if (button.dataset.action === 'attendance') openAttendanceModal(employeeId);
-        });
-
         function renderPagination(totalItems) {
             const paginationContainer = document.getElementById('paginationContainer');
             if (!paginationContainer) return;
@@ -747,44 +855,6 @@
             renderStaff();
         }
         window.changePage = changePage;
-
-        // Filter tabs logic
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                activeTab = e.target.dataset.tab;
-                renderHeaders();
-            });
-        });
-
-        // Search listener
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            currentKeyword = e.target.value.trim();
-            currentPage = 1;
-            fetchStaff();
-        });
-
-        // Drawer logic
-        document.getElementById('addStaffBtn').addEventListener('click', () => {
-            document.getElementById('staffForm').reset();
-            document.getElementById('employee_id').value = '';
-            document.getElementById('password').setAttribute('required', 'true');
-            document.getElementById('payment_frequency').value = 'Monthly';
-            
-            // Show all sections when adding a new staff
-            const secInfo = document.getElementById('sectionEmployeeInfo');
-            const secSalary = document.getElementById('sectionSalaryPayRights');
-            const secRole = document.getElementById('sectionSystemRole');
-            if (secInfo) secInfo.style.display = 'block';
-            if (secSalary) secSalary.style.display = 'block';
-            if (secRole) secRole.style.display = 'block';
-
-            const attSection = document.getElementById('editModalAttendanceSection');
-            if (attSection) attSection.style.display = 'none';
-            updatePayRateLabel(true);
-            openDrawer("เพิ่มพนักงานใหม่");
-        });
 
         function editStaff(id) {
             const s = currentStaff.find(x => (x.employee_id == id || x.id == id));
@@ -892,50 +962,17 @@
             const rightObj = rights.find(r => r && r.pay_frequency === freq) || {};
             const defaultRateVal = rightObj.default_rate !== undefined ? parseFloat(rightObj.default_rate) : (freq === 'Monthly' ? 15000 : 300);
 
-            document.getElementById('baseSalaryLabel').innerHTML = `${labels[freq] || labels.Monthly} <span style="color:red;">*</span>`;
-            document.getElementById('baseSalaryHint').innerHTML = `<i class="fas fa-lock" style="color: #64748b;"></i> อัตราค่าจ้างถูกกำหนดจากหน้า <a href="admin_pay_settings.html" style="color: #4D7C68; font-weight: 700; text-decoration: underline;">กำหนดอัตราค่าจ้างและเวลาทำงานตามสิทธิ์</a> (ไม่สามารถแก้ไขในหน้านี้ได้)`;
+            const baseSalaryLabel = document.getElementById('baseSalaryLabel');
+            if (baseSalaryLabel) {
+                baseSalaryLabel.innerHTML = `${labels[freq] || labels.Monthly} <span style="color:red;">*</span>`;
+            }
+            const baseSalaryHint = document.getElementById('baseSalaryHint');
+            if (baseSalaryHint) {
+                baseSalaryHint.innerHTML = `<i class="fas fa-lock" style="color: #64748b;"></i> อัตราค่าจ้างถูกกำหนดจากหน้า <a href="admin_pay_settings.html" style="color: #4D7C68; font-weight: 700; text-decoration: underline;">กำหนดอัตราค่าจ้างและเวลาทำงานตามสิทธิ์</a> (ไม่สามารถแก้ไขในหน้านี้ได้)`;
+            }
 
-            salaryInput.value = defaultRateVal;
+            if (salaryInput) salaryInput.value = defaultRateVal;
         }
-
-        document.getElementById('payment_frequency').addEventListener('change', () => {
-            updatePayRateLabel(true);
-        });
-
-        // Form Submit
-        document.getElementById('saveStaffBtn').addEventListener('click', async () => {
-            const form = document.getElementById('staffForm');
-            if(!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
-
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-            
-            const isUpdate = !!data.id;
-            const url = isUpdate ? `/api/staff/update?id=${data.id}` : `/api/staff/create`;
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                if (response.ok) {
-                    showToast(isUpdate ? "อัปเดตข้อมูลพนักงานสำเร็จ" : "เพิ่มพนักงานสำเร็จ", "success");
-                    closeDrawer();
-                    fetchStaff();
-                } else {
-                    const res = await response.json();
-                    showToast(res.message || "เกิดข้อผิดพลาดในการบันทึก", "error");
-                }
-            } catch (error) { 
-                console.error("saveStaffBtn error:", error);
-                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ", "error"); 
-            }
-        });
 
         async function deleteStaff(id) {
             const confirmResult = await Swal.fire({
