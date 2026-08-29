@@ -82,7 +82,7 @@ if (strpos($request_uri, '/api/') !== false) {
         '/pos' => 'pos.html',
 
         // Admin Clean Routes
-        '/admin' => 'admin_dashboard.html',
+        '/admin' => 'admin_orders.html',
         '/admin/dashboard' => 'admin_dashboard.html',
         '/admin/products' => 'admin_product_management.html',
         '/admin/products/edit' => 'admin_product_edit.html',

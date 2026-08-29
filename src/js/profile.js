@@ -2,6 +2,8 @@ import { showToast, getUserProfileData, saveUserProfileData } from './utils.js';
 import { updateNavProfile } from './main.js';
 
 export function initProfilePage() {
+    const cleanPath = (window.location.pathname || '').toLowerCase();
+    if (cleanPath.includes('/staff') || cleanPath.includes('/admin') || cleanPath.includes('staff_') || cleanPath.includes('admin_')) return;
     // Elements
     const displayName = document.getElementById('displayName');
     if (!displayName && !document.getElementById('inputName')) return;

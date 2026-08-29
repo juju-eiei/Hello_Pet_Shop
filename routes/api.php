@@ -128,7 +128,7 @@ if (preg_match('/\/api\/products$/', $path)) {
     } else {
         http_response_code(405);
     }
-} elseif (preg_match('/\/api\/orders$/', $path)) {
+} elseif (preg_match('/\/api\/orders(\/my)?$/', $path)) {
     $controller = new OrderController();
     if ($request_method === 'POST') {
         $controller->createOnlineOrder();
@@ -816,6 +816,30 @@ if (preg_match('/\/api\/products$/', $path)) {
     if ($request_method === 'POST') {
         AuthMiddleware::authenticate();
         $controller->testLineConnection();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/notifications\/line\/test-purchase$/', $path)) {
+    $controller = new NotificationController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::authenticate();
+        $controller->testPurchaseAlert();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/notifications\/line\/test-payment$/', $path)) {
+    $controller = new NotificationController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::authenticate();
+        $controller->testPaymentAlert();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/notifications\/line\/test-cancel$/', $path)) {
+    $controller = new NotificationController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::authenticate();
+        $controller->testCancelAlert();
     } else {
         http_response_code(405);
     }

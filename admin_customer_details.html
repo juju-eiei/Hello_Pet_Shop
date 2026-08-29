@@ -534,7 +534,7 @@
     </div>
 
     <!-- Pet Modal -->
-    <div class="modal" id="petModal">
+    <div class="modal modal-overlay" id="petModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalTitle"><i class="fas fa-paw" style="color: #10b981;"></i> Add Pet</h2>
@@ -613,7 +613,7 @@
     </div>
 
     <!-- Edit Customer Profile Modal -->
-    <div class="modal" id="editCustomerModal">
+    <div class="modal modal-overlay" id="editCustomerModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-user-edit" style="color: #10b981;"></i> แก้ไขข้อมูลลูกค้า</h2>
@@ -989,7 +989,7 @@
             document.getElementById('petModal').classList.remove('active');
         }
 
-        document.getElementById('petForm').addEventListener('submit', async (e) => {
+        document.getElementById('petForm')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const formData = new FormData();
@@ -1053,8 +1053,8 @@
                     cancelBtn.removeEventListener('click', handleCancel);
                 };
 
-                confirmBtn.addEventListener('click', handleConfirm);
-                cancelBtn.addEventListener('click', handleCancel);
+                if (confirmBtn) confirmBtn.addEventListener('click', handleConfirm);
+                if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
             });
         }
 

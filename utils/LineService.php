@@ -112,7 +112,7 @@ class LineService {
     }
 
     /**
-     * Send notification for a new online order
+     * Send notification for a new purchase (Online Order or POS Store Sale)
      */
     public static function sendNewOrderAlert($orderId, $db = null) {
         try {
@@ -122,15 +122,17 @@ class LineService {
             }
 
             // 1. Fetch Order Details
-            $qOrder = "SELECT o.order_id, o.order_date, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, o.free_gift,
+            $qOrder = "SELECT o.order_id, o.order_date, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, o.free_gift, o.order_type, o.cash_received,
                               c.first_name, c.last_name, c.phone,
                               a.address_detail, a.province, a.zip_code, a.recipient_name, a.phone as recipient_phone,
-                              dc.company_name
+                              dc.company_name,
+                              e.first_name as emp_first_name, e.last_name as emp_last_name
                        FROM orders o
-                       JOIN customers c ON o.customer_id = c.customer_id
+                       LEFT JOIN customers c ON o.customer_id = c.customer_id
                        LEFT JOIN addresses a ON o.address_id = a.address_id
                        LEFT JOIN deliveries d ON o.order_id = d.order_id
                        LEFT JOIN delivery_companies dc ON d.company_id = dc.company_id
+                       LEFT JOIN employees e ON o.employee_id = e.employee_id
                        WHERE o.order_id = ?";
             $stmt = $db->prepare($qOrder);
             $stmt->execute([$orderId]);
@@ -147,57 +149,256 @@ class LineService {
             $stmtItems->execute([$orderId]);
             $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
 
-            $orderNumber = "ORD-" . date('Y', strtotime($order['order_date'] ?? 'now')) . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
+            $isPos = (int)($order['order_type'] ?? 1) === 2;
+            $orderPrefix = $isPos ? "ORD-POS-" : "ORD-";
+            $orderNumber = $orderPrefix . date('Y', strtotime($order['order_date'] ?? 'now')) . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
+            
+            $customerName = trim(($order['first_name'] ?? '') . ' ' . ($order['last_name'] ?? ''));
+            if (empty($customerName)) {
+                $customerName = $order['recipient_name'] ?? ($isPos ? 'ลูกค้าทั่วไป (Walk-in)' : 'ลูกค้าทั่วไป');
+            }
+            $customerPhone = !empty($order['phone']) ? $order['phone'] : ($order['recipient_phone'] ?? '-');
+
+            $formattedTime = date('d/m/Y H:i', strtotime($order['order_date'] ?? 'now')) . " น.";
+
+            // 3. Build message
+            if ($isPos) {
+                $cashierName = trim(($order['emp_first_name'] ?? '') . ' ' . ($order['emp_last_name'] ?? ''));
+                if (empty($cashierName)) $cashierName = 'พนักงานประจำสาขา';
+
+                $msg = "🛒 มีรายการซื้อสินค้าหน้าร้าน (POS)!\n";
+                $msg .= "━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "📋 รหัสการขาย: #{$orderNumber}\n";
+                $msg .= "👤 ลูกค้า: คุณ {$customerName}\n";
+                $msg .= "💼 แคชเชียร์: {$cashierName}\n";
+                $msg .= "📦 รายการสินค้าที่ซื้อ:\n";
+
+                foreach ($items as $item) {
+                    $itemTotal = number_format($item['unit_price'] * $item['quantity'], 2);
+                    $msg .= "   • {$item['product_name']} x {$item['quantity']} (฿{$itemTotal})\n";
+                }
+
+                if (!empty($order['free_gift'])) {
+                    $msg .= "🎁 ของแถมพิเศษ: {$order['free_gift']}\n";
+                }
+
+                if ((float)$order['discount_amount'] > 0) {
+                    $msg .= "🏷️ ส่วนลด: -฿" . number_format((float)$order['discount_amount'], 2) . "\n";
+                }
+
+                $msg .= "💰 ยอดรวมทั้งสิ้น: ฿" . number_format((float)$order['net_total'], 2) . "\n";
+                
+                $cashReceived = (float)($order['cash_received'] ?? 0);
+                if ($cashReceived > 0) {
+                    $change = max(0, $cashReceived - (float)$order['net_total']);
+                    $msg .= "💵 ชำระเงินสด: รับเงิน ฿" . number_format($cashReceived, 2) . " (เงินทอน ฿" . number_format($change, 2) . ")\n";
+                } else {
+                    $msg .= "💳 ชำระเงิน: ชำระเงินเรียบร้อยแล้ว\n";
+                }
+
+                $msg .= "━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "🕒 เวลา: {$formattedTime}\n";
+                $msg .= "👉 ตรวจสอบบิลขายได้ที่ระบบ Hello Pet Shop POS";
+            } else {
+                // Online Order
+                $addressParts = array_filter([$order['address_detail'] ?? '', $order['province'] ?? '', $order['zip_code'] ?? '']);
+                $fullAddress = count($addressParts) > 0 ? implode(' ', $addressParts) : 'จัดส่งตามที่อยู่ลูกค้า';
+                $carrier = !empty($order['company_name']) ? $order['company_name'] : 'ขนส่งพาร์ทเนอร์';
+
+                $msg = "🛍️ มีคำสั่งซื้อออนไลน์ใหม่เข้ามา!\n";
+                $msg .= "━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "📋 รหัสสั่งซื้อ: #{$orderNumber}\n";
+                $msg .= "👤 ลูกค้า: คุณ {$customerName}\n";
+                $msg .= "📞 เบอร์ติดต่อ: {$customerPhone}\n";
+                $msg .= "📦 รายการสินค้า:\n";
+
+                foreach ($items as $item) {
+                    $itemTotal = number_format($item['unit_price'] * $item['quantity'], 2);
+                    $msg .= "   • {$item['product_name']} x {$item['quantity']} (฿{$itemTotal})\n";
+                }
+
+                if (!empty($order['free_gift'])) {
+                    $msg .= "🎁 ของแถมพิเศษ: {$order['free_gift']}\n";
+                }
+
+                if ((float)$order['discount_amount'] > 0) {
+                    $msg .= "🏷️ ส่วนลด: -฿" . number_format((float)$order['discount_amount'], 2) . "\n";
+                }
+
+                $shippingFee = (float)($order['shipping_fee'] ?? 0);
+                if ($shippingFee > 0) {
+                    $msg .= "🚚 ขนส่ง: {$carrier} (฿" . number_format($shippingFee, 2) . ")\n";
+                } else {
+                    $msg .= "🚚 ขนส่ง: {$carrier} (ส่งฟรี)\n";
+                }
+
+                $msg .= "📍 ที่อยู่จัดส่ง: {$fullAddress}\n";
+                $msg .= "💰 ยอดชำระสุทธิ: ฿" . number_format((float)$order['net_total'], 2) . "\n";
+                $msg .= "━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "🕒 เวลา: {$formattedTime}\n";
+                $msg .= "👉 ตรวจสอบและจัดส่งได้ที่ระบบ Hello Pet Shop";
+            }
+
+            return self::sendPushMessage($msg);
+        } catch (Exception $e) {
+            error_log("LineService sendNewOrderAlert error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Send notification for payment events (Slip Submitted / Payment Verified)
+     * $action: 'submitted' (customer uploaded slip) or 'verified' (staff approved slip / paid)
+     */
+    public static function sendPaymentAlert($orderId, $action = 'submitted', $db = null, $extra = []) {
+        try {
+            if (!$db) {
+                $database = new Database();
+                $db = $database->getConnection();
+            }
+
+            $qOrder = "SELECT o.order_id, o.order_date, o.net_total, o.order_type,
+                              c.first_name, c.last_name, c.phone,
+                              a.recipient_name, a.phone as recipient_phone,
+                              p.payment_method, p.amount as pay_amount, p.slip_image, p.payment_date
+                       FROM orders o
+                       LEFT JOIN customers c ON o.customer_id = c.customer_id
+                       LEFT JOIN addresses a ON o.address_id = a.address_id
+                       LEFT JOIN (
+                           SELECT p1.order_id, p1.payment_method, p1.amount, p1.slip_image, p1.payment_date
+                           FROM payments p1
+                           INNER JOIN (
+                               SELECT order_id, MAX(payment_id) as max_pid
+                               FROM payments
+                               GROUP BY order_id
+                           ) p2 ON p1.order_id = p2.order_id AND p1.payment_id = p2.max_pid
+                       ) p ON o.order_id = p.order_id
+                       WHERE o.order_id = ?";
+            $stmt = $db->prepare($qOrder);
+            $stmt->execute([$orderId]);
+            $order = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$order) return false;
+
+            $isPos = (int)($order['order_type'] ?? 1) === 2;
+            $orderPrefix = $isPos ? "ORD-POS-" : "ORD-";
+            $orderNumber = $orderPrefix . date('Y', strtotime($order['order_date'] ?? 'now')) . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
+
+            $customerName = trim(($order['first_name'] ?? '') . ' ' . ($order['last_name'] ?? ''));
+            if (empty($customerName)) {
+                $customerName = $order['recipient_name'] ?? ($isPos ? 'ลูกค้าทั่วไป (Walk-in)' : 'ลูกค้าทั่วไป');
+            }
+            $customerPhone = !empty($order['phone']) ? $order['phone'] : ($order['recipient_phone'] ?? '-');
+
+            $amount = (float)($order['pay_amount'] ?: $order['net_total']);
+            $formattedAmount = "฿" . number_format($amount, 2);
+            $formattedTime = date('d/m/Y H:i') . " น.";
+
+            if ($action === 'submitted') {
+                $msg = "💵 ได้รับแจ้งชำระเงินใหม่! (แนบสลิปแล้ว)\n";
+                $msg .= "━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "📋 รหัสสั่งซื้อ: #{$orderNumber}\n";
+                $msg .= "👤 ลูกค้า: คุณ {$customerName}\n";
+                $msg .= "📞 เบอร์ติดต่อ: {$customerPhone}\n";
+                $msg .= "💰 ยอดเงินที่แจ้งชำระ: {$formattedAmount}\n";
+                $msg .= "💳 วิธีการชำระเงิน: โอนผ่านธนาคาร / พร้อมเพย์\n";
+                $msg .= "📎 หลักฐาน: แนบสลิปเรียบร้อยแล้ว (รอตรวจสอบ)\n";
+                $msg .= "━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "🕒 เวลาแจ้ง: {$formattedTime}\n";
+                $msg .= "👉 กรุณาตรวจสอบสลิปและกดยืนยันในระบบหลังร้าน Hello Pet Shop";
+            } else {
+                // Verified / Approved
+                $approver = $extra['approver'] ?? 'เจ้าหน้าที่ร้าน Hello Pet Shop';
+
+                $msg = "✅ ยืนยันการชำระเงินเรียบร้อยแล้ว!\n";
+                $msg .= "━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "📋 รหัสสั่งซื้อ: #{$orderNumber}\n";
+                $msg .= "👤 ลูกค้า: คุณ {$customerName}\n";
+                $msg .= "💰 ยอดชำระสุทธิ: {$formattedAmount}\n";
+                $msg .= "📦 สถานะ: ตรวจสอบการชำระเงินผ่านแล้ว\n";
+                $msg .= "👨‍💼 ผู้ตรวจสอบ: {$approver}\n";
+                $msg .= "━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "🕒 เวลาตรวจสอบ: {$formattedTime}\n";
+                $msg .= "👉 กำลังดำเนินการแพ็คสินค้าและเตรียมส่งมอบให้ขนส่ง";
+            }
+
+            return self::sendPushMessage($msg);
+        } catch (Exception $e) {
+            error_log("LineService sendPaymentAlert error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Send notification for order / item cancellation
+     */
+    public static function sendOrderCancelledAlert($orderId, $reason = '', $cancelledBy = '', $db = null) {
+        try {
+            if (!$db) {
+                $database = new Database();
+                $db = $database->getConnection();
+            }
+
+            // 1. Fetch Order Details
+            $qOrder = "SELECT o.order_id, o.order_date, o.net_total, o.order_type,
+                              c.first_name, c.last_name, c.phone,
+                              a.recipient_name, a.phone as recipient_phone
+                       FROM orders o
+                       LEFT JOIN customers c ON o.customer_id = c.customer_id
+                       LEFT JOIN addresses a ON o.address_id = a.address_id
+                       WHERE o.order_id = ?";
+            $stmt = $db->prepare($qOrder);
+            $stmt->execute([$orderId]);
+            $order = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$order) return false;
+
+            // 2. Fetch Order Items
+            $qItems = "SELECT od.quantity, od.unit_price, p.product_name 
+                       FROM order_details od
+                       JOIN products p ON od.product_id = p.product_id
+                       WHERE od.order_id = ?";
+            $stmtItems = $db->prepare($qItems);
+            $stmtItems->execute([$orderId]);
+            $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+
+            $isPos = (int)($order['order_type'] ?? 1) === 2;
+            $orderPrefix = $isPos ? "ORD-POS-" : "ORD-";
+            $orderNumber = $orderPrefix . date('Y', strtotime($order['order_date'] ?? 'now')) . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
+
             $customerName = trim(($order['first_name'] ?? '') . ' ' . ($order['last_name'] ?? ''));
             if (empty($customerName)) {
                 $customerName = $order['recipient_name'] ?? 'ลูกค้าทั่วไป';
             }
             $customerPhone = !empty($order['phone']) ? $order['phone'] : ($order['recipient_phone'] ?? '-');
 
-            // Format address
-            $addressParts = array_filter([$order['address_detail'] ?? '', $order['province'] ?? '', $order['zip_code'] ?? '']);
-            $fullAddress = count($addressParts) > 0 ? implode(' ', $addressParts) : 'จัดส่งตามที่อยู่ลูกค้า';
-            $carrier = !empty($order['company_name']) ? $order['company_name'] : 'ขนส่งพาร์ทเนอร์';
+            $reasonText = !empty($reason) ? trim($reason) : 'ลูกค้ายกเลิกคำสั่งซื้อ / ยกเลิกเนื่องจากสลิปไม่ถูกต้อง';
+            $operator = !empty($cancelledBy) ? trim($cancelledBy) : 'เจ้าหน้าที่ / ลูกค้า';
+            $formattedTime = date('d/m/Y H:i') . " น.";
 
-            $formattedTime = date('d/m/Y H:i', strtotime($order['order_date'] ?? 'now')) . " น.";
-
-            // 3. Build message
-            $msg = "🛍️ มีคำสั่งซื้อออนไลน์ใหม่เข้ามา!\n";
+            $msg = "❌ แจ้งเตือนการยกเลิกคำสั่งซื้อ!\n";
             $msg .= "━━━━━━━━━━━━━━━━━━\n";
-            $msg .= "📋 รหัสสั่งซื้อ: #{$orderNumber}\n";
+            $msg .= "📋 รหัสคำสั่งซื้อ: #{$orderNumber}\n";
             $msg .= "👤 ลูกค้า: คุณ {$customerName}\n";
             $msg .= "📞 เบอร์ติดต่อ: {$customerPhone}\n";
-            $msg .= "📦 รายการสินค้า:\n";
+            $msg .= "📦 รายการสินค้าที่ถูกยกเลิก:\n";
 
             foreach ($items as $item) {
                 $itemTotal = number_format($item['unit_price'] * $item['quantity'], 2);
                 $msg .= "   • {$item['product_name']} x {$item['quantity']} (฿{$itemTotal})\n";
             }
 
-            if (!empty($order['free_gift'])) {
-                $msg .= "🎁 ของแถมพิเศษ: {$order['free_gift']}\n";
-            }
-
-            if ((float)$order['discount_amount'] > 0) {
-                $msg .= "🏷️ ส่วนลด: -฿" . number_format((float)$order['discount_amount'], 2) . "\n";
-            }
-
-            $shippingFee = (float)($order['shipping_fee'] ?? 0);
-            if ($shippingFee > 0) {
-                $msg .= "🚚 ขนส่ง: {$carrier} (฿" . number_format($shippingFee, 2) . ")\n";
-            } else {
-                $msg .= "🚚 ขนส่ง: {$carrier} (ส่งฟรี)\n";
-            }
-
-            $msg .= "📍 ที่อยู่จัดส่ง: {$fullAddress}\n";
-            $msg .= "💰 ยอดชำระสุทธิ: ฿" . number_format((float)$order['net_total'], 2) . "\n";
+            $msg .= "💰 มูลค่าที่ยกเลิก: ฿" . number_format((float)$order['net_total'], 2) . "\n";
+            $msg .= "⚠️ สาเหตุ: {$reasonText}\n";
+            $msg .= "👤 ดำเนินการโดย: {$operator}\n";
+            $msg .= "🔄 สต็อกสินค้า: คืนจำนวนเข้าคลังเรียบร้อยแล้ว\n";
             $msg .= "━━━━━━━━━━━━━━━━━━\n";
             $msg .= "🕒 เวลา: {$formattedTime}\n";
-            $msg .= "👉 ตรวจสอบและจัดส่งได้ที่ระบบ Hello Pet Shop";
+            $msg .= "👉 ตรวจสอบสถานะได้ที่ระบบหลังร้าน Hello Pet Shop";
 
             return self::sendPushMessage($msg);
         } catch (Exception $e) {
-            error_log("LineService sendNewOrderAlert error: " . $e->getMessage());
+            error_log("LineService sendOrderCancelledAlert error: " . $e->getMessage());
             return false;
         }
     }

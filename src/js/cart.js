@@ -1,7 +1,9 @@
 import { updateGlobalCartCount } from './main.js';
-import { getCartData, saveCartData } from './utils.js';
+import { getCartData, saveCartData, showRegisterPrompt } from './utils.js';
 
 export function initCartPage() {
+    const cleanPath = (window.location.pathname || '').toLowerCase();
+    if (cleanPath.includes('/staff') || cleanPath.includes('/admin') || cleanPath.includes('staff_') || cleanPath.includes('admin_')) return;
     const cartItemsContainer = document.getElementById('cartItemsContainer');
     if (!cartItemsContainer) return;
 
@@ -147,6 +149,12 @@ export function initCartPage() {
     const checkoutBtn = document.getElementById('checkoutBtn');
     if (checkoutBtn) {
         checkoutBtn.onclick = () => {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                showRegisterPrompt('กรุณาสมัครสมาชิกเพื่อสั่งซื้อสินค้า');
+                return;
+            }
+
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             const hasSelected = cart.some(item => item.selected !== false);
             if (!hasSelected || cart.length === 0) {

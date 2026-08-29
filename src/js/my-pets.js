@@ -1,6 +1,8 @@
 import { showToast, escapeHTML } from './utils.js';
 
 export function initMyPetsPage() {
+    const cleanPath = (window.location.pathname || '').toLowerCase();
+    if (cleanPath.includes('/staff') || cleanPath.includes('/admin') || cleanPath.includes('staff_') || cleanPath.includes('admin_')) return;
     // DOM Elements
     const petsGrid = document.getElementById('petsGrid');
     if (!petsGrid) return;

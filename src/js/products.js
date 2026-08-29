@@ -1,8 +1,10 @@
-import { showToast, escapeHTML, getCartData, saveCartData } from './utils.js';
+import { showToast, escapeHTML, getCartData, saveCartData, showRegisterPrompt } from './utils.js';
 import { updateGlobalCartCount } from './main.js';
 import { getPersonalizedProducts, trackSearchQuery, trackAddToCart } from './recommendationEngine.js';
 
 export function initProductsPage() {
+    const cleanPath = (window.location.pathname || '').toLowerCase();
+    if (cleanPath.includes('/staff') || cleanPath.includes('/admin') || cleanPath.includes('staff_') || cleanPath.includes('admin_')) return;
     const productGrid = document.getElementById('productGrid');
     if (!productGrid) return;
 
@@ -101,6 +103,14 @@ export function initProductsPage() {
         document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
+
+                // Check if user is logged in
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user) {
+                    showRegisterPrompt('กรุณาสมัครสมาชิกเพื่อสั่งซื้อสินค้า');
+                    return;
+                }
+
                 const { id, name, price, image, category, weight, weightUnit } = e.currentTarget.dataset;
                 let parsedWeight = parseFloat(weight) || 0;
                 const u = (weightUnit || 'kg').toLowerCase().trim();
@@ -301,6 +311,53 @@ export function initProductsPage() {
         });
     });
 
+    function setupNavbarForGuestOrUser() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const userNavActions = document.getElementById('userNavActions');
+        const guestNavActions = document.getElementById('guestNavActions');
+        const guestCartBtn = document.getElementById('guestCartBtn');
+
+        if (user) {
+            if (userNavActions) userNavActions.classList.remove('hidden');
+            if (guestNavActions) {
+                guestNavActions.classList.add('hidden');
+                guestNavActions.classList.remove('flex');
+            }
+        } else {
+            if (userNavActions) userNavActions.classList.add('hidden');
+            if (guestNavActions) {
+                guestNavActions.classList.remove('hidden');
+                guestNavActions.classList.add('flex');
+            }
+
+            if (guestCartBtn) {
+                guestCartBtn.onclick = (e) => {
+                    e.preventDefault();
+                    showRegisterPrompt('กรุณาสมัครสมาชิกเพื่อสั่งซื้อสินค้า');
+                };
+            }
+
+            // Customer restricted links in header
+            document.querySelectorAll('.customer-restricted-link').forEach(link => {
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    showRegisterPrompt('กรุณาสมัครสมาชิกเพื่อเข้าใช้งานส่วนนี้');
+                };
+            });
+
+            // Customer bottom nav in mobile
+            document.querySelectorAll('.customer-bottom-nav a').forEach(link => {
+                const href = link.getAttribute('href') || '';
+                if (!href.includes('products.html')) {
+                    link.onclick = (e) => {
+                        e.preventDefault();
+                        showRegisterPrompt('กรุณาสมัครสมาชิกเพื่อเข้าใช้งานส่วนนี้');
+                    };
+                }
+            });
+        }
+    }
+
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('user');
@@ -309,6 +366,7 @@ export function initProductsPage() {
     }
 
     // Initialize
+    setupNavbarForGuestOrUser();
     fetchProducts();
     initPromoCarousel();
 }

@@ -180,11 +180,27 @@ class ProductController {
     }
 
     public function top() {
+        $period = $_GET['period'] ?? null;
+        $date = $_GET['date'] ?? null;
+        $startDate = $_GET['start_date'] ?? null;
+        $endDate = $_GET['end_date'] ?? null;
         $month = $_GET['month'] ?? null;
+        $year = $_GET['year'] ?? null;
+
         $params = [];
         $where = "o.status != 5";
         
-        if ($month) {
+        if ($period === 'daily' && $date) {
+            $where .= " AND DATE(o.order_date) = :filter_date";
+            $params[':filter_date'] = $date;
+        } elseif ($period === 'weekly' && $startDate && $endDate) {
+            $where .= " AND DATE(o.order_date) BETWEEN :start_date AND :end_date";
+            $params[':start_date'] = $startDate;
+            $params[':end_date'] = $endDate;
+        } elseif ($period === 'yearly' && $year) {
+            $where .= " AND YEAR(o.order_date) = :filter_year";
+            $params[':filter_year'] = (int)$year;
+        } elseif ($month) {
             $where .= " AND o.order_date LIKE :month";
             $params[':month'] = $month . '%';
         }

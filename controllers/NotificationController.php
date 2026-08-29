@@ -103,5 +103,122 @@ class NotificationController {
             Response::json(500, "Error testing LINE connection: " . $e->getMessage());
         }
     }
+
+    /**
+     * Test LINE Purchase Notification
+     */
+    public function testPurchaseAlert() {
+        try {
+            // Find latest order or fallback to demo
+            $stmt = $this->db->query("SELECT order_id FROM orders ORDER BY order_id DESC LIMIT 1");
+            $lastOrder = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($lastOrder && !empty($lastOrder['order_id'])) {
+                $result = LineService::sendNewOrderAlert($lastOrder['order_id'], $this->db);
+            } else {
+                $sampleMsg = "🛍️ [ทดสอบระบบ] มีคำสั่งซื้อใหม่เข้ามา!\n";
+                $sampleMsg .= "━━━━━━━━━━━━━━━━━━\n";
+                $sampleMsg .= "📋 รหัสสั่งซื้อ: #ORD-TEST-999\n";
+                $sampleMsg .= "👤 ลูกค้า: คุณ ลูกค้าทดสอบระบบ\n";
+                $sampleMsg .= "📞 เบอร์ติดต่อ: 081-234-5678\n";
+                $sampleMsg .= "📦 รายการสินค้า:\n";
+                $sampleMsg .= "   • อาหารสุนัขพรีเมียม 1.5kg x 2 (฿700.00)\n";
+                $sampleMsg .= "   • ของเล่นเชือกกัด x 1 (฿120.00)\n";
+                $sampleMsg .= "🎁 ของแถมพิเศษ: ขนมขบเคี้ยวสัตว์เลี้ยง\n";
+                $sampleMsg .= "🚚 ขนส่ง: Kerry Express (ส่งฟรี)\n";
+                $sampleMsg .= "📍 ที่อยู่จัดส่ง: กรุงเทพมหานคร 10400\n";
+                $sampleMsg .= "💰 ยอดชำระสุทธิ: ฿820.00\n";
+                $sampleMsg .= "━━━━━━━━━━━━━━━━━━\n";
+                $sampleMsg .= "🕒 เวลา: " . date('d/m/Y H:i') . " น.\n";
+                $sampleMsg .= "👉 นี่คือข้อความทดสอบการแจ้งเตือนการซื้อสินค้า";
+                $result = LineService::sendPushMessage($sampleMsg);
+            }
+
+            if ($result && (is_array($result) ? $result['success'] : true)) {
+                Response::json(200, "ส่งข้อความทดสอบแจ้งเตือนการซื้อสินค้าเข้า LINE เรียบร้อยแล้ว");
+            } else {
+                $err = is_array($result) ? ($result['message'] ?? 'เกิดข้อผิดพลาด') : 'ไม่สามารถส่งข้อความได้';
+                Response::json(400, "ส่งทดสอบไม่สำเร็จ: " . $err);
+            }
+        } catch (Exception $e) {
+            Response::json(500, "Error testing purchase alert: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Test LINE Payment Notification
+     */
+    public function testPaymentAlert() {
+        try {
+            $stmt = $this->db->query("SELECT order_id FROM payments WHERE slip_image IS NOT NULL ORDER BY payment_id DESC LIMIT 1");
+            $lastPay = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($lastPay && !empty($lastPay['order_id'])) {
+                $result = LineService::sendPaymentAlert($lastPay['order_id'], 'submitted', $this->db);
+            } else {
+                $sampleMsg = "💵 [ทดสอบระบบ] ได้รับแจ้งชำระเงินใหม่! (แนบสลิปแล้ว)\n";
+                $sampleMsg .= "━━━━━━━━━━━━━━━━━━\n";
+                $sampleMsg .= "📋 รหัสสั่งซื้อ: #ORD-TEST-999\n";
+                $sampleMsg .= "👤 ลูกค้า: คุณ ลูกค้าทดสอบระบบ\n";
+                $sampleMsg .= "📞 เบอร์ติดต่อ: 081-234-5678\n";
+                $sampleMsg .= "💰 ยอดเงินที่แจ้งชำระ: ฿820.00\n";
+                $sampleMsg .= "💳 วิธีการชำระเงิน: โอนผ่านธนาคาร / พร้อมเพย์\n";
+                $sampleMsg .= "📎 หลักฐาน: แนบสลิปเรียบร้อยแล้ว (รอตรวจสอบ)\n";
+                $sampleMsg .= "━━━━━━━━━━━━━━━━━━\n";
+                $sampleMsg .= "🕒 เวลาแจ้ง: " . date('d/m/Y H:i') . " น.\n";
+                $sampleMsg .= "👉 นี่คือข้อความทดสอบการแจ้งเตือนการชำระเงิน";
+                $result = LineService::sendPushMessage($sampleMsg);
+            }
+
+            if ($result && (is_array($result) ? $result['success'] : true)) {
+                Response::json(200, "ส่งข้อความทดสอบแจ้งเตือนการชำระเงินเข้า LINE เรียบร้อยแล้ว");
+            } else {
+                $err = is_array($result) ? ($result['message'] ?? 'เกิดข้อผิดพลาด') : 'ไม่สามารถส่งข้อความได้';
+                Response::json(400, "ส่งทดสอบไม่สำเร็จ: " . $err);
+            }
+        } catch (Exception $e) {
+            Response::json(500, "Error testing payment alert: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Test LINE Cancellation Notification
+     */
+    public function testCancelAlert() {
+        try {
+            $stmt = $this->db->query("SELECT order_id FROM orders WHERE status = 5 ORDER BY order_id DESC LIMIT 1");
+            $lastCancel = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($lastCancel && !empty($lastCancel['order_id'])) {
+                $result = LineService::sendOrderCancelledAlert($lastCancel['order_id'], 'ทดสอบระบบการยกเลิกคำสั่งซื้อ', 'เจ้าหน้าที่ทดสอบระบบ', $this->db);
+            } else {
+                $sampleMsg = "❌ [ทดสอบระบบ] แจ้งเตือนการยกเลิกคำสั่งซื้อ!\n";
+                $sampleMsg .= "━━━━━━━━━━━━━━━━━━\n";
+                $sampleMsg .= "📋 รหัสคำสั่งซื้อ: #ORD-TEST-999\n";
+                $sampleMsg .= "👤 ลูกค้า: คุณ ลูกค้าทดสอบระบบ\n";
+                $sampleMsg .= "📞 เบอร์ติดต่อ: 081-234-5678\n";
+                $sampleMsg .= "📦 รายการสินค้าที่ถูกยกเลิก:\n";
+                $sampleMsg .= "   • อาหารสุนัขพรีเมียม 1.5kg x 2 (฿700.00)\n";
+                $sampleMsg .= "   • ของเล่นเชือกกัด x 1 (฿120.00)\n";
+                $sampleMsg .= "💰 มูลค่าที่ยกเลิก: ฿820.00\n";
+                $sampleMsg .= "⚠️ สาเหตุ: ทดสอบระบบแจ้งเตือนการยกเลิกสินค้า\n";
+                $sampleMsg .= "👤 ดำเนินการโดย: ผู้ดูแลระบบ\n";
+                $sampleMsg .= "🔄 สต็อกสินค้า: คืนจำนวนเข้าคลังเรียบร้อยแล้ว\n";
+                $sampleMsg .= "━━━━━━━━━━━━━━━━━━\n";
+                $sampleMsg .= "🕒 เวลา: " . date('d/m/Y H:i') . " น.\n";
+                $sampleMsg .= "👉 นี่คือข้อความทดสอบการแจ้งเตือนการยกเลิกคำสั่งซื้อ";
+                $result = LineService::sendPushMessage($sampleMsg);
+            }
+
+            if ($result && (is_array($result) ? $result['success'] : true)) {
+                Response::json(200, "ส่งข้อความทดสอบแจ้งเตือนการยกเลิกสินค้าเข้า LINE เรียบร้อยแล้ว");
+            } else {
+                $err = is_array($result) ? ($result['message'] ?? 'เกิดข้อผิดพลาด') : 'ไม่สามารถส่งข้อความได้';
+                Response::json(400, "ส่งทดสอบไม่สำเร็จ: " . $err);
+            }
+        } catch (Exception $e) {
+            Response::json(500, "Error testing cancel alert: " . $e->getMessage());
+        }
+    }
 }
 ?>

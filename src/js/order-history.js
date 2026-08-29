@@ -1,10 +1,14 @@
 import { showToast, escapeHTML, getUserOrdersData, saveUserOrdersData } from './utils.js';
 
 export function initOrderHistoryPage() {
-    const ordersContainer = document.getElementById('ordersContainer');
-    if (!ordersContainer) return;
-
+    const cleanPath = (window.location.pathname || '').toLowerCase();
+    const isStaffOrAdmin = cleanPath.includes('/staff') || cleanPath.includes('/admin') || cleanPath.includes('staff_') || cleanPath.includes('admin_');
+    const isCustomerOrders = cleanPath.includes('/orders') || cleanPath.includes('/order-history') || cleanPath.includes('order-history.html');
     const emptyOrders = document.getElementById('emptyOrders');
+    const ordersContainer = document.getElementById('ordersContainer');
+
+    // Strict guard: Never run on staff or admin pages, and only run on customer order history
+    if (isStaffOrAdmin || !isCustomerOrders || !emptyOrders || !ordersContainer) return;
     const orderDetailModal = document.getElementById('orderDetailModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const pendingBadge = document.getElementById('pendingBadge');
@@ -68,7 +72,7 @@ export function initOrderHistoryPage() {
         let localOrders = getUserOrdersData();
         
         try {
-            const res = await fetch('/api/orders/my');
+            const res = await fetch('/api/orders');
             if (res.ok) {
                 const apiRes = await res.json();
                 if (apiRes.data && Array.isArray(apiRes.data)) {
@@ -244,9 +248,9 @@ export function initOrderHistoryPage() {
                     </button>
                     ${order.status === 'Pending Payment' ? (
                         !order.slipImage ? `
-                            <button class="cancel-order-btn px-4 py-2 rounded-xl text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-all border border-red-100 flex items-center space-x-1" data-id="${order.id}">
-                                <i class="fas fa-times text-[10px]"></i>
-                                <span>ยกเลิกออเดอร์</span>
+                            <button class="cancel-order-btn px-4 py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 flex items-center space-x-1" data-id="${order.id}">
+                                <i class="fas fa-times-circle text-[11px]"></i>
+                                <span>ยกเลิกคำสั่งซื้อ</span>
                             </button>
                             <button class="pay-now-btn px-4 py-2 rounded-xl text-xs font-bold bg-[#4D7C68] hover:bg-[#3D6353] text-white shadow-sm transition-all flex items-center space-x-1.5" data-id="${order.id}">
                                 <i class="fas fa-qrcode"></i>
@@ -281,54 +285,71 @@ export function initOrderHistoryPage() {
         document.querySelectorAll('.cancel-order-btn').forEach(btn => {
             btn.onclick = async (e) => {
                 const id = e.currentTarget.dataset.id;
-                const targetOrder = orders.find(o => o.id == id);
-                if (!targetOrder) return;
-
-                if (targetOrder.slipImage || targetOrder.status !== 'Pending Payment') {
-                    showToast("คำสั่งซื้อนี้มีการแจ้งชำระเงินแล้ว ไม่สามารถยกเลิกได้", "error");
-                    return;
-                }
-
-                let isConfirmed = false;
-                if (typeof Swal !== 'undefined') {
-                    const result = await Swal.fire({
-                        title: 'ยืนยันการยกเลิกคำสั่งซื้อ?',
-                        text: `คุณต้องการยกเลิกคำสั่งซื้อ #${id} ใช่หรือไม่?`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#ef4444',
-                        cancelButtonColor: '#64748b',
-                        confirmButtonText: 'ใช่, ยกเลิกออเดอร์',
-                        cancelButtonText: 'ย้อนกลับ'
-                    });
-                    isConfirmed = result.isConfirmed;
-                } else {
-                    isConfirmed = confirm(`คุณต้องการยกเลิกคำสั่งซื้อ #${id} ใช่หรือไม่?`);
-                }
-
-                if (isConfirmed) {
-                    try {
-                        await fetch('/api/orders/update-status', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                order_id: id,
-                                status: 5
-                            })
-                        });
-                    } catch (err) {
-                        console.warn("Backend status sync note:", err);
-                    }
-
-                    targetOrder.status = 'Cancelled';
-                    saveUserOrdersData(orders);
-
-                    showToast(`ยกเลิกคำสั่งซื้อ #${id} เรียบร้อยแล้ว`, "success");
-                    updatePendingBadge();
-                    renderOrders();
-                }
+                await cancelOrderAction(id);
             };
         });
+    }
+
+    async function cancelOrderAction(orderId) {
+        const targetOrder = orders.find(o => o.id == orderId);
+        if (!targetOrder) return;
+
+        if (targetOrder.slipImage || targetOrder.status !== 'Pending Payment') {
+            showToast("คำสั่งซื้อนี้มีการแจ้งชำระเงินแล้ว ไม่สามารถยกเลิกได้", "error");
+            return;
+        }
+
+        let confirmed = false;
+        if (typeof Swal !== 'undefined') {
+            const res = await Swal.fire({
+                title: 'ยืนยันการยกเลิกคำสั่งซื้อ?',
+                text: `คุณต้องการยกเลิกคำสั่งซื้อ #${orderId} หรือไม่? รายการสินค้าจะถูกยกเลิกและคืนเข้าสต็อกร้านค้า`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'ยืนยันการยกเลิก',
+                cancelButtonText: 'ย้อนกลับ'
+            });
+            confirmed = res.isConfirmed;
+        } else {
+            confirmed = confirm(`คุณต้องการยกเลิกคำสั่งซื้อ #${orderId} หรือไม่?`);
+        }
+
+        if (!confirmed) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/orders/update-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    status: 'Cancelled',
+                    cancel_reason: 'ลูกค้ายกเลิกคำสั่งซื้อผ่านหน้าประวัติคำสั่งซื้อ'
+                })
+            });
+
+            const resData = await res.json();
+            if (res.ok) {
+                targetOrder.status = 'Cancelled';
+                if (typeof saveUserOrdersData === 'function') {
+                    saveUserOrdersData(orders);
+                }
+                localStorage.setItem('myOrders', JSON.stringify(orders));
+                updatePendingBadge();
+                renderOrders();
+                showToast(`ยกเลิกคำสั่งซื้อ #${orderId} เรียบร้อยแล้ว`, "success");
+            } else {
+                showToast(resData.message || 'เกิดข้อผิดพลาดในการยกเลิกคำสั่งซื้อ', "error");
+            }
+        } catch (err) {
+            console.error("Cancel order error:", err);
+            showToast('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', "error");
+        }
     }
 
     function getStatusBadge(status) {

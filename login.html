@@ -146,11 +146,11 @@
                     setTimeout(() => {
                         const role = (loggedInUser && loggedInUser.role_name) ? String(loggedInUser.role_name).toLowerCase() : 'customer';
                         if (role === 'admin') {
-                            window.location.href = '/admin/dashboard';
+                            window.location.href = '/admin/orders';
                         } else if (role === 'customer') {
                             window.location.href = '/products';
                         } else {
-                            window.location.href = '/staff/profile';
+                            window.location.href = '/staff/orders';
                         }
                     }, 1000);
                 } else {

@@ -212,12 +212,14 @@
                 display: contents !important;
             }
             .stock-table .product-row .product-details {
-                flex: 2 !important;
+                flex: 2.5 !important;
                 order: 1 !important;
                 display: flex !important;
                 align-items: center !important;
-                margin-right: 15px !important;
+                margin-right: 0 !important;
+                padding-right: 15px !important;
                 min-width: 0 !important;
+                box-sizing: border-box !important;
             }
             .stock-table .product-row .product-name {
                 font-weight: 600 !important;
@@ -225,36 +227,47 @@
                 font-size: 15px !important;
             }
             .stock-table .product-row .card-bottom-actions {
-                order: 1 !important;
-                margin-left: 8px !important;
-                display: inline-flex !important;
+                flex: 1 !important;
+                order: 2 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin-left: 0 !important;
             }
             .stock-table .product-row .show-lots-btn {
                 cursor: pointer !important;
-                font-size: 11px !important;
+                font-size: 12px !important;
                 color: #10b981 !important;
                 display: inline-flex !important;
                 align-items: center !important;
-                gap: 4px !important;
+                gap: 5px !important;
                 border: 1px solid #d1fae5 !important;
-                padding: 2px 6px !important;
-                border-radius: 4px !important;
+                padding: 4px 10px !important;
+                border-radius: 6px !important;
                 background-color: #f0fdf4 !important;
                 white-space: nowrap !important;
                 outline: none !important;
+                transition: all 0.2s ease !important;
+            }
+            .stock-table .product-row .show-lots-btn:hover {
+                background-color: #dcfce7 !important;
+                border-color: #86efac !important;
             }
             .stock-table .product-row .stock-status-cell {
                 flex: 1 !important;
-                order: 2 !important;
+                order: 3 !important;
                 text-align: center !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
             }
             .stock-table .product-row .stock-qty-cell {
-                flex: 1 !important;
-                order: 3 !important;
+                flex: 1.2 !important;
+                order: 4 !important;
                 text-align: center !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
                 color: #475569 !important;
                 font-weight: 500 !important;
                 font-size: 14px !important;
@@ -575,9 +588,10 @@
             <!-- Table -->
             <div class="stock-table">
                 <div class="table-header">
-                    <span style="flex: 2;">ชื่อสินค้า</span>
+                    <span style="flex: 2.5;">ชื่อสินค้า</span>
+                    <span style="flex: 1; text-align: center;">ข้อมูลล็อต</span>
                     <span style="flex: 1; text-align: center;">สถานะ</span>
-                    <span style="flex: 1; text-align: center;">จำนวนสินค้าคงเหลือ</span>
+                    <span style="flex: 1.2; text-align: center;">จำนวนสินค้าคงเหลือ</span>
                 </div>
                 <div id="productContainer">
                     <div class="loading-container">
