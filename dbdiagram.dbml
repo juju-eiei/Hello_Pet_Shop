@@ -4,7 +4,6 @@
 Table roles {
   role_id int [pk, increment]
   role_name varchar [unique]
-  permissions text
 }
 
 Table users {
