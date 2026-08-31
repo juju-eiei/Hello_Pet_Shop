@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการการคืนเงิน (Staff) - Hello Pet Shop</title>
+    <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .refund-status-pill {
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .refund-status-pill.pending {
+            background-color: #ffe4e6;
+            color: #be123c;
+            border: 1px solid #fecdd3;
+        }
+        .refund-status-pill.refunded {
+            background-color: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+        }
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-refunded {
+            background-color: #10b981;
+            color: white;
+        }
+        .btn-refunded:hover {
+            background-color: #059669;
+        }
+        .btn-pending {
+            background-color: #f43f5e;
+            color: white;
+        }
+        .btn-pending:hover {
+            background-color: #e11d48;
+        }
+        .btn-detail {
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+        .btn-detail:hover {
+            background-color: #e2e8f0;
+            color: #1e293b;
+        }
+        .filter-btn {
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .filter-btn.active {
+            background: #1b4332;
+            color: white;
+            border-color: #1b4332;
+            box-shadow: 0 4px 12px rgba(27,67,50,0.2);
+        }
+    </style>
+    <script type="module" src="/src/js/main.js"></script>
+</head>
+<body class="preload">
+    <div class="admin-wrapper">
+        <header class="mobile-header"></header>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="sidebar"></aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>จัดการการคืนเงิน</h1>
+            </div>
+
+            <!-- Summary Stats Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 24px;">
+                <div class="stat-card" style="border-left: 4px solid #f43f5e;">
+                    <div style="font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 6px;">
+                        ⏳ ยังไม่ได้คืนเงิน (Pending)
+                    </div>
+                    <div style="font-size: 26px; font-weight: 800; color: #be123c;" id="statPendingCount">
+                        0 รายการ
+                    </div>
+                    <div style="font-size: 13px; color: #881337; font-weight: 700; margin-top: 4px;" id="statPendingAmount">
+                        รวม ฿0.00
+                    </div>
+                </div>
+
+                <div class="stat-card" style="border-left: 4px solid #10b981;">
+                    <div style="font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 6px;">
+                        ✅ คืนเงินเรียบร้อยแล้ว (Refunded)
+                    </div>
+                    <div style="font-size: 26px; font-weight: 800; color: #15803d;" id="statRefundedCount">
+                        0 รายการ
+                    </div>
+                    <div style="font-size: 13px; color: #166534; font-weight: 700; margin-top: 4px;" id="statRefundedAmount">
+                        รวม ฿0.00
+                    </div>
+                </div>
+
+                <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                    <div style="font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 6px;">
+                        📋 รวมออเดอร์ยกเลิกทั้งหมด
+                    </div>
+                    <div style="font-size: 26px; font-weight: 800; color: #1e40af;" id="statTotalCount">
+                        0 รายการ
+                    </div>
+                    <div style="font-size: 13px; color: #475569; font-weight: 600; margin-top: 4px;" id="statTotalAmount">
+                        มูลค่ารวม ฿0.00
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters & Search Toolbar -->
+            <div class="card" style="margin-bottom: 24px; padding: 20px; border-radius: 16px; border: 1px solid #f1f5f9; background: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <button class="filter-btn active" data-filter="all" id="btnFilterAll">
+                            ทั้งหมด (<span id="countAll">0</span>)
+                        </button>
+                        <button class="filter-btn" data-filter="pending" id="btnFilterPending">
+                            ⏳ ยังไม่ได้คืนเงิน (<span id="countPending">0</span>)
+                        </button>
+                        <button class="filter-btn" data-filter="refunded" id="btnFilterRefunded">
+                            ✅ คืนเงินแล้ว (<span id="countRefunded">0</span>)
+                        </button>
+                    </div>
+
+                    <div style="position: relative; min-width: 280px;">
+                        <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                        <input type="text" id="searchInput" placeholder="ค้นหาเลขที่ออเดอร์, ชื่อลูกค้า, เบอร์โทร..." style="width: 100%; padding: 10px 14px 10px 40px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 13px; font-family: inherit;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Refunds Table Card -->
+            <div class="card" style="padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid #f1f5f9; background: white;">
+                <div style="overflow-x: auto;">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8fafc; text-align: left; font-size: 13px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                <th style="padding: 16px;">เลขที่ออเดอร์</th>
+                                <th style="padding: 16px;">ลูกค้า / เบอร์โทร</th>
+                                <th style="padding: 16px;">วันที่สั่งซื้อ</th>
+                                <th style="padding: 16px; text-align: right;">ยอดคืนเงิน</th>
+                                <th style="padding: 16px; text-align: center;">สลิปชำระเงิน</th>
+                                <th style="padding: 16px; text-align: center;">สถานะการคืนเงิน</th>
+                                <th style="padding: 16px; text-align: center;">การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="refundsTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
+                                    <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom: 10px; display: block;"></i>
+                                    กำลังโหลดข้อมูลการคืนเงิน...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Slip Modal -->
+    <div id="slipModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+        <div style="background: white; border-radius: 20px; padding: 24px; max-width: 440px; width: 90%; text-align: center; position: relative;">
+            <button id="closeSlipBtn" style="position: absolute; right: 16px; top: 16px; border: none; background: #f1f5f9; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: #64748b;">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px;">🖼️ สลิปการโอนเงินของลูกค้า</h3>
+            <img id="modalSlipImage" src="" alt="Slip Image" style="max-width: 100%; max-height: 450px; border-radius: 12px; border: 1px solid #e2e8f0; object-fit: contain;">
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            let refundsData = [];
+            let currentFilter = 'all';
+
+            function checkAuth() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user) {
+                    window.location.href = '/login.html';
+                    return null;
+                }
+                return user;
+            }
+
+            async function loadRefundOrders() {
+                try {
+                    let apiData = [];
+                    try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch('/api/orders/refunds', {
+                            headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+                        });
+                        if (res.ok) {
+                            const json = await res.json();
+                            apiData = json.data || [];
+                        }
+                    } catch (e) {
+                        console.warn("API refund fetch error:", e);
+                    }
+
+                    const refundMap = new Map();
+                    apiData.forEach(item => {
+                        refundMap.set(String(item.order_id), item);
+                    });
+
+                    // Merge local customer orders if cancelled
+                    const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+                    myOrders.forEach(mo => {
+                        const isCancelled = (mo.status === 'Cancelled' || mo.status === 'ยกเลิกแล้ว');
+                        if (isCancelled && !refundMap.has(String(mo.id))) {
+                            refundMap.set(String(mo.id), {
+                                order_id: mo.id,
+                                number: mo.number || (`ORD-2026-` + String(mo.id).padStart(3, '0')),
+                                customer_name: mo.customer?.name || mo.shippingAddress?.fullName || 'ลูกค้าออนไลน์',
+                                phone: mo.customer?.phone || mo.shippingAddress?.phone || '-',
+                                order_date: mo.date || new Date().toISOString(),
+                                amount: parseFloat(mo.total || mo.amount || 0),
+                                slip_image: mo.slipImage || mo.slip_image || null,
+                                refund_status: mo.refund_status || 0,
+                                refund_date: mo.refund_date || null
+                            });
+                        }
+                    });
+
+                    refundsData = Array.from(refundMap.values());
+                    updateStats();
+                    renderTable();
+                } catch (err) {
+                    console.error("Error loading refund orders:", err);
+                    renderTable();
+                }
+            }
+
+            function updateStats() {
+                const pendingList = refundsData.filter(r => (parseInt(r.refund_status) || 0) === 0);
+                const refundedList = refundsData.filter(r => (parseInt(r.refund_status) || 0) === 1);
+
+                const pendingSum = pendingList.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+                const refundedSum = refundedList.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+                const totalSum = refundsData.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+
+                document.getElementById('statPendingCount').textContent = `${pendingList.length} รายการ`;
+                document.getElementById('statPendingAmount').textContent = `รวม ฿${pendingSum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+                document.getElementById('statRefundedCount').textContent = `${refundedList.length} รายการ`;
+                document.getElementById('statRefundedAmount').textContent = `รวม ฿${refundedSum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+                document.getElementById('statTotalCount').textContent = `${refundsData.length} รายการ`;
+                document.getElementById('statTotalAmount').textContent = `มูลค่ารวม ฿${totalSum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+                document.getElementById('countAll').textContent = refundsData.length;
+                document.getElementById('countPending').textContent = pendingList.length;
+                document.getElementById('countRefunded').textContent = refundedList.length;
+            }
+
+            function renderTable() {
+                const tbody = document.getElementById('refundsTableBody');
+                if (!tbody) return;
+
+                const searchInput = document.getElementById('searchInput');
+                const searchStr = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+                let filtered = refundsData.filter(r => {
+                    const rStat = parseInt(r.refund_status) || 0;
+                    if (currentFilter === 'pending' && rStat !== 0) return false;
+                    if (currentFilter === 'refunded' && rStat !== 1) return false;
+
+                    if (searchStr) {
+                        const matchNum = String(r.number || '').toLowerCase().includes(searchStr);
+                        const matchName = String(r.customer_name || '').toLowerCase().includes(searchStr);
+                        const matchPhone = String(r.phone || '').toLowerCase().includes(searchStr);
+                        return matchNum || matchName || matchPhone;
+                    }
+                    return true;
+                });
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
+                                <i class="fas fa-inbox fa-2x" style="margin-bottom: 10px; display: block;"></i>
+                                ไม่พบรายการคำสั่งซื้อที่ยกเลิก
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = filtered.map(item => {
+                    const d = new Date(item.order_date);
+                    const dateStr = !isNaN(d.getTime()) ? d.toLocaleString('th-TH') : item.order_date;
+                    const rd = item.refund_date ? new Date(item.refund_date) : null;
+                    const refundDateStr = (rd && !isNaN(rd.getTime())) ? rd.toLocaleString('th-TH') : '-';
+                    const isRefunded = (parseInt(item.refund_status) || 0) === 1;
+
+                    return `
+                        <tr style="border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+                            <td style="padding: 16px; font-weight: 700; color: #1e293b;">
+                                <a href="/staff/orders/details?id=${item.order_id}" class="hover:underline text-emerald-700">
+                                    ${item.number || ('#ORD-' + item.order_id)}
+                                </a>
+                            </td>
+                            <td style="padding: 16px;">
+                                <div style="font-weight: 600; color: #334155;">${escapeHTML(item.customer_name)}</div>
+                                <div style="font-size: 12px; color: #64748b;"><i class="fas fa-phone text-[10px] mr-1"></i>${escapeHTML(item.phone)}</div>
+                            </td>
+                            <td style="padding: 16px; color: #64748b; font-size: 12px;">
+                                ${dateStr}
+                            </td>
+                            <td style="padding: 16px; text-align: right; font-weight: 800; font-size: 14px; color: #e11d48;">
+                                ฿${parseFloat(item.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </td>
+                            <td style="padding: 16px; text-align: center;">
+                                ${item.slip_image ? `
+                                    <button class="btn-action btn-detail btn-view-slip" data-slip="${escapeHTML(item.slip_image)}" style="padding: 5px 12px; font-size: 12px;">
+                                        <i class="fas fa-receipt text-emerald-600"></i> ดูสลิป
+                                    </button>
+                                ` : `
+                                    <span style="font-size: 12px; color: #94a3b8;">ไม่มีสลิป</span>
+                                `}
+                            </td>
+                            <td style="padding: 16px; text-align: center;">
+                                <span class="refund-status-pill ${isRefunded ? 'refunded' : 'pending'}">
+                                    <i class="fas ${isRefunded ? 'fa-check-circle' : 'fa-clock'}"></i>
+                                    ${isRefunded ? 'คืนเงินแล้ว' : 'ยังไม่ได้คืนเงิน'}
+                                </span>
+                                ${isRefunded ? `<div style="font-size: 11px; color: #166534; margin-top: 3px;">คืนเมื่อ: ${refundDateStr}</div>` : ''}
+                            </td>
+                            <td style="padding: 16px; text-align: center;">
+                                <div style="display: inline-flex; gap: 6px;">
+                                    ${!isRefunded ? `
+                                        <button class="btn-action btn-refunded btn-update-status" data-id="${item.order_id}" data-status="1">
+                                            <i class="fas fa-check-circle"></i> คืนเงินแล้ว
+                                        </button>
+                                    ` : `
+                                        <button class="btn-action btn-pending btn-update-status" data-id="${item.order_id}" data-status="0">
+                                            <i class="fas fa-undo"></i> ยังไม่ได้คืนเงิน
+                                        </button>
+                                    `}
+                                    <a href="/staff/orders/details?id=${item.order_id}" class="btn-action btn-detail" title="ดูรายละเอียดคำสั่งซื้อ">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                document.querySelectorAll('.btn-update-status').forEach(btn => {
+                    btn.onclick = async (e) => {
+                        const id = e.currentTarget.dataset.id;
+                        const status = parseInt(e.currentTarget.dataset.status);
+                        await updateStatus(id, status);
+                    };
+                });
+
+                document.querySelectorAll('.btn-view-slip').forEach(btn => {
+                    btn.onclick = (e) => {
+                        const src = e.currentTarget.dataset.slip;
+                        const img = document.getElementById('modalSlipImage');
+                        img.src = src;
+                        document.getElementById('slipModal').style.display = 'flex';
+                    };
+                });
+            }
+
+            async function updateStatus(orderId, newStatus) {
+                const statusText = newStatus === 1 ? "ระบุว่าคืนเงินแล้ว" : "ระบุว่ายังไม่ได้คืนเงิน";
+                const confirmRes = await Swal.fire({
+                    title: 'ยืนยันเปลี่ยนสถานะ?',
+                    text: `คุณต้องการเปลี่ยนสถานะคำสั่งซื้อ #${orderId} เป็น "${statusText}" หรือไม่?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: newStatus === 1 ? '#10b981' : '#f43f5e',
+                    cancelButtonColor: '#94a3b8',
+                    confirmButtonText: 'ยืนยัน',
+                    cancelButtonText: 'ยกเลิก',
+                    borderRadius: '16px'
+                });
+
+                if (!confirmRes.isConfirmed) return;
+
+                try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch('/api/orders/update-refund-status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
+                        body: JSON.stringify({
+                            order_id: orderId,
+                            refund_status: newStatus
+                        })
+                    });
+                    
+                    const target = refundsData.find(r => String(r.order_id) === String(orderId));
+                    if (target) {
+                        target.refund_status = newStatus;
+                        target.refund_date = newStatus === 1 ? new Date().toISOString() : null;
+                    }
+                    const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+                    const moIdx = myOrders.findIndex(o => String(o.id) === String(orderId));
+                    if (moIdx !== -1) {
+                        myOrders[moIdx].refund_status = newStatus;
+                        myOrders[moIdx].refund_date = newStatus === 1 ? new Date().toISOString() : null;
+                        localStorage.setItem('myOrders', JSON.stringify(myOrders));
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ!',
+                        text: 'อัปเดตสถานะเรียบร้อยแล้ว',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        borderRadius: '16px'
+                    });
+                    updateStats();
+                    renderTable();
+                } catch (err) {
+                    console.error("Error updating refund status:", err);
+                }
+            }
+
+            function setFilter(filter, btnId) {
+                currentFilter = filter;
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById(btnId).classList.add('active');
+                renderTable();
+            }
+
+            function escapeHTML(str) {
+                return String(str || '').replace(/[&<>'"]/g, 
+                    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+                );
+            }
+
+            // Init
+            checkAuth();
+            
+            const btnAll = document.getElementById('btnFilterAll');
+            if (btnAll) btnAll.onclick = () => setFilter('all', 'btnFilterAll');
+            const btnPending = document.getElementById('btnFilterPending');
+            if (btnPending) btnPending.onclick = () => setFilter('pending', 'btnFilterPending');
+            const btnRefunded = document.getElementById('btnFilterRefunded');
+            if (btnRefunded) btnRefunded.onclick = () => setFilter('refunded', 'btnFilterRefunded');
+            
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.oninput = renderTable;
+
+            const closeSlipBtn = document.getElementById('closeSlipBtn');
+            if (closeSlipBtn) {
+                closeSlipBtn.onclick = () => {
+                    document.getElementById('slipModal').style.display = 'none';
+                };
+            }
+
+            setTimeout(loadRefundOrders, 100);
+        })();
+    </script>
+</body>
+</html>

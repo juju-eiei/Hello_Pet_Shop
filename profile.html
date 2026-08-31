@@ -5,22 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ข้อมูลส่วนตัว - Hello Pet Shop</title>
     <link rel="stylesheet" href="/src/css/style.css">
-    <style>
-        html { opacity: 0; }
-        html.rendered { opacity: 1; transition: opacity 0.12s ease-in-out; }
-        body { font-family: 'Outfit', 'Kanit', sans-serif; }
-        .nav-green { background-color: #1b4332; }
-        .btn-green { background-color: #16a34a; }
-        .btn-green:hover { background-color: #15803d; }
-    </style>
-    <script>
-        (function() {
-            function show() { document.documentElement.classList.add('rendered'); }
-            if (document.readyState !== 'loading') show();
-            else document.addEventListener('DOMContentLoaded', show);
-            setTimeout(show, 200);
-        })();
-    </script>
     <script type="module" src="/src/js/main.js"></script>
     <script type="module" src="/src/js/profile.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -62,9 +46,9 @@
                     <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full hidden">0</span>
                 </a>
                 <div class="relative">
-                    <button id="navProfileMenuBtn" class="block w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-transparent shadow-sm hover:border-white transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#1b4332]">
-                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center bg-gray-50">
-                            <i class="fas fa-user text-gray-400 text-[15px]"></i>
+                    <button id="navProfileMenuBtn" class="block w-8 h-8 rounded-full overflow-hidden bg-white/15 hover:bg-white/25 border border-white/30 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-white flex items-center justify-center text-white">
+                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center text-white">
+                            <i class="fas fa-user text-white text-[14px]"></i>
                         </div>
                         <img id="navProfileImage" src="" alt="Profile" class="w-full h-full object-cover hidden">
                     </button>
@@ -85,18 +69,18 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8 pb-20 space-y-6">
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8 pb-8 space-y-6">
         
         <!-- Profile Header Card -->
         <div class="bg-white rounded-3xl shadow-lg border border-gray-100/80 overflow-hidden relative">
             <!-- Decorative Banner Header -->
-            <div class="h-32 sm:h-36 bg-gradient-to-r from-[#FE7F9C] via-[#FF859D] to-[#E95B7A] relative p-6 flex items-start justify-between">
-                <span class="bg-white/20 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center space-x-1.5">
+            <div class="h-32 sm:h-36 bg-gradient-to-r from-[#1b4332] via-[#235841] to-[#2d6a4f] relative p-6 flex items-start justify-between">
+                <span class="bg-white/15 backdrop-blur-md text-white text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center space-x-1.5 border border-white/20">
                     <i class="fas fa-paw"></i>
                     <span>Hello Pet Member</span>
                 </span>
-                <button id="openEditModalBtn" class="bg-white/90 hover:bg-white text-gray-800 text-sm font-semibold px-4 py-2 rounded-xl shadow-md backdrop-blur-md transition-all duration-300 flex items-center space-x-2 active:scale-95">
-                    <i class="fas text-[#FE7F9C] fa-user-pen"></i>
+                <button id="openEditModalBtn" class="bg-white/95 hover:bg-white text-gray-800 hover:text-[#1b4332] text-sm font-semibold px-4 py-2 rounded-xl shadow-md backdrop-blur-md transition-all duration-300 flex items-center space-x-2 active:scale-95">
+                    <i class="fas text-[#1b4332] fa-user-pen"></i>
                     <span>แก้ไขโปรไฟล์</span>
                 </button>
             </div>
@@ -143,9 +127,9 @@
         <div class="bg-white rounded-3xl p-6 shadow-md border border-gray-100">
             <div class="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
                 <h2 class="text-lg font-bold text-gray-900 flex items-center">
-                    <i class="fas fa-shopping-bag text-[#FE7F9C] mr-2"></i> คำสั่งซื้อของฉัน
+                    <i class="fas fa-shopping-bag text-[#1b4332] mr-2"></i> คำสั่งซื้อของฉัน
                 </h2>
-                <a href="order-history.html" class="text-sm font-semibold text-[#FE7F9C] hover:underline flex items-center">
+                <a href="order-history.html" class="text-sm font-semibold text-[#1b4332] hover:text-[#16a34a] hover:underline flex items-center">
                     ดูประวัติทั้งหมด <i class="fas fa-chevron-right text-xs ml-1"></i>
                 </a>
             </div>
@@ -250,7 +234,7 @@
             <!-- Modal Header -->
             <div class="flex items-center justify-between border-b border-gray-100 pb-4">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-2xl bg-[#FFF0F3] text-[#FE7F9C] flex items-center justify-center text-lg">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-[#1b4332] flex items-center justify-center text-lg">
                         <i class="fas fa-user-pen"></i>
                     </div>
                     <div>
@@ -265,7 +249,7 @@
 
             <!-- Profile Picture Upload Inside Modal -->
             <div class="flex flex-col items-center justify-center space-y-3 pt-2">
-                <div class="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 border-2 border-[#FE7F9C] shadow-md group">
+                <div class="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 border-2 border-[#1b4332] shadow-md group">
                     <div id="modalDefaultAvatar" class="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
                         <i class="fas fa-user text-4xl"></i>
                     </div>
@@ -289,7 +273,7 @@
                             <i class="fas fa-user text-sm"></i>
                         </div>
                         <input id="inputName" type="text" placeholder="ระบุชื่อ-นามสกุล"
-                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#FE7F9C] focus:ring-2 focus:ring-[#FFE0E6] outline-none transition-all">
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#1b4332] focus:ring-2 focus:ring-emerald-100 outline-none transition-all">
                     </div>
                 </div>
 
@@ -301,7 +285,7 @@
                             <i class="fas fa-map-marker-alt text-sm"></i>
                         </div>
                         <textarea id="inputAddress" rows="2" placeholder="ระบุบ้านเลขที่ ซอย ถนน อาคาร..."
-                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#FE7F9C] focus:ring-2 focus:ring-[#FFE0E6] outline-none resize-none transition-all"></textarea>
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#1b4332] focus:ring-2 focus:ring-emerald-100 outline-none resize-none transition-all"></textarea>
                     </div>
                 </div>
 
@@ -314,7 +298,7 @@
                                 <i class="fas fa-city text-sm"></i>
                             </div>
                             <input id="inputProvince" type="text" placeholder="เช่น กรุงเทพฯ"
-                                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#FE7F9C] focus:ring-2 focus:ring-[#FFE0E6] outline-none transition-all">
+                                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#1b4332] focus:ring-2 focus:ring-emerald-100 outline-none transition-all">
                         </div>
                     </div>
                     <div>
@@ -324,7 +308,7 @@
                                 <i class="fas fa-mail-bulk text-sm"></i>
                             </div>
                             <input id="inputZipcode" type="text" placeholder="เช่น 10110"
-                                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#FE7F9C] focus:ring-2 focus:ring-[#FFE0E6] outline-none transition-all">
+                                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#1b4332] focus:ring-2 focus:ring-emerald-100 outline-none transition-all">
                         </div>
                     </div>
                 </div>
@@ -337,7 +321,7 @@
                             <i class="fas fa-phone text-sm"></i>
                         </div>
                         <input id="inputPhone" type="tel" placeholder="08XXXXXXXX"
-                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#FE7F9C] focus:ring-2 focus:ring-[#FFE0E6] outline-none transition-all">
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#1b4332] focus:ring-2 focus:ring-emerald-100 outline-none transition-all">
                     </div>
                 </div>
 
@@ -349,7 +333,7 @@
                             <i class="fas fa-envelope text-sm"></i>
                         </div>
                         <input id="inputEmail" type="email" placeholder="example@mail.com"
-                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#FE7F9C] focus:ring-2 focus:ring-[#FFE0E6] outline-none transition-all">
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-[#1b4332] focus:ring-2 focus:ring-emerald-100 outline-none transition-all">
                     </div>
                 </div>
             </div>
@@ -359,7 +343,7 @@
                 <button id="cancelEditBtn" class="w-1/2 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition-colors">
                     ยกเลิก
                 </button>
-                <button id="saveProfileModalBtn" class="w-1/2 py-3 bg-[#4D7C68] hover:bg-[#3D6353] text-white font-bold rounded-xl text-sm shadow-md active:scale-95 transition-all">
+                <button id="saveProfileModalBtn" class="w-1/2 py-3 bg-[#1b4332] hover:bg-[#15803d] text-white font-bold rounded-xl text-sm shadow-md active:scale-95 transition-all">
                     บันทึกข้อมูล
                 </button>
             </div>

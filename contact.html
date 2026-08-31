@@ -9,8 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Outfit', 'Kanit', sans-serif; }
-        .nav-green { background-color: #1b4332; }
+        html { overscroll-behavior-y: none; }
+        body { font-family: 'Outfit', 'Kanit', sans-serif; margin: 0; }
+        .nav-green { background-color: #1b4332; position: sticky; top: 0; }
         .btn-green { background-color: #16a34a; }
         .btn-green:hover { background-color: #15803d; }
         .contact-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
@@ -43,9 +44,9 @@
                     <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full hidden">0</span>
                 </a>
                 <div class="relative">
-                    <button id="navProfileMenuBtn" class="block w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-transparent shadow-sm hover:border-white transition-all">
-                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center bg-gray-50">
-                            <i class="fas fa-user text-gray-400 text-[15px]"></i>
+                    <button id="navProfileMenuBtn" class="block w-8 h-8 rounded-full overflow-hidden bg-white/15 hover:bg-white/25 border border-white/30 shadow-sm transition-all flex items-center justify-center text-white">
+                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center text-white">
+                            <i class="fas fa-user text-white text-[14px]"></i>
                         </div>
                         <img id="navProfileImage" src="" alt="Profile" class="w-full h-full object-cover hidden">
                     </button>
@@ -64,7 +65,7 @@
         </nav>
     </header>
 
-    <main class="max-w-6xl mx-auto px-4 py-12">
+    <main class="max-w-6xl mx-auto px-4 py-8 pb-8">
         <div class="text-center mb-16">
             <h1 class="text-4xl font-bold text-gray-800 mb-4">ติดต่อเรา</h1>
             <p class="text-gray-500 max-w-2xl mx-auto text-lg">หากคุณมีคำถามใด ๆ เกี่ยวกับสัตว์เลี้ยงหรือสินค้า เราพร้อมช่วยเหลือคุณ! ส่งข้อความหาเราและเราจะติดต่อกลับโดยเร็วที่สุด</p>
@@ -137,8 +138,6 @@
                 <div class="bg-[#FE7F9C] rounded-3xl p-8 shadow-lg text-white flex flex-col items-center justify-center text-center">
                     <h3 class="text-lg font-bold mb-4">ติดตามโซเชียลมีเดียของเรา</h3>
                     <div class="flex space-x-4">
-                        <a href="#" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/40 transition-all"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/40 transition-all"><i class="fab fa-instagram"></i></a>
                         <a href="https://lin.ee/XxKOiGF" target="_blank" rel="noopener noreferrer" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-[#06C755] hover:text-white transition-all" title="LINE"><i class="fab fa-line text-lg"></i></a>
                     </div>
                 </div>
@@ -198,6 +197,70 @@
             </div>
         </div>
     </main>
+
+    <!-- Detailed Footer (Compact on mobile, perfectly hugging the content) -->
+    <footer class="w-full bg-[#1b4332] text-white pt-5 pb-16 md:pt-14 md:pb-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:grid md:grid-cols-3 gap-5 md:gap-12 mb-5 md:mb-8">
+                <!-- Brand Section -->
+                <div class="space-y-2.5">
+                    <a href="products.html" class="flex items-center space-x-2.5 inline-flex group">
+                        <div class="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-[#1b4332] shadow-sm shrink-0">
+                            <i class="fas fa-paw text-lg"></i>
+                        </div>
+                        <span class="text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-emerald-200 transition-colors">Hello Pet Shop</span>
+                    </a>
+                    <p class="text-emerald-100/90 leading-relaxed text-xs sm:text-sm font-normal max-w-md">
+                        We provide high-quality pet products and services to ensure your pets live a happy and healthy
+                        life.
+                    </p>
+                    <div class="pt-0.5">
+                        <a href="https://lin.ee/XxKOiGF" target="_blank" rel="noopener noreferrer"
+                            class="w-8 h-8 bg-white/10 hover:bg-[#06C755] rounded-full flex items-center justify-center text-white transition-all shadow-sm active:scale-95"
+                            title="LINE">
+                            <i class="fab fa-line text-lg"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links (Hidden on mobile as requested, visible on desktop/tablet) -->
+                <div class="hidden md:block">
+                    <h4 class="text-lg font-bold mb-4 text-white">Quick Links</h4>
+                    <ul class="space-y-2.5 text-emerald-100/80 text-sm">
+                        <li><a href="products.html" class="hover:text-white transition-colors">Home</a></li>
+                        <li><a href="products.html" class="hover:text-white transition-colors">Products</a></li>
+                        <li><a href="my-pets.html" class="hover:text-white transition-colors">My Pets</a></li>
+                        <li><a href="order-history.html" class="hover:text-white transition-colors">Orders</a></li>
+                        <li><a href="contact.html" class="hover:text-white transition-colors font-bold text-white">Contact Us</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="space-y-2">
+                    <h4 class="text-base sm:text-lg font-bold text-white tracking-wide">Contact Info</h4>
+                    <ul class="space-y-2 text-emerald-100/90 text-xs sm:text-sm font-normal">
+                        <li class="flex items-start space-x-2.5">
+                            <i class="fas fa-map-marker-alt text-white text-sm mt-0.5 shrink-0 w-4 text-center"></i>
+                            <span class="leading-relaxed">123 Pet Street, chaingmai, Thailand 10110</span>
+                        </li>
+                        <li class="flex items-center space-x-2.5">
+                            <i class="fas fa-phone-alt text-white text-sm shrink-0 w-4 text-center"></i>
+                            <a href="tel:0652496925" class="hover:text-white transition-colors">065-249-6925</a>
+                        </li>
+                        <li class="flex items-center space-x-2.5">
+                            <i class="fas fa-envelope text-white text-sm shrink-0 w-4 text-center"></i>
+                            <a href="mailto:jotelpetshop2704@gmail.com" class="hover:text-white transition-colors break-all">jotelpetshop2704@gmail.com</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Bottom Border / Copyright -->
+            <div class="border-t border-white/10 pt-3 text-center text-emerald-100/60 text-[11px] sm:text-xs">
+                <p>&copy; 2024 Hello Pet Shop. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
 
     <!-- Toast -->
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl transition-all duration-500 opacity-0 translate-y-4 pointer-events-none z-50"></div>

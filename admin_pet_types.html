@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการประเภทสัตว์เลี้ยง - Hello Pet Shop</title>
+    <link rel="stylesheet" href="/css/admin_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('mobile-device');
+        }
+    </script>
+    <script type="module" src="/src/js/main.js"></script>
+    <style>
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            .page-header > div {
+                width: 100% !important;
+                display: flex !important;
+                gap: 8px !important;
+            }
+            .page-header button {
+                flex: 1 !important;
+                justify-content: center !important;
+                font-size: 13px !important;
+                padding: 10px 14px !important;
+            }
+            .modal-card {
+                width: 95% !important;
+                padding: 20px 16px !important;
+                border-radius: 16px !important;
+            }
+        }
+    </style>
+</head>
+<body class="preload">
+    <div class="admin-wrapper">
+        <header class="mobile-header"></header>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="sidebar"></aside>
+
+        <main class="main-content">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>ประเภทสัตว์เลี้ยงเป้าหมาย</h1>
+                    <p style="color: #64748b; font-size: 13px; margin-top: 4px;">จัดการชนิดสัตว์เลี้ยงที่ใช้สำหรับการจัดหมวดหมู่สินค้าและระบบ AI สินค้าแนะนำ</p>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button onclick="openAddPetTypeModal()" class="save-btn" style="padding: 10px 24px; font-size: 14px; border: none; cursor: pointer; display: inline-flex; align-items: center; height: 42px;">
+                        <i class="fas fa-plus" style="margin-right: 8px;"></i>
+                        เพิ่มประเภทสัตว์เลี้ยง
+                    </button>
+                </div>
+            </div>
+
+            <div class="search-container" style="margin-top: 20px;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="ค้นหาประเภทสัตว์เลี้ยง...">
+            </div>
+
+            <div class="stock-table">
+                <div class="table-header" style="display: flex; align-items: center; width: 100%;">
+                    <span style="flex: 0.8;">รหัส</span>
+                    <span style="flex: 2;">ชื่อประเภทสัตว์</span>
+                    <span style="flex: 1.5;">รหัสระบบ (Code)</span>
+                    <span style="flex: 3;">รายละเอียด</span>
+                    <span style="flex: 1.2; text-align: right;">การจัดการ</span>
+                </div>
+                <div id="petTypeContainer">
+                    <div class="loading-container">
+                        <div class="spinner-loader"></div>
+                        <span>กำลังโหลดข้อมูล...</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <button onclick="openAddPetTypeModal()" class="fab-add" style="border: none;">
+            <i class="fas fa-plus"></i>
+        </button>
+
+        <nav class="bottom-nav">
+            <a href="admin_dashboard.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>แดชบอร์ด</span>
+            </a>
+            <a href="admin_orders.html" class="nav-item">
+                <i class="fas fa-file-invoice"></i>
+                <span>คำสั่งซื้อ</span>
+            </a>
+            <a href="admin_stock.html" class="nav-item active">
+                <i class="fas fa-box"></i>
+                <span>สินค้า</span>
+            </a>
+            <a href="admin_customers.html" class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>ลูกค้า</span>
+            </a>
+        </nav>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title" id="modalTitle">ยืนยันการลบ</div>
+            <div class="modal-text" id="modalText">คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?</div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" id="cancelModalBtn">ยกเลิก</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmModalBtn">ลบประเภทสัตว์</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Pet Type Modal -->
+    <div id="addPetTypeModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title">เพิ่มประเภทสัตว์เลี้ยงใหม่</div>
+            <div class="form-group" style="margin-top: 15px; margin-bottom: 12px;">
+                <label for="petTypeName" style="display: block; margin-bottom: 6px; font-weight: 600;">ชื่อประเภทสัตว์เลี้ยง <span style="color: red;">*</span></label>
+                <input type="text" id="petTypeName" class="form-control" placeholder="เช่น กระต่าย, ชูการ์ไกลเดอร์" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label for="petTypeCode" style="display: block; margin-bottom: 6px; font-weight: 600;">รหัสระบุชนิดระบบ (Code Eng)</label>
+                <input type="text" id="petTypeCode" class="form-control" placeholder="เช่น rabbit, sugar_glider (เว้นว่างไว้จะใช้อัตโนมัติ)" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="petTypeDescription" style="display: block; margin-bottom: 6px; font-weight: 600;">รายละเอียดเพิ่มเติม</label>
+                <input type="text" id="petTypeDescription" class="form-control" placeholder="คำอธิบายสั้นๆ" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeAddPetTypeModal()">ยกเลิก</button>
+                <button class="modal-btn" style="background-color: var(--secondary-berry, #16a34a); color: white;" onclick="addPetType()">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Pet Type Modal -->
+    <div id="editPetTypeModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-title">แก้ไขประเภทสัตว์เลี้ยง</div>
+            <input type="hidden" id="editPetTypeId">
+            <div class="form-group" style="margin-top: 15px; margin-bottom: 12px;">
+                <label for="editPetTypeName" style="display: block; margin-bottom: 6px; font-weight: 600;">ชื่อประเภทสัตว์เลี้ยง <span style="color: red;">*</span></label>
+                <input type="text" id="editPetTypeName" class="form-control" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label for="editPetTypeCode" style="display: block; margin-bottom: 6px; font-weight: 600;">รหัสระบุชนิดระบบ (Code Eng)</label>
+                <input type="text" id="editPetTypeCode" class="form-control" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="editPetTypeDescription" style="display: block; margin-bottom: 6px; font-weight: 600;">รายละเอียดเพิ่มเติม</label>
+                <input type="text" id="editPetTypeDescription" class="form-control" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeEditPetTypeModal()">ยกเลิก</button>
+                <button class="modal-btn" style="background-color: var(--secondary-berry, #16a34a); color: white;" onclick="updatePetType()">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allPetTypes = [];
+        let currentKeyword = '';
+
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const role = (user.role_name || user.role || '').toLowerCase();
+            if (role !== 'admin') {
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function fetchPetTypes() {
+            try {
+                const response = await fetch('/api/pet-types');
+                const result = await response.json();
+                if (response.ok) {
+                    allPetTypes = result.data || [];
+                    renderPetTypes();
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
+                }
+            } catch (error) {
+                console.error("fetchPetTypes error:", error);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        function renderPetTypes() {
+            const container = document.getElementById('petTypeContainer');
+            const filtered = allPetTypes.filter(p => 
+                (p.name || '').toLowerCase().includes(currentKeyword.toLowerCase()) ||
+                (p.code || '').toLowerCase().includes(currentKeyword.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="padding: 50px; text-align: center; color: #718096;">ไม่พบรายการประเภทสัตว์เลี้ยง</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(p => `
+                <div class="product-row" style="display: flex; align-items: center; width: 100%;">
+                    <div style="flex: 0.8; color: #64748b; font-weight: 600;">#${p.id}</div>
+                    <div class="product-details" style="flex: 2;">
+                        <div class="product-name" style="font-weight: 700; color: #1e293b;">${p.name}</div>
+                    </div>
+                    <div style="flex: 1.5;">
+                        <span style="background-color: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 6px; font-family: monospace; font-size: 12px; font-weight: 600;">
+                            ${p.code || '-'}
+                        </span>
+                    </div>
+                    <div style="flex: 3; color: #64748b; font-size: 13px;">
+                        ${p.description || '-'}
+                    </div>
+                    <div class="stock-actions" style="flex: 1.2; text-align: right; justify-content: flex-end; display: flex; gap: 12px;">
+                        <a href="#" onclick="openEditPetTypeModal(${p.id}, '${escapeQuote(p.name)}', '${escapeQuote(p.code || '')}', '${escapeQuote(p.description || '')}'); event.preventDefault();" class="action-link edit-link" title="แก้ไข" style="color: #475569;">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        ${p.code === 'all' ? '' : `
+                        <a href="#" onclick="deletePetType(${p.id}, '${escapeQuote(p.name)}'); event.preventDefault();" class="action-link delete-link" title="ลบ">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function escapeQuote(str) {
+            return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        function openAddPetTypeModal() {
+            document.getElementById('petTypeName').value = '';
+            document.getElementById('petTypeCode').value = '';
+            document.getElementById('petTypeDescription').value = '';
+            const modal = document.getElementById('addPetTypeModal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeAddPetTypeModal() {
+            const modal = document.getElementById('addPetTypeModal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        function openEditPetTypeModal(id, name, code, description) {
+            document.getElementById('editPetTypeId').value = id;
+            document.getElementById('editPetTypeName').value = name;
+            document.getElementById('editPetTypeCode').value = code;
+            document.getElementById('editPetTypeDescription').value = description;
+            const modal = document.getElementById('editPetTypeModal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeEditPetTypeModal() {
+            const modal = document.getElementById('editPetTypeModal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        async function addPetType() {
+            const name = document.getElementById('petTypeName').value.trim();
+            if (!name) {
+                showToast("กรุณากรอกชื่อประเภทสัตว์เลี้ยง", "error");
+                return;
+            }
+            const code = document.getElementById('petTypeCode').value.trim();
+            const description = document.getElementById('petTypeDescription').value.trim();
+
+            try {
+                const response = await fetch('/api/pet-types', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, code, description })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast("เพิ่มประเภทสัตว์เลี้ยงเรียบร้อย", "success");
+                    closeAddPetTypeModal();
+                    fetchPetTypes();
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาด", "error");
+                }
+            } catch (error) {
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        async function updatePetType() {
+            const id = document.getElementById('editPetTypeId').value;
+            const name = document.getElementById('editPetTypeName').value.trim();
+            if (!name) {
+                showToast("กรุณากรอกชื่อประเภทสัตว์เลี้ยง", "error");
+                return;
+            }
+            const code = document.getElementById('editPetTypeCode').value.trim();
+            const description = document.getElementById('editPetTypeDescription').value.trim();
+
+            try {
+                const response = await fetch('/api/pet-types/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, name, code, description })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast("อัปเดตประเภทสัตว์เลี้ยงเรียบร้อย", "success");
+                    closeEditPetTypeModal();
+                    fetchPetTypes();
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาด", "error");
+                }
+            } catch (error) {
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        async function deletePetType(id, name) {
+            const confirmed = await showConfirmModal("ยืนยันการลบ", `คุณต้องการลบประเภทสัตว์เลี้ยง "${name}" ใช่หรือไม่?`);
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch('/api/pet-types/delete', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast("ลบประเภทสัตว์เลี้ยงเรียบร้อย", "success");
+                    fetchPetTypes();
+                } else {
+                    showToast(result.message || "เกิดข้อผิดพลาด", "error");
+                }
+            } catch (error) {
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        function showConfirmModal(title, text) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalText').textContent = text;
+                const confirmBtn = document.getElementById('confirmModalBtn');
+                const cancelBtn = document.getElementById('cancelModalBtn');
+
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+
+                const handleConfirm = () => { cleanup(); resolve(true); };
+                const handleCancel = () => { cleanup(); resolve(false); };
+
+                const cleanup = () => {
+                    modal.classList.remove('show');
+                    setTimeout(() => modal.style.display = 'none', 300);
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                };
+
+                confirmBtn.addEventListener('click', handleConfirm);
+                cancelBtn.addEventListener('click', handleCancel);
+            });
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentKeyword = e.target.value.trim();
+            renderPetTypes();
+        });
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            if (!toast) return;
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+
+        checkAuth();
+        fetchPetTypes();
+    </script>
+</body>
+</html>

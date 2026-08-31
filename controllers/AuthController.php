@@ -53,11 +53,16 @@ class AuthController {
             $user['csrf_token'] = $_SESSION['csrf_token'];
 
             if (strtolower($user['role_name']) === 'customer') {
-                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust = $this->db->prepare("SELECT customer_id, first_name, last_name, 
+                             COALESCE(NULLIF(phone, ''), (SELECT a.phone FROM addresses a WHERE a.customer_id = customers.customer_id AND a.phone IS NOT NULL AND a.phone != '' ORDER BY a.is_default DESC, a.address_id DESC LIMIT 1)) as phone
+                             FROM customers WHERE user_id = ?");
                 $stmtCust->execute([$user['user_id']]);
                 $cust = $stmtCust->fetch(PDO::FETCH_ASSOC);
                 if ($cust) {
                     $user['customer_id'] = $cust['customer_id'];
+                    $user['first_name'] = $cust['first_name'];
+                    $user['last_name'] = $cust['last_name'];
+                    $user['phone'] = $cust['phone'] ?: '';
                 }
             } elseif (in_array(strtolower($user['role_name']), ['admin', 'employee'])) {
                 $stmtEmp = $this->db->prepare("SELECT employee_id FROM employees WHERE user_id = ?");
@@ -168,12 +173,20 @@ class AuthController {
 
         $customerId = null;
         $employeeId = null;
+        $firstName = null;
+        $lastName = null;
+        $phone = null;
         if ($roleNameLower === 'customer') {
-            $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+            $stmtCust = $this->db->prepare("SELECT customer_id, first_name, last_name, 
+                         COALESCE(NULLIF(phone, ''), (SELECT a.phone FROM addresses a WHERE a.customer_id = customers.customer_id AND a.phone IS NOT NULL AND a.phone != '' ORDER BY a.is_default DESC, a.address_id DESC LIMIT 1)) as phone 
+                         FROM customers WHERE user_id = ?");
             $stmtCust->execute([$user['user_id']]);
             $cust = $stmtCust->fetch(PDO::FETCH_ASSOC);
             if ($cust) {
                 $customerId = $cust['customer_id'];
+                $firstName = $cust['first_name'];
+                $lastName = $cust['last_name'];
+                $phone = $cust['phone'] ?: '';
             }
         } else {
             $stmtEmp = $this->db->prepare("SELECT employee_id FROM employees WHERE user_id = ?");
@@ -187,6 +200,9 @@ class AuthController {
         $response_data = [
             "user_id" => $user['user_id'],
             "username" => $user['username'],
+            "first_name" => $firstName,
+            "last_name" => $lastName,
+            "phone" => $phone,
             "email" => $user['email'],
             "role_name" => $user['role_name'],
             "customer_id" => $customerId,

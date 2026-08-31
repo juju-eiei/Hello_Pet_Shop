@@ -7,23 +7,20 @@
     <title>รายการสินค้า - Hello Pet Shop</title>
     <link rel="stylesheet" href="/src/css/style.css">
     <style>
-        html { opacity: 0; }
-        html.rendered { opacity: 1; transition: opacity 0.12s ease-in-out; }
-        body { font-family: 'Outfit', 'Kanit', sans-serif; }
-        .nav-green { background-color: #1b4332; }
         .search-blue { background-color: #d8eafa; }
-        .btn-green { background-color: #16a34a; }
-        .btn-green:hover { background-color: #15803d; }
-        .pagination-active { background-color: #f3f4f6; border-radius: 50%; }
+        #recommendedScroll,
+        .scrollbar-none {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+        #recommendedScroll::-webkit-scrollbar,
+        .scrollbar-none::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
     </style>
-    <script>
-        (function() {
-            function show() { document.documentElement.classList.add('rendered'); }
-            if (document.readyState !== 'loading') show();
-            else document.addEventListener('DOMContentLoaded', show);
-            setTimeout(show, 200);
-        })();
-    </script>
     <script type="module" src="/src/js/main.js"></script>
     <script type="module" src="/src/js/products.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -71,9 +68,9 @@
                     </a>
                     <div class="relative">
                         <button id="navProfileMenuBtn"
-                            class="block w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-transparent shadow-sm hover:border-white transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#1b4332]">
-                            <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center bg-gray-50">
-                                <i class="fas fa-user text-gray-400 text-[15px]"></i>
+                            class="block w-8 h-8 rounded-full overflow-hidden bg-white/15 hover:bg-white/25 border border-white/30 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-white flex items-center justify-center text-white">
+                            <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center text-white">
+                                <i class="fas fa-user text-white text-[14px]"></i>
                             </div>
                             <img id="navProfileImage" src="" alt="Profile" class="w-full h-full object-cover hidden">
                         </button>
@@ -117,27 +114,6 @@
                     <input type="text" id="productSearch" placeholder="ค้นหาสินค้า..."
                         class="w-full pl-12 pr-4 py-3 search-blue rounded-xl outline-none text-[#5c88b5] placeholder-[#88aed4] focus:ring-2 focus:ring-blue-100 transition-all">
                 </div>
-
-                <!-- Category Filter -->
-                <div class="flex justify-start space-x-3 mt-6 overflow-x-auto pb-2 scrollbar-none">
-                    <button
-                        class="category-btn active px-4 py-2 bg-gradient-to-r from-secondary-600 to-secondary-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 shrink-0"
-                        data-category="recommended">
-                        <i class="fas fa-wand-magic-sparkles text-yellow-300 animate-pulse"></i> แนะนำสำหรับคุณ (AI)
-                    </button>
-                    <button
-                        class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
-                        data-category="all">ทั้งหมด</button>
-                    <button
-                        class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
-                        data-category="Dog">สุนัข</button>
-                    <button
-                        class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
-                        data-category="Cat">แมว</button>
-                    <button
-                        class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
-                        data-category="Bird">นก</button>
-                </div>
             </div>
         </div>
 
@@ -162,21 +138,21 @@
                     <div class="w-full flex-shrink-0 relative">
                         <div class="w-full h-48 sm:h-64 md:h-80 relative overflow-hidden">
                             <img src="/images/promotions/promo1.png" alt="โปรโมชั่น 1"
-                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                class="w-full h-full object-cover">
                         </div>
                     </div>
                     <!-- Slide 2 -->
                     <div class="w-full flex-shrink-0 relative">
                         <div class="w-full h-48 sm:h-64 md:h-80 relative overflow-hidden">
                             <img src="/images/promotions/promo2.png" alt="โปรโมชั่น 2"
-                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                class="w-full h-full object-cover">
                         </div>
                     </div>
                     <!-- Slide 3 -->
                     <div class="w-full flex-shrink-0 relative">
                         <div class="w-full h-48 sm:h-64 md:h-80 relative overflow-hidden">
                             <img src="/images/promotions/promo3.png" alt="โปรโมชั่น 3"
-                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                class="w-full h-full object-cover">
                         </div>
                     </div>
                 </div>
@@ -207,9 +183,54 @@
             </div>
         </section>
 
-        <!-- Featured Products -->
-        <section class="mb-12">
-            <h2 class="text-2xl font-bold text-gray-800 mb-8 ml-2">สินค้าแนะนำ</h2>
+        <!-- Recommended Products Section (Horizontal Scroll Row) -->
+        <section class="mb-14" id="recommendedSection">
+            <div class="flex items-center justify-between mb-4 ml-1">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-thumbs-up text-secondary-500"></i> สินค้าแนะนำ
+                </h2>
+                <div class="flex items-center space-x-2">
+                    <button id="recScrollLeft" aria-label="เลื่อนซ้าย"
+                        class="w-8 h-8 rounded-full bg-white hover:bg-gray-100 border border-gray-200 shadow-sm flex items-center justify-center text-gray-600 transition-all focus:outline-none">
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </button>
+                    <button id="recScrollRight" aria-label="เลื่อนขวา"
+                        class="w-8 h-8 rounded-full bg-white hover:bg-gray-100 border border-gray-200 shadow-sm flex items-center justify-center text-gray-600 transition-all focus:outline-none">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Horizontal Scroll Row -->
+            <div id="recommendedScroll"
+                class="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none scroll-smooth">
+                <!-- Recommended product cards will be loaded here via JS -->
+            </div>
+        </section>
+
+        <!-- All Products Section -->
+        <section class="mb-12" id="allProductsSection">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 ml-1">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-layer-group text-secondary-500"></i> สินค้าทั้งหมด
+                </h2>
+
+                <!-- Category Filter -->
+                <div class="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
+                    <button
+                        class="category-btn active px-4 py-2 bg-secondary-200 text-gray-800 text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all shrink-0"
+                        data-category="all">ทั้งหมด</button>
+                    <button
+                        class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
+                        data-category="Dog">สุนัข</button>
+                    <button
+                        class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
+                        data-category="Cat">แมว</button>
+                    <button
+                        class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
+                        data-category="Bird">นก</button>
+                </div>
+            </div>
 
             <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-10">
                 <!-- Product cards will be loaded here via JS -->
@@ -218,32 +239,17 @@
                     <div class="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
                     <div class="h-4 bg-gray-200 rounded w-1/4 mx-auto"></div>
                 </div>
-                <!-- Skeleton cards -->
             </div>
         </section>
 
-        <!-- Pagination -->
-        <div class="flex items-center justify-center space-x-4 text-gray-500 text-sm mt-8 pb-12">
-            <button class="hover:text-gray-800 transition-colors"><i class="fas fa-chevron-left"></i></button>
-            <button
-                class="w-8 h-8 flex items-center justify-center pagination-active text-gray-800 font-bold">1</button>
-            <button
-                class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all">2</button>
-            <button
-                class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all">3</button>
-            <button
-                class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all">4</button>
-            <button class="hover:text-gray-800 transition-colors"><i class="fas fa-chevron-right"></i></button>
-        </div>
-
-    <!-- Features Section -->
-    <section class="bg-white py-20 border-t border-gray-50">
+    <!-- Features Section (Hidden on mobile to eliminate white space, visible on desktop) -->
+    <section class="hidden md:block w-full bg-white py-16 border-t border-gray-100">
         <div class="max-w-6xl mx-auto px-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
                 <!-- Fast Delivery -->
                 <div class="flex flex-col items-center">
                     <div
-                        class="w-16 h-16 bg-[#f7f9fc] rounded-full flex items-center justify-center mb-6 text-[#1b4332] text-2xl shadow-sm">
+                        class="w-16 h-16 bg-[#1b4332] text-white rounded-full flex items-center justify-center mb-6 text-2xl shadow-md">
                         <i class="fas fa-truck"></i>
                     </div>
                     <h3 class="text-xl font-bold text-[#1a202c] mb-4">Fast Delivery</h3>
@@ -255,7 +261,7 @@
                 <!-- Secure Payments -->
                 <div class="flex flex-col items-center">
                     <div
-                        class="w-16 h-16 bg-[#f7f9fc] rounded-full flex items-center justify-center mb-6 text-[#1b4332] text-2xl shadow-sm">
+                        class="w-16 h-16 bg-[#1b4332] text-white rounded-full flex items-center justify-center mb-6 text-2xl shadow-md">
                         <i class="fas fa-shield-alt"></i>
                     </div>
                     <h3 class="text-xl font-bold text-[#1a202c] mb-4">Secure Payments</h3>
@@ -267,7 +273,7 @@
                 <!-- Premium Support -->
                 <div class="flex flex-col items-center">
                     <div
-                        class="w-16 h-16 bg-[#f7f9fc] rounded-full flex items-center justify-center mb-6 text-[#1b4332] text-2xl shadow-sm">
+                        class="w-16 h-16 bg-[#1b4332] text-white rounded-full flex items-center justify-center mb-6 text-2xl shadow-md">
                         <i class="fas fa-hand-holding-heart"></i>
                     </div>
                     <h3 class="text-xl font-bold text-[#1a202c] mb-4">Premium Support</h3>
@@ -278,79 +284,71 @@
             </div>
         </div>
     </section>
+    </main>
 
-    <!-- Detailed Footer -->
-    <footer class="bg-[#111827] text-white pt-16 pb-12">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-                <!-- Brand Section -->
-                <div class="space-y-6">
-                    <a href="products.html" class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#111827]">
-                            <i class="fas fa-paw text-xl"></i>
+    <!-- Detailed Footer (Compact on mobile, perfectly hugging the content) -->
+    <footer class="w-full bg-[#1b4332] text-white pt-5 pb-16 md:pt-14 md:pb-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:grid md:grid-cols-3 gap-5 md:gap-12 mb-5 md:mb-8">
+                <!-- Brand Section (Image 1) -->
+                <div class="space-y-2.5">
+                    <a href="products.html" class="flex items-center space-x-2.5 inline-flex group">
+                        <div class="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-[#1b4332] shadow-sm shrink-0">
+                            <i class="fas fa-paw text-lg"></i>
                         </div>
-                        <span class="text-2xl font-bold tracking-tight">Hello Pet Shop</span>
+                        <span class="text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-emerald-200 transition-colors">Hello Pet Shop</span>
                     </a>
-                    <p class="text-gray-400 leading-relaxed text-[15px] max-w-xs">
+                    <p class="text-emerald-100/90 leading-relaxed text-xs sm:text-sm font-normal max-w-md">
                         We provide high-quality pet products and services to ensure your pets live a happy and healthy
                         life.
                     </p>
-                    <div class="flex space-x-4 pt-2">
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all">
-                            <i class="fab fa-facebook-f text-sm"></i>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all">
-                            <i class="fab fa-instagram text-sm"></i>
-                        </a>
+                    <div class="pt-0.5">
                         <a href="https://lin.ee/XxKOiGF" target="_blank" rel="noopener noreferrer"
-                            class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-[#06C755] hover:text-white transition-all"
+                            class="w-8 h-8 bg-white/10 hover:bg-[#06C755] rounded-full flex items-center justify-center text-white transition-all shadow-sm active:scale-95"
                             title="LINE">
                             <i class="fab fa-line text-lg"></i>
                         </a>
                     </div>
                 </div>
 
-                <!-- Quick Links -->
-                <div>
-                    <h4 class="text-lg font-bold mb-6">Quick Links</h4>
-                    <ul class="space-y-4 text-gray-400">
-                        <li><a href="products.html" class="hover:text-[#FE7F9C] transition-colors">Home</a></li>
+                <!-- Quick Links (Hidden on mobile as requested, visible on desktop/tablet) -->
+                <div class="hidden md:block">
+                    <h4 class="text-lg font-bold mb-4 text-white">Quick Links</h4>
+                    <ul class="space-y-2.5 text-emerald-100/80 text-sm">
+                        <li><a href="products.html" class="hover:text-white transition-colors">Home</a></li>
                         <li><a href="products.html"
-                                class="hover:text-[#FE7F9C] transition-colors font-bold text-white">Products</a></li>
-                        <li><a href="my-pets.html" class="hover:text-[#FE7F9C] transition-colors">My Pets</a></li>
-                        <li><a href="contact.html" class="hover:text-[#FE7F9C] transition-colors">Contact Us</a></li>
+                                class="hover:text-white transition-colors font-bold text-white">Products</a></li>
+                        <li><a href="my-pets.html" class="hover:text-white transition-colors">My Pets</a></li>
+                        <li><a href="contact.html" class="hover:text-white transition-colors">Contact Us</a></li>
                     </ul>
                 </div>
 
-                <!-- Contact Info -->
-                <div>
-                    <h4 class="text-lg font-bold mb-6">Contact Info</h4>
-                    <ul class="space-y-4 text-gray-400">
-                        <li class="flex items-start space-x-3">
-                            <i class="fas fa-map-marker-alt mt-1 text-[#FE7F9C]"></i>
-                            <span>123 Pet Street, chaingmai, Thailand 10110</span>
+                <!-- Contact Info (Image 2) -->
+                <div class="space-y-2">
+                    <h4 class="text-base sm:text-lg font-bold text-white tracking-wide">Contact Info</h4>
+                    <ul class="space-y-2 text-emerald-100/90 text-xs sm:text-sm font-normal">
+                        <li class="flex items-start space-x-2.5">
+                            <i class="fas fa-map-marker-alt text-white text-sm mt-0.5 shrink-0 w-4 text-center"></i>
+                            <span class="leading-relaxed">123 Pet Street, chaingmai, Thailand 10110</span>
                         </li>
-                        <li class="flex items-center space-x-3">
-                            <i class="fas fa-phone-alt text-[#FE7F9C]"></i>
-                            <span>065-249-6925</span>
+                        <li class="flex items-center space-x-2.5">
+                            <i class="fas fa-phone-alt text-white text-sm shrink-0 w-4 text-center"></i>
+                            <a href="tel:0652496925" class="hover:text-white transition-colors">065-249-6925</a>
                         </li>
-                        <li class="flex items-center space-x-3">
-                            <i class="fas fa-envelope text-[#FE7F9C]"></i>
-                            <span>jotelpetshop2704@gmail.com</span>
+                        <li class="flex items-center space-x-2.5">
+                            <i class="fas fa-envelope text-white text-sm shrink-0 w-4 text-center"></i>
+                            <a href="mailto:jotelpetshop2704@gmail.com" class="hover:text-white transition-colors break-all">jotelpetshop2704@gmail.com</a>
                         </li>
                     </ul>
                 </div>
             </div>
 
             <!-- Bottom Border / Copyright -->
-            <div class="border-t border-white/10 pt-8 text-center text-gray-500 text-sm">
+            <div class="border-t border-white/10 pt-3 text-center text-emerald-100/60 text-[11px] sm:text-xs">
                 <p>&copy; 2024 Hello Pet Shop. All rights reserved.</p>
             </div>
         </div>
     </footer>
-    </main>
 
     <!-- Customer Bottom Navigation for Mobile -->
     <nav class="customer-bottom-nav">
@@ -375,6 +373,100 @@
             <span>โปรไฟล์</span>
         </a>
     </nav>
+
+    <!-- Product Detail Modal -->
+    <div id="productDetailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm transition-all duration-300 opacity-0 pointer-events-none" aria-hidden="true">
+        <div id="productDetailDialog" class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-95 relative border border-gray-100">
+            <!-- Close Button -->
+            <button id="closeProductModalBtn" class="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-gray-100/80 hover:bg-gray-200 text-gray-500 hover:text-gray-800 flex items-center justify-center transition-all focus:outline-none shadow-xs cursor-pointer" title="ปิดหน้าต่าง">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+
+            <!-- Scrollable Content -->
+            <div class="overflow-y-auto p-6 sm:p-8 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-start">
+                    <!-- Left: Product Image Box -->
+                    <div class="relative aspect-square bg-[#f8f9fa] rounded-2xl overflow-hidden border border-gray-100 p-6 flex items-center justify-center group shadow-xs">
+                        <div id="modalAiBadge" class="absolute top-3 left-3 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow-md backdrop-blur-sm border border-white/30 hidden items-center gap-1.5">
+                            <i class="fas fa-wand-magic-sparkles text-yellow-300 animate-pulse"></i>
+                            <span id="modalAiBadgeText">แนะนำสำหรับคุณ</span>
+                        </div>
+                        <img id="modalProductImage" src="/image/non-image.png" alt="Product Image" class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" onerror="this.src='/image/non-image.png'">
+                    </div>
+
+                    <!-- Right: Product Info & Actions -->
+                    <div class="flex flex-col justify-between space-y-5">
+                        <div>
+                            <!-- Category & Stock Status -->
+                            <div class="flex items-center gap-2 flex-wrap mb-2">
+                                <span id="modalProductCategory" class="px-3 py-1 bg-secondary-50 text-secondary-700 text-xs font-bold rounded-lg border border-secondary-100">
+                                    หมวดหมู่
+                                </span>
+                                <span id="modalProductStockBadge" class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200 flex items-center gap-1">
+                                    <i class="fas fa-check-circle"></i> มีสินค้า
+                                </span>
+                            </div>
+
+                            <!-- Product Name -->
+                            <h2 id="modalProductName" class="text-xl sm:text-2xl font-bold text-gray-900 leading-snug">
+                                ชื่อสินค้า
+                            </h2>
+
+                            <!-- Price -->
+                            <div class="mt-3 flex items-baseline gap-2">
+                                <span class="text-xs text-gray-400 font-medium">ราคา</span>
+                                <span id="modalProductPrice" class="text-3xl font-extrabold text-secondary-600 font-sans">
+                                    ฿0.00
+                                </span>
+                            </div>
+
+                            <!-- Attributes (Weight) -->
+                            <div class="mt-4 flex flex-wrap gap-2 text-xs">
+                                <div id="modalProductWeightContainer" class="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-600 flex items-center gap-1.5 font-medium">
+                                    <i class="fas fa-weight-scale text-secondary-500"></i>
+                                    <span>น้ำหนัก/ปริมาตร: <strong id="modalProductWeight" class="text-gray-800">-</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Divider -->
+                            <hr class="my-4 border-gray-100">
+
+                            <!-- Description -->
+                            <div>
+                                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                    <i class="fas fa-align-left text-secondary-500"></i> รายละเอียดสินค้า
+                                </h3>
+                                <div id="modalProductDesc" class="p-4 bg-gray-50/70 border border-gray-100 rounded-2xl text-sm text-gray-600 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-line">
+                                    ไม่มีรายละเอียดเพิ่มเติม
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quantity Selector & Add to Cart -->
+                        <div class="pt-3 border-t border-gray-100 space-y-3">
+                            <div id="modalQtySection" class="flex items-center justify-between">
+                                <span class="text-sm font-bold text-gray-700">จำนวนที่ต้องการ</span>
+                                <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white shadow-xs">
+                                    <button type="button" id="modalQtyDecreaseBtn" class="w-10 h-10 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition-colors flex items-center justify-center text-base focus:outline-none cursor-pointer">
+                                        -
+                                    </button>
+                                    <input type="number" id="modalQtyInput" value="1" min="1" class="w-14 h-10 text-center font-bold text-gray-800 outline-none border-x border-gray-100 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                                    <button type="button" id="modalQtyIncreaseBtn" class="w-10 h-10 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition-colors flex items-center justify-center text-base focus:outline-none cursor-pointer">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button id="modalAddToCartBtn" class="w-full py-3.5 px-6 bg-secondary-600 hover:bg-secondary-700 active:scale-98 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer">
+                                <i class="fas fa-cart-plus"></i>
+                                <span>เพิ่มลงในตะกร้า</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast -->
     <div id="toast"

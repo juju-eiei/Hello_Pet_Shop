@@ -600,6 +600,12 @@
                     </div>
                     <div class="product-details" style="flex: 2; margin-right: 20px;">
                         <div class="product-name">${p.product_name || p.name || ''}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                            <span>📁 ${p.category_name || '-'}</span>
+                            <span style="background: #e0f2fe; color: #0369a1; padding: 1px 7px; border-radius: 4px; font-weight: 600; font-size: 10px;">
+                                🐾 ${p.target_pet_type_name || 'สัตว์ทุกประเภท'}
+                            </span>
+                        </div>
                     </div>
                     <div class="stock-status" style="flex: 1; text-align: center; color: #475569; font-weight: 500;">
                         ฿${parseFloat(p.selling_price || p.price || 0).toFixed(2)}

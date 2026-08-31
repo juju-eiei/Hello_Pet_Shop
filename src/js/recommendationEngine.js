@@ -86,20 +86,24 @@ export function getPersonalizedProducts(allProducts) {
     const behavior = getUserBehavior();
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-    const myPets = JSON.parse(localStorage.getItem('myPets') || '[]');
-
-    // Build Affinity Frequency Maps
-    const petKeywords = [];
-    myPets.forEach(p => {
-        if (p.species) petKeywords.push(p.species.toLowerCase());
-        if (p.type) petKeywords.push(p.type.toLowerCase());
-        if (p.name) petKeywords.push(p.name.toLowerCase());
-    });
+    
+    // Retrieve user's pets from local storage (myPetsData or myPets)
+    let myPets = [];
+    try {
+        const cachedData = localStorage.getItem('myPetsData');
+        if (cachedData) myPets = JSON.parse(cachedData);
+        if (!Array.isArray(myPets) || myPets.length === 0) {
+            const fallbackPets = localStorage.getItem('myPets');
+            if (fallbackPets) myPets = JSON.parse(fallbackPets);
+        }
+    } catch (e) {
+        myPets = [];
+    }
 
     // Extract cart categories & items
     const cartItemNames = cart.map(i => (i.name || i.product_name || '').toLowerCase());
     
-    // Extract purchased product keywords & categories
+    // Extract purchased product keywords
     const purchasedKeywords = [];
     myOrders.forEach(o => {
         (o.items || []).forEach(item => {
@@ -109,14 +113,16 @@ export function getPersonalizedProducts(allProducts) {
 
     // Score every product
     const scoredProducts = allProducts.map(product => {
-        let score = 50; // Base score for cold start
+        let score = 50; // Base score
         const nameLower = (product.product_name || product.name || '').toLowerCase();
         const catLower = (product.category_name || product.category || '').toLowerCase();
+        const targetPetName = (product.target_pet_type_name || '').toLowerCase();
+        const targetPetCode = (product.target_pet_type_code || '').toLowerCase();
 
         // 1. Search Query Match (Max +30 points)
         behavior.searches.forEach((search, index) => {
-            const recencyWeight = (20 - index) / 20; // 1.0 down to 0.05
-            if (nameLower.includes(search) || catLower.includes(search)) {
+            const recencyWeight = (20 - index) / 20;
+            if (nameLower.includes(search) || catLower.includes(search) || targetPetName.includes(search)) {
                 score += 25 * recencyWeight;
             }
         });
@@ -142,14 +148,34 @@ export function getPersonalizedProducts(allProducts) {
             }
         });
 
-        // 4. Pet Profile Affinity (Max +15 points)
-        petKeywords.forEach(pk => {
-            if (nameLower.includes(pk) || catLower.includes(pk)) {
-                score += 15;
-            }
-        });
+        // 4. Pet Profile Affinity (+40 points for direct pet type match!)
+        let isPetMatch = false;
+        let matchedPetLabel = '';
 
-        // Cap score at 99%, minimum at 65% for pleasant presentation
+        if (Array.isArray(myPets) && myPets.length > 0) {
+            myPets.forEach(pet => {
+                const petSpecies = (pet.species || pet.pet_type || pet.type || '').toLowerCase();
+                const petName = pet.name || pet.pet_name || '';
+
+                if (petSpecies) {
+                    if (targetPetCode !== 'all' && (targetPetCode.includes(petSpecies) || petSpecies.includes(targetPetCode) || targetPetName.includes(petSpecies) || petSpecies.includes(targetPetName))) {
+                        score += 40; // High priority boost +40 for exact target_pet_type match!
+                        isPetMatch = true;
+                        if (!matchedPetLabel) matchedPetLabel = petName ? `${petName} (${pet.species || pet.pet_type})` : (pet.species || pet.pet_type);
+                    } else if (nameLower.includes(petSpecies) || catLower.includes(petSpecies)) {
+                        score += 25;
+                        isPetMatch = true;
+                        if (!matchedPetLabel) matchedPetLabel = petName ? `${petName} (${pet.species || pet.pet_type})` : (pet.species || pet.pet_type);
+                    }
+                }
+            });
+
+            if (targetPetCode === 'all') {
+                score += 15; // Universal products for all pets get medium boost
+            }
+        }
+
+        // Cap score at 99%, minimum at 68%
         let matchPercentage = Math.min(99, Math.max(68, Math.round(score)));
         
         // Randomize slight variance (±2%) so ratings look dynamic and natural
@@ -158,19 +184,18 @@ export function getPersonalizedProducts(allProducts) {
         matchPercentage = Math.min(99, Math.max(70, matchPercentage + variance));
 
         // Generate Reason Badge
-        let aiReason = `✨ ${matchPercentage}% ตรงใจคุณ`;
-        if (petKeywords.some(pk => nameLower.includes(pk))) {
-            aiReason = `🐾 เหมาะสำหรับสัตว์เลี้ยงของคุณ (${matchPercentage}%)`;
-        } else if (behavior.searches.some(s => nameLower.includes(s))) {
-            aiReason = `🔍 ตามที่คุณค้นหา (${matchPercentage}%)`;
-        } else if (cartItemNames.some(c => extractKeywords(c).some(k => nameLower.includes(k)))) {
-            aiReason = `🛒 เข้าคู่กับในตะกร้า (${matchPercentage}%)`;
+        let aiReason = `สินค้าแนะนำ`;
+        if (isPetMatch && matchedPetLabel) {
+            aiReason = `สำหรับ ${matchedPetLabel}`;
+        } else if (targetPetName && targetPetCode !== 'all') {
+            aiReason = `เหมาะสำหรับ${targetPetName}`;
         }
 
         return {
             ...product,
             aiScore: matchPercentage,
-            aiReason: aiReason
+            aiReason: aiReason,
+            isPetMatch: isPetMatch
         };
     });
 

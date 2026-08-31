@@ -72,6 +72,13 @@
                             </div>
 
                             <div class="form-group">
+                                <label>เหมาะสำหรับสัตว์เลี้ยงประเภท (Target Pet Type)</label>
+                                <select name="target_pet_type_id" id="pTargetPetType" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 14px; color: #1e293b; outline: none; background-color: #fff;">
+                                    <option value="1">กำลังโหลดประเภทสัตว์เลี้ยง...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
                                 <label>Cost Price (฿)</label>
                                 <input type="number" step="0.01" name="cost_price" id="pCostPrice" required value="0">
                             </div>
@@ -184,6 +191,7 @@
 
         async function init() {
             await loadCategories();
+            await loadPetTypes();
             const pTitle = document.getElementById('pageTitle');
             const mTitle = document.getElementById('mobileTitle');
             if (productId) {
@@ -204,6 +212,19 @@
                 result.data.map(c => `<option value="${c.category_id}">${c.category_name}</option>`).join('');
         }
 
+        async function loadPetTypes() {
+            try {
+                const res = await fetch('/api/pet-types');
+                const result = await res.json();
+                const select = document.getElementById('pTargetPetType');
+                if (select && result.data) {
+                    select.innerHTML = result.data.map(pt => `<option value="${pt.id}">${pt.name} (${pt.code})</option>`).join('');
+                }
+            } catch (e) {
+                console.error("loadPetTypes error:", e);
+            }
+        }
+
         async function loadProductData(id) {
             const res = await fetch(`/api/products?id=${id}`);
             const result = await res.json();
@@ -212,6 +233,9 @@
             document.getElementById('productId').value = p.product_id;
             document.getElementById('pName').value = p.product_name;
             document.getElementById('pCategory').value = p.category_id;
+            if (p.target_pet_type_id) {
+                document.getElementById('pTargetPetType').value = p.target_pet_type_id;
+            }
             document.getElementById('pPrice').value = p.selling_price;
             document.getElementById('pCostPrice').value = p.cost_price;
             document.getElementById('pStock').value = p.stock_qty;

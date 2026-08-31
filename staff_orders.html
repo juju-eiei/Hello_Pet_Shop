@@ -442,6 +442,7 @@
                         order_type: o.order_type || 1,
                         order_type_label: o.order_type_label || 'ออนไลน์',
                         amount: parseFloat(o.total || o.amount || 0),
+                        items: o.items || [],
                         slip_image: o.slipImage || o.slip_image || null,
                         has_slip: !!(o.slipImage || o.slip_image),
                         customer: o.customer || { name: o.shippingAddress?.fullName || 'ลูกค้าออนไลน์', email: 'customer@example.com', phone: o.shippingAddress?.phone || '-', address: o.shippingAddress ? `${o.shippingAddress.address} ${o.shippingAddress.province}` : '-' }
@@ -468,7 +469,8 @@
                         slip_image: ao.slip_image || null,
                         has_slip: !!ao.has_slip,
                         payment_method: ao.payment_method || null,
-                        customer: ao.customer || { name: 'ลูกค้าออนไลน์', email: '-', phone: '-', address: '-' }
+                        items: ao.items || [],
+                        customer: ao.customer || { name: ao.customer_name || 'ลูกค้าออนไลน์', email: '-', phone: '-', address: '-' }
                     });
                 });
 
@@ -526,7 +528,8 @@
                                        o.status.toLowerCase().includes(keyword) ||
                                        statusLabel.toLowerCase().includes(keyword) ||
                                        (o.order_type_label && o.order_type_label.toLowerCase().includes(keyword)) ||
-                                       o.date.includes(keyword);
+                                       o.date.includes(keyword) ||
+                                       (o.items && o.items.some(i => (i.product_name || i.name || '').toLowerCase().includes(keyword)));
                 
                 if (!matchesKeyword) return false;
 
@@ -570,21 +573,38 @@
             const endIndex = startIndex + itemsPerPage;
             const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
 
-            container.innerHTML = paginatedOrders.map(o => `
+            container.innerHTML = paginatedOrders.map(o => {
+                const items = o.items || [];
+                const firstItem = items.length > 0 ? items[0] : null;
+                const moreCount = items.length - 1;
+                const itemSummaryHtml = firstItem ? `
+                    <div class="order-item-preview" style="display: flex; align-items: center; gap: 7px; margin-top: 4px;">
+                        <img src="${firstItem.image_url || firstItem.image || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" style="width: 26px; height: 26px; object-fit: contain; border-radius: 6px; background: #f8fafc; border: 1px solid #e2e8f0; flex-shrink: 0;">
+                        <span style="font-size: 12px; color: #475569; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;" title="${firstItem.product_name || firstItem.name}">
+                            ${firstItem.product_name || firstItem.name} <span style="color: #94a3b8; font-size: 11px;">x${firstItem.quantity || firstItem.qty || 1}</span>
+                            ${moreCount > 0 ? `<span style="color: var(--secondary-berry, #4D7C68); font-weight: 600; font-size: 11px;">(+${moreCount})</span>` : ''}
+                        </span>
+                    </div>
+                ` : '';
+
+                return `
                 <div class="order-row" onclick="(window.navigateTo ? window.navigateTo('staff_order_details.html?id=${o.id}') : window.location.href='staff_order_details.html?id=${o.id}')" style="cursor: pointer;">
                     <div class="order-date">${o.date}</div>
                     <div class="order-number">
-                        <span>${o.number}</span>
-                        <span class="channel-pill ${o.order_type === 2 ? 'pos' : 'online'} mobile-only-pill">
-                            <i class="fas ${o.order_type === 2 ? 'fa-store' : 'fa-globe'}"></i> ${o.order_type_label}
-                        </span>
-                        ${o.order_type === 2 ? `
-                            <span class="slip-pill pos mobile-only-pill" style="font-size: 11px; padding: 2px 6px;"><i class="fas fa-cash-register"></i> หน้าร้าน</span>
-                        ` : o.has_slip && o.slip_image ? `
-                            <span class="slip-pill attached mobile-only-pill" style="font-size: 11px; padding: 2px 6px;" onclick="event.stopPropagation(); window.openQuickSlipModalById('${o.id}')"><i class="fas fa-receipt"></i> มีสลิป</span>
-                        ` : `
-                            <span class="slip-pill missing mobile-only-pill" style="font-size: 11px; padding: 2px 6px;"><i class="fas fa-clock"></i> ยังไม่แนบ</span>
-                        `}
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                            <span style="font-weight: 600; color: #1e293b;">${o.number}</span>
+                            <span class="channel-pill ${o.order_type === 2 ? 'pos' : 'online'} mobile-only-pill">
+                                <i class="fas ${o.order_type === 2 ? 'fa-store' : 'fa-globe'}"></i> ${o.order_type_label}
+                            </span>
+                            ${o.order_type === 2 ? `
+                                <span class="slip-pill pos mobile-only-pill" style="font-size: 11px; padding: 2px 6px;"><i class="fas fa-cash-register"></i> หน้าร้าน</span>
+                            ` : o.has_slip && o.slip_image ? `
+                                <span class="slip-pill attached mobile-only-pill" style="font-size: 11px; padding: 2px 6px;" onclick="event.stopPropagation(); window.openQuickSlipModalById('${o.id}')"><i class="fas fa-receipt"></i> มีสลิป</span>
+                            ` : `
+                                <span class="slip-pill missing mobile-only-pill" style="font-size: 11px; padding: 2px 6px;"><i class="fas fa-clock"></i> ยังไม่แนบ</span>
+                            `}
+                        </div>
+                        ${itemSummaryHtml}
                     </div>
                     <div class="order-channel desktop-only-cell">
                         <span class="channel-pill ${o.order_type === 2 ? 'pos' : 'online'}">
@@ -610,7 +630,8 @@
                         </a>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             renderPagination(filteredOrders.length);
         }

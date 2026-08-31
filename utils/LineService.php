@@ -122,7 +122,7 @@ class LineService {
             }
 
             // 1. Fetch Order Details
-            $qOrder = "SELECT o.order_id, o.order_date, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, o.free_gift, o.order_type, o.cash_received,
+            $qOrder = "SELECT o.order_id, o.order_date, o.subtotal, o.shipping_fee, o.discount_amount, o.points_used, o.net_total, o.free_gift, o.order_type, o.cash_received,
                               c.first_name, c.last_name, c.phone,
                               a.address_detail, a.province, a.zip_code, a.recipient_name, a.phone as recipient_phone,
                               dc.company_name,
@@ -182,8 +182,13 @@ class LineService {
                     $msg .= "🎁 ของแถมพิเศษ: {$order['free_gift']}\n";
                 }
 
+                if (!empty($order['points_used']) && (int)$order['points_used'] > 0) {
+                    $ptsDiscount = ((int)$order['points_used'] / 10) * 10;
+                    $msg .= "🪙 ใช้แต้มสะสม: {$order['points_used']} แต้ม (-฿" . number_format($ptsDiscount, 2) . ")\n";
+                }
+
                 if ((float)$order['discount_amount'] > 0) {
-                    $msg .= "🏷️ ส่วนลด: -฿" . number_format((float)$order['discount_amount'], 2) . "\n";
+                    $msg .= "🏷️ ส่วนลดรวม: -฿" . number_format((float)$order['discount_amount'], 2) . "\n";
                 }
 
                 $msg .= "💰 ยอดรวมทั้งสิ้น: ฿" . number_format((float)$order['net_total'], 2) . "\n";
@@ -221,8 +226,13 @@ class LineService {
                     $msg .= "🎁 ของแถมพิเศษ: {$order['free_gift']}\n";
                 }
 
+                if (!empty($order['points_used']) && (int)$order['points_used'] > 0) {
+                    $ptsDiscount = ((int)$order['points_used'] / 10) * 10;
+                    $msg .= "🪙 ใช้แต้มสะสม: {$order['points_used']} แต้ม (-฿" . number_format($ptsDiscount, 2) . ")\n";
+                }
+
                 if ((float)$order['discount_amount'] > 0) {
-                    $msg .= "🏷️ ส่วนลด: -฿" . number_format((float)$order['discount_amount'], 2) . "\n";
+                    $msg .= "🏷️ ส่วนลดรวม: -฿" . number_format((float)$order['discount_amount'], 2) . "\n";
                 }
 
                 $shippingFee = (float)($order['shipping_fee'] ?? 0);

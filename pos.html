@@ -251,6 +251,28 @@
             background: #f8fafc;
             border-color: var(--accent-green);
         }
+
+        .pos-quick-point-btn {
+            padding: 6px 4px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: #475569;
+        }
+        .pos-quick-point-btn:hover {
+            border-color: #eab308;
+            background: #fefce8;
+        }
+        .pos-quick-point-btn.active {
+            background: #eab308 !important;
+            color: white !important;
+            border-color: #ca8a04 !important;
+            box-shadow: 0 1px 3px rgba(234, 179, 8, 0.35);
+        }
         
         /* Thermal Receipt 80mm Styling */
         #receiptPrintArea {
@@ -469,7 +491,48 @@
                         <div id="customerSuggestionsList" style="position: absolute; left: 0; right: 0; top: 100%; z-index: 100; background: white; border: 1.5px solid #cbd5e1; border-radius: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; display: none; margin-top: 4px;"></div>
                     </div>
 
+                    <!-- Customer Loyalty Points Redemption Box -->
+                    <div id="posPointsRedeemCard" style="display: none; background: #fffdf5; border: 1.5px solid #fef08a; border-radius: 12px; padding: 12px; margin-bottom: 12px; transition: all 0.2s;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <div style="font-size: 13px; font-weight: 700; color: #854d0e; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-coins" style="color: #eab308;"></i> สิทธิ์ส่วนลดแต้มสะสม
+                            </div>
+                            <span style="font-size: 11px; font-weight: 700; color: #a16207; background: #fef9c3; padding: 2px 8px; border-radius: 8px; border: 1px solid #fef08a;">
+                                10 แต้ม = 10 บาท
+                            </span>
+                        </div>
+                        
+                        <div id="posPointsAvailableSection">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: #713f12;">
+                                <span>แต้มที่ต้องการใช้ลด:</span>
+                                <strong><span id="posPointsToUseDisplay">0</span> แต้ม (-฿<span id="posPointsDiscountDisplay">0.00</span>)</strong>
+                            </div>
 
+                            <!-- Quick Select Points Buttons -->
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px;" id="posQuickPointsContainer">
+                                <button type="button" class="pos-quick-point-btn active" onclick="selectPointsToUse(0)">ไม่ใช้</button>
+                                <button type="button" class="pos-quick-point-btn" id="btnPts10" onclick="selectPointsToUse(10)">10 แต้ม</button>
+                                <button type="button" class="pos-quick-point-btn" id="btnPts50" onclick="selectPointsToUse(50)">50 แต้ม</button>
+                                <button type="button" class="pos-quick-point-btn" id="btnPtsMax" onclick="selectMaxPointsToUse()" style="border-color: #eab308; background: #fef9c3; color: #854d0e; font-weight: 700;">ใช้สูงสุด</button>
+                            </div>
+
+                            <!-- Custom Points Stepper / Input -->
+                            <div style="display: flex; align-items: center; gap: 8px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 8px;">
+                                <span style="font-size: 11px; color: #64748b; white-space: nowrap;">ระบุแต้ม (ทีละ 10):</span>
+                                <div style="display: flex; align-items: center; gap: 4px; margin-left: auto;">
+                                    <button type="button" onclick="stepPointsToUse(-10)" style="width: 26px; height: 26px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 13px; font-weight: 700; cursor: pointer;">-</button>
+                                    <input type="number" id="posCustomPointsInput" value="0" min="0" step="10" style="width: 65px; text-align: center; font-size: 13px; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px;" onchange="onCustomPointsChange(this.value)">
+                                    <button type="button" onclick="stepPointsToUse(10)" style="width: 26px; height: 26px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 13px; font-weight: 700; cursor: pointer;">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notice if points < 10 -->
+                        <div id="posPointsLowNotice" style="display: none; font-size: 11px; color: #a16207; line-height: 1.4;">
+                            <i class="fas fa-info-circle" style="color: #eab308; margin-right: 4px;"></i> 
+                            ลูกค้ามี <span id="posCurrentLowPoints" style="font-weight: 700;">0</span> แต้ม (ต้องการอีก <span id="posNeededPoints" style="font-weight: 700;">0</span> แต้ม เพื่อเริ่มใช้ส่วนลด 10 บาท)
+                        </div>
+                    </div>
 
                     <!-- Pricing Summary -->
                     <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-top: 12px;">
@@ -478,8 +541,12 @@
                             <span id="summarySubtotal">฿0.00</span>
                         </div>
                         <div class="pos-summary-row" style="color: #ef4444;">
-                            <span>ส่วนลด (Discount)</span>
+                            <span>ส่วนลดโปรโมชั่น</span>
                             <span id="summaryDiscount">-฿0.00</span>
+                        </div>
+                        <div class="pos-summary-row" id="pointsDiscountRow" style="color: #ea580c; display: none; font-weight: 600;">
+                            <span>ส่วนลดแต้มสะสม (<span id="summaryPointsUsed">0</span> แต้ม)</span>
+                            <span id="summaryPointsDiscount">-฿0.00</span>
                         </div>
                         <div class="pos-summary-row pos-summary-total" style="border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
                             <span>ยอดรวมสุทธิ</span>
@@ -760,8 +827,113 @@
                     }
                 }
             }
+            updatePointsUI();
             try { calculateCart(); } catch(e) {}
         }
+
+        let selectedPointsToUse = 0;
+
+        function getMaxRedeemablePoints() {
+            if (!selectedCustomer) return 0;
+            const pts = parseInt(selectedCustomer.points || 0);
+            if (pts < 10) return 0;
+
+            let subtotal = 0;
+            cart.forEach(i => { subtotal += (i.price * i.quantity); });
+
+            // 10 points = 10 Baht, minimum 10, multiple of 10
+            const maxPtsFromCustomer = Math.floor(pts / 10) * 10;
+            const maxPtsFromSubtotal = Math.floor(subtotal / 10) * 10;
+            return Math.max(0, Math.min(maxPtsFromCustomer, maxPtsFromSubtotal));
+        }
+
+        function updatePointsUI() {
+            const card = document.getElementById('posPointsRedeemCard');
+            const lowNotice = document.getElementById('posPointsLowNotice');
+            const availSection = document.getElementById('posPointsAvailableSection');
+            
+            if (!selectedCustomer) {
+                if (card) card.style.display = 'none';
+                selectedPointsToUse = 0;
+                return;
+            }
+
+            const pts = parseInt(selectedCustomer.points || 0);
+            if (card) card.style.display = 'block';
+
+            if (pts < 10) {
+                if (lowNotice) lowNotice.style.display = 'block';
+                if (availSection) availSection.style.display = 'none';
+                const curEl = document.getElementById('posCurrentLowPoints');
+                const needEl = document.getElementById('posNeededPoints');
+                if (curEl) curEl.textContent = pts;
+                if (needEl) needEl.textContent = (10 - pts);
+                selectedPointsToUse = 0;
+            } else {
+                if (lowNotice) lowNotice.style.display = 'none';
+                if (availSection) availSection.style.display = 'block';
+
+                const maxRedeemable = getMaxRedeemablePoints();
+                if (selectedPointsToUse > maxRedeemable) {
+                    selectedPointsToUse = maxRedeemable;
+                }
+
+                const ptsDisplay = document.getElementById('posPointsToUseDisplay');
+                const discDisplay = document.getElementById('posPointsDiscountDisplay');
+                const customInput = document.getElementById('posCustomPointsInput');
+
+                if (ptsDisplay) ptsDisplay.textContent = selectedPointsToUse.toLocaleString();
+                if (discDisplay) discDisplay.textContent = ((selectedPointsToUse / 10) * 10).toFixed(2);
+                if (customInput) {
+                    customInput.value = selectedPointsToUse;
+                    customInput.max = maxRedeemable;
+                }
+
+                // Update active state on quick buttons
+                document.querySelectorAll('.pos-quick-point-btn').forEach(btn => btn.classList.remove('active'));
+                if (selectedPointsToUse === 0) {
+                    document.querySelector('.pos-quick-point-btn[onclick="selectPointsToUse(0)"]')?.classList.add('active');
+                } else if (selectedPointsToUse === 10) {
+                    document.getElementById('btnPts10')?.classList.add('active');
+                } else if (selectedPointsToUse === 50) {
+                    document.getElementById('btnPts50')?.classList.add('active');
+                } else if (selectedPointsToUse === maxRedeemable && maxRedeemable > 0) {
+                    document.getElementById('btnPtsMax')?.classList.add('active');
+                }
+            }
+        }
+
+        function selectPointsToUse(pts) {
+            const maxPts = getMaxRedeemablePoints();
+            let target = Math.floor((parseInt(pts) || 0) / 10) * 10;
+            if (target > maxPts) target = maxPts;
+            if (target < 0) target = 0;
+            selectedPointsToUse = target;
+            updatePointsUI();
+            calculateCart();
+        }
+
+        function selectMaxPointsToUse() {
+            const maxPts = getMaxRedeemablePoints();
+            selectedPointsToUse = maxPts;
+            updatePointsUI();
+            calculateCart();
+        }
+
+        function stepPointsToUse(delta) {
+            let next = selectedPointsToUse + delta;
+            selectPointsToUse(next);
+        }
+
+        function onCustomPointsChange(val) {
+            let num = parseInt(val) || 0;
+            selectPointsToUse(num);
+        }
+
+        window.selectPointsToUse = selectPointsToUse;
+        window.selectMaxPointsToUse = selectMaxPointsToUse;
+        window.stepPointsToUse = stepPointsToUse;
+        window.onCustomPointsChange = onCustomPointsChange;
 
         function renderCustomerDropdown() {
             updateCustomerUI();
@@ -774,8 +946,6 @@
         window.onCustomerInput = onCustomerInput;
         window.selectCustomerFromSuggestion = selectCustomerFromSuggestion;
         window.clearCustomerInput = clearCustomerInput;
-
-
 
         function renderProductGrid() {
             const grid = document.getElementById('posProductsGrid');
@@ -997,12 +1167,15 @@
                 listContainer.innerHTML = '<div style="padding: 40px; text-align: center; color: #94a3b8; font-size: 13px;">ยังไม่มีรายการสินค้า</div>';
                 document.getElementById('summarySubtotal').textContent = '฿0.00';
                 document.getElementById('summaryDiscount').textContent = '-฿0.00';
+                const ptsRowEmpty = document.getElementById('pointsDiscountRow');
+                if (ptsRowEmpty) ptsRowEmpty.style.display = 'none';
                 document.getElementById('summaryNetTotal').textContent = '฿0.00';
                 const pointsRow = document.getElementById('pointsEarnedRow');
                 if (pointsRow) pointsRow.style.display = 'none';
                 const giftRow = document.getElementById('freeGiftRow');
                 if (giftRow) giftRow.style.display = 'none';
                 netTotal = 0;
+                selectedPointsToUse = 0;
                 updateChangeDue();
                 return;
             }
@@ -1031,11 +1204,25 @@
             }).join('');
 
             // Discount calculations
-            let discount = 0;
-            netTotal = Math.max(0, subtotal - discount);
+            let promoDiscount = 0;
+            const pointsDiscount = (selectedPointsToUse / 10) * 10.0;
+            const totalDiscount = promoDiscount + pointsDiscount;
+            netTotal = Math.max(0, subtotal - totalDiscount);
 
             document.getElementById('summarySubtotal').textContent = `฿${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            document.getElementById('summaryDiscount').textContent = `-฿${discount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('summaryDiscount').textContent = `-฿${promoDiscount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            const ptsRow = document.getElementById('pointsDiscountRow');
+            if (ptsRow) {
+                if (selectedPointsToUse > 0) {
+                    document.getElementById('summaryPointsUsed').textContent = selectedPointsToUse.toLocaleString();
+                    document.getElementById('summaryPointsDiscount').textContent = `-฿${pointsDiscount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    ptsRow.style.display = 'flex';
+                } else {
+                    ptsRow.style.display = 'none';
+                }
+            }
+
             document.getElementById('summaryNetTotal').textContent = `฿${netTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             // Points calculation and display
@@ -1138,6 +1325,7 @@
                 customer_id: customerId,
                 promo_id: promoId,
                 payment_method: paymentMethod,
+                points_used: selectedPointsToUse,
                 cash_received: paymentMethod === 'cash' ? cashReceived : netTotal,
                 items: cart.map(i => ({
                     product_id: i.product_id,
@@ -1158,7 +1346,14 @@
                 const result = await response.json();
                 if (response.ok) {
                     showToast("บันทึกการขายสำเร็จ!", "success");
+                    // Update remaining points in memory if available
+                    if (selectedCustomer && result.data && result.data.remaining_points !== undefined) {
+                        selectedCustomer.points = result.data.remaining_points;
+                        const cInList = allCustomers.find(c => (c.customer_id || c.id) == (selectedCustomer.customer_id || selectedCustomer.id));
+                        if (cInList) cInList.points = result.data.remaining_points;
+                    }
                     showReceiptModal(result.data);
+                    selectedPointsToUse = 0;
                 } else {
                     const detailErr = result.data && result.data.error ? result.data.error : result.error;
                     const errMsg = detailErr ? `${result.message || 'เกิดข้อผิดพลาด'} (${detailErr})` : (result.message || "เกิดข้อผิดพลาดในการบันทึก");
@@ -1201,8 +1396,13 @@
                     <span>ยอดรวม (Subtotal)</span>
                     <span>฿${parseFloat(orderData.subtotal).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
+                ${(orderData.points_used && orderData.points_used > 0) ? `
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px; color: #b45309;">
+                    <span>ส่วนลดแต้มสะสม (${Number(orderData.points_used).toLocaleString()} แต้ม)</span>
+                    <span>-฿${parseFloat(orderData.points_discount || orderData.points_used).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                </div>` : ''}
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
-                    <span>ส่วนลด (Discount)</span>
+                    <span>ส่วนลดรวม (Discount)</span>
                     <span>-฿${parseFloat(orderData.discount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 <div class="receipt-summary-row">
@@ -1223,9 +1423,14 @@
                     <span>฿${parseFloat(orderData.change).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 ${(orderData.points_earned && orderData.points_earned > 0) ? `
-                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px; color: #16a34a;">
                     <span>แต้มได้รับครั้งนี้</span>
                     <span>+${Number(orderData.points_earned).toLocaleString()} แต้ม</span>
+                </div>` : ''}
+                ${(orderData.remaining_points !== undefined && orderData.customer_id) ? `
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px; color: #475569;">
+                    <span>แต้มสะสมคงเหลือล่าสุด</span>
+                    <span>${Number(orderData.remaining_points).toLocaleString()} แต้ม</span>
                 </div>` : ''}
                 ${orderData.free_gift ? `
                 <div class="receipt-summary-row" style="font-weight: bold; font-size: 11px;">

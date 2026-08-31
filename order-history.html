@@ -2,25 +2,9 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ประวัติคำสั่งซื้อ - Hello Pet Shop</title>
     <link rel="stylesheet" href="/src/css/style.css">
-    <style>
-        html { opacity: 0; }
-        html.rendered { opacity: 1; transition: opacity 0.12s ease-in-out; }
-        body { font-family: 'Outfit', 'Kanit', sans-serif; }
-        .nav-green { background-color: #1b4332; }
-        .btn-green { background-color: #4D7C68; color: white !important; }
-        .btn-green:hover { background-color: #3D6353; }
-    </style>
-    <script>
-        (function() {
-            function show() { document.documentElement.classList.add('rendered'); }
-            if (document.readyState !== 'loading') show();
-            else document.addEventListener('DOMContentLoaded', show);
-            setTimeout(show, 200);
-        })();
-    </script>
     <script type="module" src="/src/js/main.js"></script>
     <script type="module" src="/src/js/order-history.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -54,9 +38,9 @@
                     <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full hidden">0</span>
                 </a>
                 <div class="relative">
-                    <button id="navProfileMenuBtn" class="block w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-transparent shadow-sm hover:border-white transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#1b4332]">
-                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center bg-gray-50">
-                            <i class="fas fa-user text-gray-400 text-[15px]"></i>
+                    <button id="navProfileMenuBtn" class="block w-8 h-8 rounded-full overflow-hidden bg-white/15 hover:bg-white/25 border border-white/30 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-white flex items-center justify-center text-white">
+                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center text-white">
+                            <i class="fas fa-user text-white text-[14px]"></i>
                         </div>
                         <img id="navProfileImage" src="" alt="Profile" class="w-full h-full object-cover hidden">
                     </button>
@@ -76,38 +60,53 @@
         </nav>
     </header>
 
-    <main class="max-w-5xl mx-auto px-4 py-10 pb-20">
-        <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <main class="max-w-5xl mx-auto px-4 py-6 md:py-10 pb-8">
+        <div class="mb-4 sm:mb-6 flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800 tracking-tight">ประวัติคำสั่งซื้อ</h1>
-                <p class="text-gray-500 text-sm mt-1">ติดตามสถานะและจัดการรายการสั่งซื้อทั้งหมดของคุณ</p>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight">ประวัติคำสั่งซื้อ</h1>
+                <p class="text-gray-500 text-xs sm:text-sm mt-0.5">ติดตามสถานะและจัดการรายการสั่งซื้อทั้งหมดของคุณ</p>
             </div>
         </div>
 
         <!-- Status Filter Tabs -->
-        <div class="flex items-center space-x-2 overflow-x-auto pb-2 mb-6 no-scrollbar border-b border-gray-100">
-            <button data-tab="all" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-[#4D7C68] text-white shadow-sm">
-                ทั้งหมด
+        <div class="relative mb-6">
+            <!-- Left Scroll Button -->
+            <button id="tabScrollLeft" aria-label="เลื่อนซ้าย" class="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/95 shadow-md border border-gray-200 text-gray-700 hover:bg-gray-50 items-center justify-center transition-all opacity-0 pointer-events-none">
+                <i class="fas fa-chevron-left text-xs"></i>
             </button>
-            <button data-tab="pending_payment" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 flex items-center gap-1.5">
-                <span>ที่ต้องชำระ</span>
-                <span id="pendingBadge" class="hidden bg-amber-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">0</span>
-            </button>
-            <button data-tab="preparing" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
-                ที่ต้องจัดส่ง
-            </button>
-            <button data-tab="shipping" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
-                ที่ต้องได้รับ
-            </button>
-            <button data-tab="completed" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
-                สำเร็จแล้ว
-            </button>
-            <button data-tab="cancelled" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
-                ยกเลิกแล้ว
+
+            <div id="orderTabs" class="flex items-center gap-2 overflow-x-auto pb-2.5 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none scroll-smooth touch-pan-x cursor-grab select-none" style="-webkit-overflow-scrolling: touch;">
+                <button data-tab="all" class="tab-btn shrink-0 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap bg-[#1b4332] text-white shadow-sm border border-[#1b4332]">
+                    ทั้งหมด
+                </button>
+                <button data-tab="pending_payment" class="tab-btn shrink-0 px-4 py-2 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm transition-all whitespace-nowrap bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center gap-1.5">
+                    <span>ที่ต้องชำระ</span>
+                    <span id="pendingBadge" class="hidden bg-amber-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">0</span>
+                </button>
+                <button data-tab="preparing" class="tab-btn shrink-0 px-4 py-2 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm transition-all whitespace-nowrap bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center gap-1.5">
+                    <span>ที่ต้องจัดส่ง</span>
+                    <span id="preparingBadge" class="hidden bg-blue-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">0</span>
+                </button>
+                <button data-tab="shipping" class="tab-btn shrink-0 px-4 py-2 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm transition-all whitespace-nowrap bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center gap-1.5">
+                    <span>ที่ต้องได้รับ</span>
+                    <span id="shippingBadge" class="hidden bg-purple-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">0</span>
+                </button>
+                <button data-tab="completed" class="tab-btn shrink-0 px-4 py-2 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm transition-all whitespace-nowrap bg-white text-gray-700 hover:bg-gray-50 border border-gray-200">
+                    สำเร็จแล้ว
+                </button>
+                <button data-tab="cancelled" class="tab-btn shrink-0 px-4 py-2 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm transition-all whitespace-nowrap bg-white text-gray-700 hover:bg-gray-50 border border-gray-200">
+                    ยกเลิกแล้ว
+                </button>
+                <div class="shrink-0 w-2"></div>
+            </div>
+
+            <!-- Right Scroll Button -->
+            <button id="tabScrollRight" aria-label="เลื่อนขวา" class="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/95 shadow-md border border-gray-200 text-gray-700 hover:bg-gray-50 items-center justify-center transition-all">
+                <i class="fas fa-chevron-right text-xs"></i>
             </button>
         </div>
 
-        <div id="ordersContainer" class="space-y-6">
+        <div id="ordersContainer" class="space-y-4 sm:space-y-6">
             <!-- Orders will be loaded here via JS -->
             <!-- Skeleton Loading -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
@@ -126,13 +125,13 @@
         </div>
 
         <!-- Empty State -->
-        <div id="emptyOrders" class="hidden flex flex-col items-center justify-center py-20 text-center">
-            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 text-gray-300">
-                <i class="fas fa-receipt text-5xl"></i>
+        <div id="emptyOrders" class="hidden flex flex-col items-center justify-center py-12 sm:py-20 text-center px-4">
+            <div class="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-full flex items-center justify-center mb-5 text-gray-300">
+                <i class="fas fa-receipt text-4xl sm:text-5xl"></i>
             </div>
-            <h2 class="text-xl font-bold text-gray-700">ยังไม่มีรายการสั่งซื้อ</h2>
-            <p class="text-gray-500 text-sm mt-1 mb-6">ยังไม่มีประวัติในหมวดหมู่นี้ หรือคุณยังไม่มีรายการสั่งซื้อ</p>
-            <a href="products.html" class="bg-[#4D7C68] hover:bg-[#3D6353] text-white px-6 py-3 rounded-xl font-bold shadow-md transition-all inline-flex items-center">
+            <h2 class="text-lg sm:text-xl font-bold text-gray-700">ยังไม่มีรายการสั่งซื้อ</h2>
+            <p class="text-gray-500 text-xs sm:text-sm mt-1 mb-6 max-w-xs">ยังไม่มีประวัติในหมวดหมู่นี้ หรือคุณยังไม่มีรายการสั่งซื้อ</p>
+            <a href="products.html" class="bg-[#1b4332] hover:bg-[#15803d] text-white px-6 py-3 rounded-xl font-bold shadow-md transition-all inline-flex items-center text-sm">
                 <i class="fas fa-store mr-2"></i>
                 <span>เริ่มเลือกซื้อสินค้า</span>
             </a>
@@ -187,7 +186,7 @@
                     </div>
                     <div class="flex justify-between text-lg font-bold text-gray-800 pt-2 border-t border-gray-200">
                         <span>ยอดสุทธิ</span>
-                        <span id="modalTotal" class="text-[#FE7F9C]"></span>
+                        <span id="modalTotal" class="text-[#1b4332]"></span>
                     </div>
                 </div>
             </div>

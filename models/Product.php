@@ -8,10 +8,11 @@ class Product {
     }
 
     public function getAll($keyword = "", $filter = "all") {
-        $query = "SELECT p.*, c.category_name, CONCAT(e.first_name, ' ', e.last_name) AS creator_name,
+        $query = "SELECT p.*, c.category_name, pt.name AS target_pet_type_name, pt.code AS target_pet_type_code, CONCAT(e.first_name, ' ', e.last_name) AS creator_name,
                   (SELECT MIN(expiry_date) FROM product_lots WHERE product_id = p.product_id AND quantity > 0 AND expiry_date IS NOT NULL) AS min_lot_expiry
                   FROM " . $this->table . " p 
                   LEFT JOIN product_categories c ON p.category_id = c.category_id 
+                  LEFT JOIN pet_types pt ON p.target_pet_type_id = pt.id 
                   LEFT JOIN employees e ON p.created_by = e.employee_id ";
         
         $conditions = [];
@@ -61,9 +62,10 @@ class Product {
     }
 
     public function getById($id) {
-        $query = "SELECT p.*, c.category_name, CONCAT(e.first_name, ' ', e.last_name) AS creator_name 
+        $query = "SELECT p.*, c.category_name, pt.name AS target_pet_type_name, pt.code AS target_pet_type_code, CONCAT(e.first_name, ' ', e.last_name) AS creator_name 
                   FROM " . $this->table . " p 
                   LEFT JOIN product_categories c ON p.category_id = c.category_id 
+                  LEFT JOIN pet_types pt ON p.target_pet_type_id = pt.id 
                   LEFT JOIN employees e ON p.created_by = e.employee_id 
                   WHERE p.product_id = :id";
         
@@ -77,6 +79,7 @@ class Product {
     public function update($id, $data) {
         $query = "UPDATE " . $this->table . " SET 
                   category_id = :category_id,
+                  target_pet_type_id = :target_pet_type_id,
                   product_name = :name,
                   description = :description,
                   selling_price = :price,
@@ -93,8 +96,10 @@ class Product {
         $stmt = $this->conn->prepare($query);
         
         $status = ($data['status'] === 'active' || $data['status'] == 1) ? 1 : 0;
+        $target_pet_type_id = isset($data['target_pet_type_id']) && $data['target_pet_type_id'] !== '' ? (int)$data['target_pet_type_id'] : 1;
 
         $stmt->bindParam(':category_id', $data['category_id']);
+        $stmt->bindParam(':target_pet_type_id', $target_pet_type_id);
         $stmt->bindParam(':name', $data['name']);
         $stmt->bindParam(':description', $data['description']);
         $stmt->bindParam(':price', $data['price']);
@@ -175,14 +180,16 @@ class Product {
 
     public function create($data) {
         $query = "INSERT INTO " . $this->table . " 
-                 (category_id, product_name, description, cost_price, selling_price, stock_qty, barcode, weight, weight_value, weight_unit, image_url, is_active, created_by) 
-                 VALUES (:category_id, :name, :description, :cost_price, :price, :stock_quantity, :barcode, :weight, :weight_value, :weight_unit, :image_url, :status, :created_by)";
+                 (category_id, target_pet_type_id, product_name, description, cost_price, selling_price, stock_qty, barcode, weight, weight_value, weight_unit, image_url, is_active, created_by) 
+                 VALUES (:category_id, :target_pet_type_id, :name, :description, :cost_price, :price, :stock_quantity, :barcode, :weight, :weight_value, :weight_unit, :image_url, :status, :created_by)";
         
         $stmt = $this->conn->prepare($query);
         
         $status = ($data['status'] === 'active' || $data['status'] == 1) ? 1 : 0;
+        $target_pet_type_id = isset($data['target_pet_type_id']) && $data['target_pet_type_id'] !== '' ? (int)$data['target_pet_type_id'] : 1;
 
         $stmt->bindParam(':category_id', $data['category_id']);
+        $stmt->bindParam(':target_pet_type_id', $target_pet_type_id);
         $stmt->bindParam(':name', $data['name']);
         $stmt->bindParam(':description', $data['description']);
         $stmt->bindParam(':cost_price', $data['cost_price']);

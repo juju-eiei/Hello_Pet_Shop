@@ -41,11 +41,41 @@ export function initMyPetsPage() {
     let petToDeleteId = null;
 
     // Initialize
+    loadPetTypesForSelect();
     loadPets();
+
+    async function loadPetTypesForSelect() {
+        try {
+            const res = await fetch('/api/pet-types');
+            if (res.ok) {
+                const result = await res.json();
+                if (petSpeciesInput && result.data && result.data.length > 0) {
+                    const currentVal = petSpeciesInput.value;
+                    petSpeciesInput.innerHTML = '<option value="" disabled selected>เลือกชนิดสัตว์เลี้ยง...</option>' +
+                        result.data.filter(pt => pt.code !== 'all').map(pt => `<option value="${escapeHTML(pt.name)}">${escapeHTML(pt.name)}</option>`).join('');
+                    if (currentVal) petSpeciesInput.value = currentVal;
+                }
+            }
+        } catch (e) {
+            console.error("Error loading pet types for select:", e);
+        }
+    }
 
     // =============== Core Functions ===============
 
     async function loadPets() {
+        // 1. Instant Cache Render: If pets data is already in cache, render immediately (0ms)
+        const cachedPetsStr = localStorage.getItem('myPetsData');
+        if (cachedPetsStr) {
+            try {
+                const cached = JSON.parse(cachedPetsStr);
+                if (Array.isArray(cached) && cached.length > 0) {
+                    pets = cached;
+                    renderPets();
+                }
+            } catch (e) {}
+        }
+
         const userStr = localStorage.getItem('user');
         const user = userStr ? JSON.parse(userStr) : null;
         let customerId = user?.customer_id;
@@ -82,15 +112,18 @@ export function initMyPetsPage() {
                             image: p.image_url || '',
                             createdAt: p.created_at || ''
                         }));
+                        savePetsToLocal();
+                        renderPets();
+                        return;
                     }
                 }
             } catch (err) {
                 console.error("Error loading pets from DB:", err);
             }
-        } else {
-            const petsStr = localStorage.getItem('myPetsData');
-            pets = petsStr ? JSON.parse(petsStr) : [];
         }
+
+        const petsStr = localStorage.getItem('myPetsData');
+        pets = petsStr ? JSON.parse(petsStr) : [];
         renderPets();
     }
 

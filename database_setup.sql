@@ -78,10 +78,20 @@ CREATE TABLE product_categories (
     requires_expiration TINYINT(1) NOT NULL DEFAULT 1
 );
 
+-- 7a. pet_types
+CREATE TABLE pet_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 8. products
 CREATE TABLE products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     category_id INT NOT NULL,
+    target_pet_type_id INT NULL DEFAULT 1,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     cost_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
@@ -92,7 +102,8 @@ CREATE TABLE products (
     status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES product_categories(id) ON DELETE RESTRICT
+    FOREIGN KEY (category_id) REFERENCES product_categories(id) ON DELETE RESTRICT,
+    FOREIGN KEY (target_pet_type_id) REFERENCES pet_types(id) ON DELETE SET NULL
 );
 
 -- 9. carts

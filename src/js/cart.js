@@ -8,6 +8,19 @@ export function initCartPage() {
     if (!cartItemsContainer) return;
 
     const cartSubtotal = document.getElementById('cartSubtotal');
+    let rewardSettings = { point_earning_baht: 100, point_earning_qty: 1 };
+
+    async function fetchRewardSettings() {
+        try {
+            const res = await fetch('/api/rewards/settings');
+            if (res.ok) {
+                const json = await res.json();
+                if (json.data) rewardSettings = json.data;
+            }
+        } catch(e) {}
+        renderCart();
+    }
+    fetchRewardSettings();
     
     function renderCart() {
         const cart = getCartData();
@@ -22,6 +35,10 @@ export function initCartPage() {
                 </div>
             `;
             if (cartSubtotal) cartSubtotal.textContent = '฿0.00';
+            const cartPointsEarnedBadge = document.getElementById('cartPointsEarnedBadge');
+            if (cartPointsEarnedBadge) cartPointsEarnedBadge.style.display = 'none';
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            if (checkoutBtn) checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
             updateGlobalCartCount();
             return;
         }
@@ -49,26 +66,28 @@ export function initCartPage() {
             const imageUrl = item.image || '/image/non-image.png';
             
             return `
-                <div class="flex items-center justify-between py-4 border-b border-gray-100 last:border-0 group">
-                    <div class="flex items-center space-x-4">
-                        <input type="checkbox" class="item-checkbox w-4 h-4 rounded border-gray-300 text-[#16a34a] focus:ring-[#16a34a] cursor-pointer" data-id="${item.id}" ${isSelected ? 'checked' : ''}>
-                        <img src="${imageUrl}" onerror="this.src='/image/non-image.png'" alt="${item.name}" class="w-16 h-16 object-contain rounded-lg border border-gray-100 p-1">
-                        <div>
-                            <h3 class="font-semibold text-gray-800 group-hover:text-[#16a34a] transition-colors">${item.name}</h3>
-                            <p class="text-sm text-gray-500 font-mono mt-0.5">฿${parseFloat(item.price).toFixed(2)}</p>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-gray-100 last:border-0 group gap-3">
+                    <!-- Left: Checkbox + Image + Product Details -->
+                    <div class="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                        <input type="checkbox" class="item-checkbox w-4 h-4 rounded border-gray-300 text-[#16a34a] focus:ring-[#16a34a] cursor-pointer shrink-0" data-id="${item.id}" ${isSelected ? 'checked' : ''}>
+                        <img src="${imageUrl}" onerror="this.src='/image/non-image.png'" alt="${item.name}" class="w-16 h-16 object-contain rounded-lg border border-gray-100 p-1 shrink-0 bg-gray-50">
+                        <div class="min-w-0 flex-1">
+                            <h3 class="font-semibold text-gray-800 group-hover:text-[#16a34a] transition-colors truncate text-sm sm:text-base">${item.name}</h3>
+                            <p class="text-xs sm:text-sm text-gray-500 font-mono mt-0.5">฿${parseFloat(item.price).toFixed(2)} <span class="text-[11px] text-gray-400 font-sans">/ ชิ้น</span></p>
                         </div>
                     </div>
 
-                    <div class="flex items-center space-x-6">
+                    <!-- Right: Quantity Stepper + Item Total + Trash Button -->
+                    <div class="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-6 pl-7 sm:pl-0">
                         <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white shadow-xs">
-                            <button class="decrease-btn px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors" data-id="${item.id}">-</button>
-                            <span class="px-3 py-1 text-sm font-semibold text-gray-700 min-w-[32px] text-center">${item.quantity}</span>
-                            <button class="increase-btn px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors" data-id="${item.id}">+</button>
+                            <button class="decrease-btn px-2.5 sm:px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors active:scale-95" data-id="${item.id}">-</button>
+                            <span class="px-2.5 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-gray-700 min-w-[28px] sm:min-w-[32px] text-center">${item.quantity}</span>
+                            <button class="increase-btn px-2.5 sm:px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors active:scale-95" data-id="${item.id}">+</button>
                         </div>
 
-                        <span class="font-bold text-gray-800 font-mono min-w-[80px] text-right">฿${itemTotal.toFixed(2)}</span>
+                        <span class="font-bold text-gray-800 font-mono text-sm sm:text-base min-w-[70px] sm:min-w-[80px] text-right">฿${itemTotal.toFixed(2)}</span>
 
-                        <button class="remove-btn text-gray-400 hover:text-red-500 transition-colors p-1" data-id="${item.id}">
+                        <button class="remove-btn text-gray-400 hover:text-red-500 transition-colors p-1" data-id="${item.id}" title="ลบสินค้า">
                             <i class="fas fa-trash-can text-sm"></i>
                         </button>
                     </div>
@@ -80,6 +99,33 @@ export function initCartPage() {
         
         if (cartSubtotal) {
             cartSubtotal.textContent = `฿${total.toFixed(2)}`;
+        }
+
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        if (checkoutBtn) {
+            const hasSelected = cart.some(item => item.selected !== false);
+            if (!hasSelected) {
+                checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        const cartPointsEarnedBadge = document.getElementById('cartPointsEarnedBadge');
+        const cartPointsEarnedText = document.getElementById('cartPointsEarnedText');
+        if (cartPointsEarnedBadge && cartPointsEarnedText) {
+            const peBaht = parseFloat(rewardSettings.point_earning_baht) || 100;
+            const peQty = parseInt(rewardSettings.point_earning_qty) || 1;
+            let pts = 0;
+            if (peBaht > 0 && peQty > 0 && total > 0) {
+                pts = Math.floor(total / peBaht) * peQty;
+            }
+            if (pts > 0) {
+                cartPointsEarnedText.textContent = `+${pts.toLocaleString()}`;
+                cartPointsEarnedBadge.style.display = 'inline-flex';
+            } else {
+                cartPointsEarnedBadge.style.display = 'none';
+            }
         }
         
         document.querySelectorAll('.increase-btn').forEach(btn => {
@@ -149,13 +195,7 @@ export function initCartPage() {
     const checkoutBtn = document.getElementById('checkoutBtn');
     if (checkoutBtn) {
         checkoutBtn.onclick = () => {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user) {
-                showRegisterPrompt('กรุณาสมัครสมาชิกเพื่อสั่งซื้อสินค้า');
-                return;
-            }
-
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const cart = getCartData();
             const hasSelected = cart.some(item => item.selected !== false);
             if (!hasSelected || cart.length === 0) {
                 // If nothing is selected or cart is empty
@@ -167,6 +207,12 @@ export function initCartPage() {
                         toast.className = `fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-xl transition-all duration-500 z-50 opacity-0 translate-y-4 pointer-events-none`;
                     }, 3000);
                 }
+                return;
+            }
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                showRegisterPrompt('กรุณาสมัครสมาชิกเพื่อสั่งซื้อสินค้า');
                 return;
             }
             if (window.navigateTo) {

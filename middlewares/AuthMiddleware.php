@@ -65,6 +65,28 @@ class AuthMiddleware {
             ];
         }
 
+        // 3. Fallback: Validate via X-User-Id header for SPA / proxy session recovery
+        $headers = function_exists('apache_request_headers') ? apache_request_headers() : [];
+        $userIdHeader = isset($headers['X-User-Id']) ? $headers['X-User-Id'] : (isset($_SERVER['HTTP_X_USER_ID']) ? $_SERVER['HTTP_X_USER_ID'] : null);
+        if ($userIdHeader) {
+            $database = new Database();
+            $db = $database->getConnection();
+            $stmt = $db->prepare("SELECT u.user_id, u.username, r.role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE u.user_id = ?");
+            $stmt->execute([(int)$userIdHeader]);
+            $u = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($u) {
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                }
+                $_SESSION['user_id'] = $u['user_id'];
+                $_SESSION['role'] = $u['role_name'];
+                return [
+                    'user_id' => $u['user_id'],
+                    'role' => $u['role_name']
+                ];
+            }
+        }
+
         Response::json(401, "Unauthorized: User not authenticated");
     }
 

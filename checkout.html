@@ -6,27 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ชำระเงิน - Hello Pet Shop</title>
     <link rel="stylesheet" href="/src/css/style.css">
-    <style>
-        html { opacity: 0; }
-        html.rendered { opacity: 1; transition: opacity 0.12s ease-in-out; }
-        body { font-family: 'Outfit', 'Kanit', sans-serif; }
-        .nav-green { background-color: #1b4332; }
-        .btn-green { background-color: #16a34a; }
-        .btn-green:hover { background-color: #15803d; }
-    </style>
-    <script>
-        (function() {
-            function show() { document.documentElement.classList.add('rendered'); }
-            if (document.readyState !== 'loading') show();
-            else document.addEventListener('DOMContentLoaded', show);
-            setTimeout(show, 200);
-        })();
-    </script>
     <script type="module" src="/src/js/main.js"></script>
     <script type="module" src="/src/js/checkout.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-        
+    <style>
         /* Custom Option Cards Active Styling */
         .option-card {
             display: block;
@@ -93,9 +77,9 @@
                     <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full hidden">0</span>
                 </a>
                 <div class="relative">
-                    <button id="navProfileMenuBtn" class="block w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-transparent shadow-sm hover:border-white transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#1b4332]">
-                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center bg-gray-50">
-                            <i class="fas fa-user text-gray-400 text-[15px]"></i>
+                    <button id="navProfileMenuBtn" class="block w-8 h-8 rounded-full overflow-hidden bg-white/15 hover:bg-white/25 border border-white/30 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-white flex items-center justify-center text-white">
+                        <div id="navDefaultAvatar" class="w-full h-full flex items-center justify-center text-white">
+                            <i class="fas fa-user text-white text-[14px]"></i>
                         </div>
                         <img id="navProfileImage" src="" alt="Profile" class="w-full h-full object-cover hidden">
                     </button>
@@ -213,28 +197,29 @@
                         <!-- Option 1: PromptPay / Bank Transfer -->
                         <label class="option-card block cursor-pointer active-card">
                             <input type="radio" name="paymentMethod" value="transfer" class="sr-only" checked>
-                            <div class="border-2 border-gray-100 rounded-2xl p-4 md:p-5 flex items-center justify-between hover:border-gray-300 hover:bg-gray-50/80 transition-all duration-200">
-                                <div class="flex items-center space-x-4">
+                            <div class="border-2 border-gray-100 rounded-2xl p-3.5 sm:p-4 md:p-5 flex items-center justify-between gap-3 hover:border-gray-300 hover:bg-gray-50/80 transition-all duration-200">
+                                <div class="flex items-center space-x-3 sm:space-x-3.5 min-w-0 flex-1">
                                     <div class="radio-circle w-5 h-5 rounded-full border-2 border-gray-300 relative flex items-center justify-center transition-all shrink-0">
                                         <div class="radio-dot w-2 h-2 rounded-full bg-white scale-0 opacity-0 transition-all duration-200"></div>
                                     </div>
-                                    <div class="flex items-center space-x-3.5">
-                                        <div class="w-11 h-11 rounded-xl bg-[#003B6A] text-white flex items-center justify-center shadow-md shrink-0">
+                                    <div class="flex items-center space-x-3 sm:space-x-3.5 min-w-0 flex-1">
+                                        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#003B6A] text-white flex items-center justify-center shadow-md shrink-0">
                                             <span class="font-extrabold text-[10px] tracking-tighter flex flex-col items-center leading-none">
                                                 <i class="fas fa-qrcode text-base mb-0.5 text-blue-200"></i>
                                                 <span class="text-[8px] text-blue-100">PROMPT</span>
                                             </span>
                                         </div>
-                                        <div>
-                                            <div class="font-bold text-gray-800 flex items-center gap-2">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="font-bold text-gray-800 text-sm sm:text-base leading-tight">
                                                 โอนผ่านธนาคาร / PromptPay
-                                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-[#003B6A]">พร้อมเพย์</span>
                                             </div>
-                                            <div class="text-xs text-gray-500 mt-0.5">สแกน QR Code หรือโอนผ่านเลขบัญชีธนาคาร</div>
+                                            <div class="text-[11px] sm:text-xs text-gray-500 mt-1 leading-snug">
+                                                สแกน QR Code หรือโอนผ่านเลขบัญชีธนาคาร
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <i class="fas fa-chevron-right chevron-icon text-gray-300 text-xs transition-all"></i>
+                                <i class="fas fa-chevron-right chevron-icon text-gray-300 text-xs transition-all shrink-0"></i>
                             </div>
                         </label>
                     </div>
@@ -255,6 +240,34 @@
                         <!-- Populated by checkout.js -->
                     </div>
 
+                    <!-- Points Redemption Card -->
+                    <div id="checkoutPointsCard" class="mb-6 p-4 rounded-xl border border-amber-200 bg-amber-50/50" style="display: none;">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="flex items-center space-x-2 cursor-pointer select-none">
+                                <input type="checkbox" id="usePointsCheckbox" class="w-4 h-4 text-amber-500 rounded border-gray-300 focus:ring-amber-400">
+                                <span class="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                                    <i class="fas fa-coins text-amber-500"></i> ใช้แต้มสะสมเป็นส่วนลด
+                                </span>
+                            </label>
+                            <span class="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200" id="checkoutUserPointsBadge">0 แต้ม</span>
+                        </div>
+                        <div id="checkoutPointsSelectorArea" class="hidden mt-3 pt-3 border-t border-amber-200/60">
+                            <div class="flex items-center justify-between text-xs text-amber-900 mb-2">
+                                <span>แลกแต้ม (10 แต้ม = 10 บาท):</span>
+                                <span class="font-bold text-emerald-600">-฿<span id="checkoutPointsDiscountAmount">0.00</span></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button type="button" id="btnPointsMinus" class="w-8 h-8 rounded-lg bg-white border border-amber-300 text-amber-900 font-bold text-sm hover:bg-amber-100 transition-colors">-</button>
+                                <input type="number" id="checkoutPointsInput" value="0" min="0" step="10" class="flex-1 text-center py-1 bg-white border border-amber-300 rounded-lg text-sm font-bold text-gray-800 outline-none">
+                                <button type="button" id="btnPointsPlus" class="w-8 h-8 rounded-lg bg-white border border-amber-300 text-amber-900 font-bold text-sm hover:bg-amber-100 transition-colors">+</button>
+                                <button type="button" id="btnPointsMax" class="px-2.5 py-1 text-xs font-bold bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">สูงสุด</button>
+                            </div>
+                        </div>
+                        <div id="checkoutPointsNotice" class="text-[11px] text-amber-800 mt-2 hidden">
+                            <i class="fas fa-info-circle mr-1 text-amber-600"></i>สะสมครบ 10 แต้มเพื่อเริ่มใช้ส่วนลด 10 บาท (ปัจจุบันมี <span id="checkoutNoticePts">0</span> แต้ม)
+                        </div>
+                    </div>
+
                     <!-- Totals -->
                     <div class="space-y-3 mb-6 text-sm">
                         <div class="flex justify-between text-gray-600">
@@ -265,6 +278,10 @@
                             <span>ค่าจัดส่ง</span>
                             <span id="summaryShipping" class="font-semibold text-gray-800"></span>
                         </div>
+                        <div id="summaryPointsRow" class="flex justify-between text-amber-600 font-semibold" style="display: none;">
+                            <span>ส่วนลดแต้มสะสม (<span id="summaryPointsUsedText">0</span> แต้ม)</span>
+                            <span id="summaryPointsDiscount">-฿0.00</span>
+                        </div>
                     </div>
                     
                     <div class="border-t border-gray-100 pt-4 mb-6">
@@ -274,6 +291,14 @@
                                 <span class="text-[11px] text-gray-400">รวมภาษีมูลค่าเพิ่มแล้ว</span>
                             </div>
                             <span id="summaryTotal" class="text-2xl font-extrabold text-secondary-600"></span>
+                        </div>
+
+                        <!-- Points to be Earned Highlight -->
+                        <div id="summaryPointsEarnedContainer" class="mt-3.5 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                            <span class="text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
+                                <i class="fas fa-coins text-amber-500"></i> แต้มสะสมที่จะได้รับจากคำสั่งซื้อนี้:
+                            </span>
+                            <span id="summaryPointsEarned" class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200">+0 แต้ม</span>
                         </div>
                     </div>
 
@@ -314,6 +339,9 @@
                 <span class="text-xs text-gray-500 font-semibold block mb-0.5">ยอดสุทธิที่ต้องชำระ</span>
                 <span id="qrModalAmount" class="text-3xl font-extrabold text-[#003B6A]">฿0.00</span>
                 <span class="text-[11px] text-gray-400 block mt-1">รหัสคำสั่งซื้อ: #<span id="qrModalOrderId" class="font-mono font-semibold"></span></span>
+                <div class="mt-2 inline-flex items-center gap-1.5 bg-emerald-100/80 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
+                    <i class="fas fa-coins text-amber-500"></i> แต้มสะสมที่จะได้รับ: <span id="qrModalPointsEarned">+0 แต้ม</span>
+                </div>
             </div>
 
             <!-- Customizable QR Code Image Container -->

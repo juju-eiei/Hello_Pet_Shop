@@ -55,6 +55,9 @@ const routes = {
     '/admin/categories': { file: '/admin_categories.html', category: 'admin', title: 'จัดการหมวดหมู่สินค้า - Hello Pet Shop' },
     '/admin_categories.html': { file: '/admin_categories.html', category: 'admin', title: 'จัดการหมวดหมู่สินค้า - Hello Pet Shop' },
 
+    '/admin/pet-types': { file: '/admin_pet_types.html', category: 'admin', title: 'จัดการประเภทสัตว์เลี้ยง - Hello Pet Shop' },
+    '/admin_pet_types.html': { file: '/admin_pet_types.html', category: 'admin', title: 'จัดการประเภทสัตว์เลี้ยง - Hello Pet Shop' },
+
     '/admin/promotions': { file: '/admin_promotions.html', category: 'admin', title: 'จัดการโปรโมชั่น - Hello Pet Shop' },
     '/admin_promotions.html': { file: '/admin_promotions.html', category: 'admin', title: 'จัดการโปรโมชั่น - Hello Pet Shop' },
 
@@ -63,6 +66,9 @@ const routes = {
 
     '/admin/orders/details': { file: '/admin_order_details.html', category: 'admin', title: 'รายละเอียดคำสั่งซื้อ - Hello Pet Shop' },
     '/admin_order_details.html': { file: '/admin_order_details.html', category: 'admin', title: 'รายละเอียดคำสั่งซื้อ - Hello Pet Shop' },
+
+    '/admin/refunds': { file: '/admin_refunds.html', category: 'admin', title: 'จัดการการคืนเงิน - Hello Pet Shop' },
+    '/admin_refunds.html': { file: '/admin_refunds.html', category: 'admin', title: 'จัดการการคืนเงิน - Hello Pet Shop' },
 
     '/admin/customers': { file: '/admin_customers.html', category: 'admin', title: 'จัดการลูกค้า - Hello Pet Shop' },
     '/admin_customers.html': { file: '/admin_customers.html', category: 'admin', title: 'จัดการลูกค้า - Hello Pet Shop' },
@@ -110,6 +116,9 @@ const routes = {
 
     '/staff/orders/details': { file: '/staff_order_details.html', category: 'staff', title: 'รายละเอียดคำสั่งซื้อ - Hello Pet Shop' },
     '/staff_order_details.html': { file: '/staff_order_details.html', category: 'staff', title: 'รายละเอียดคำสั่งซื้อ - Hello Pet Shop' },
+
+    '/staff/refunds': { file: '/staff_refunds.html', category: 'staff', title: 'จัดการการคืนเงิน - Hello Pet Shop' },
+    '/staff_refunds.html': { file: '/staff_refunds.html', category: 'staff', title: 'จัดการการคืนเงิน - Hello Pet Shop' },
 
     '/staff/customers': { file: '/staff_customers.html', category: 'staff', title: 'ข้อมูลลูกค้า - Hello Pet Shop' },
     '/staff_customers.html': { file: '/staff_customers.html', category: 'staff', title: 'ข้อมูลลูกค้า - Hello Pet Shop' },
@@ -232,14 +241,21 @@ export async function navigateTo(url, pushState = true) {
             } catch (e) {}
         }
 
-        // 2. Synchronize Page-Specific <style> and <link rel="stylesheet"> elements
+        // 2. Synchronize Page-Specific <style> and <link rel="stylesheet"> elements safely (filter out opacity hacks)
         document.querySelectorAll('style[data-spa-style="true"], link[data-spa-style="true"]').forEach(el => el.remove());
 
         doc.querySelectorAll('style').forEach(styleEl => {
-            const newStyle = document.createElement('style');
-            newStyle.setAttribute('data-spa-style', 'true');
-            newStyle.textContent = styleEl.textContent;
-            document.head.appendChild(newStyle);
+            let css = styleEl.textContent || '';
+            // Remove dangerous opacity: 0 and .rendered hacks that cause black/white screen flash
+            css = css.replace(/html\s*\{\s*opacity:\s*0[^}]*\}/gi, '');
+            css = css.replace(/html\.rendered\s*\{[^}]*\}/gi, '');
+            css = css.trim();
+            if (css) {
+                const newStyle = document.createElement('style');
+                newStyle.setAttribute('data-spa-style', 'true');
+                newStyle.textContent = css;
+                document.head.appendChild(newStyle);
+            }
         });
 
         doc.querySelectorAll('link[rel="stylesheet"]').forEach(linkEl => {
@@ -253,74 +269,132 @@ export async function navigateTo(url, pushState = true) {
             }
         });
 
-        // 3. Swap Main Content
-        const newMain = doc.querySelector('main');
-        const currentMain = document.querySelector('main');
+        // Function to perform the actual DOM mutation
+        const applyDOMUpdates = () => {
+            // 3. Swap Main Content
+            const newMain = doc.querySelector('main');
+            const currentMain = document.querySelector('main');
 
-        if (newMain && currentMain) {
-            currentMain.replaceWith(newMain);
-            newMain.classList.add('spa-fade-in');
-        }
-
-        // 4. Synchronize Floating Modals & Drawers (those outside <main>)
-        const floatingOverlaysSelector = '.modal, .modal-overlay, .modal-backdrop, .drawer-overlay, .po-modal-overlay, .print-layout-overlay, #drawerOverlay, #attendanceOverlay, #dateDetailOverlay, #inspectOverlay, #bookingOverlay, #bannerModal, #giftModal, #restockModal, #categoryModal, #paymentQrModal, #successModal, #petFormModal, #petModal, #editCustomerModal, #deleteModal, #confirmModal, #editProfileModal, #orderDetailModal, #payNowModal, #createPoModal, #poHistoryModal, #stockHistoryModal, #receivePoModal';
-        
-        // Remove existing overlays in current page that are outside <main>
-        document.querySelectorAll(floatingOverlaysSelector).forEach(el => {
-            if (!el.closest('main')) {
-                el.remove();
+            if (newMain && currentMain) {
+                currentMain.replaceWith(newMain);
+                newMain.classList.add('spa-fade-in');
             }
-        });
 
-        // Ensure any floating LINE button or stray body elements outside <main> are removed
-        document.querySelectorAll('a[href*="lin.ee"], a[title*="LINE"].fixed, body > footer, body > section.border-t').forEach(el => {
-            if (!el.closest('main')) {
-                el.remove();
-            }
-        });
+            // Clean up any stray sections or orphan elements between main and footer/bottomNav
+            document.querySelectorAll('body > section').forEach(sec => {
+                if (!sec.closest('main')) {
+                    sec.remove();
+                }
+            });
 
-        // Append new modals & drawers from incoming document that are outside <main> into live body
-        doc.querySelectorAll(floatingOverlaysSelector).forEach(el => {
-            if (!el.closest('main')) {
+            // 4. Synchronize Floating Modals & Drawers (those outside <main>)
+            const floatingOverlaysSelector = '.modal, .modal-overlay, .modal-backdrop, .drawer-overlay, .po-modal-overlay, .print-layout-overlay, #drawerOverlay, #attendanceOverlay, #dateDetailOverlay, #inspectOverlay, #bookingOverlay, #bannerModal, #giftModal, #restockModal, #categoryModal, #paymentQrModal, #successModal, #petFormModal, #petModal, #editCustomerModal, #deleteModal, #confirmModal, #editProfileModal, #orderDetailModal, #payNowModal, #createPoModal, #poHistoryModal, #stockHistoryModal, #receivePoModal';
+            
+            const incomingModals = Array.from(doc.querySelectorAll(floatingOverlaysSelector)).filter(el => !el.closest('main'));
+            const incomingModalIds = new Set(incomingModals.map(m => m.id).filter(Boolean));
+
+            // Clean up modals from previous page that are not in incoming page
+            document.querySelectorAll(floatingOverlaysSelector).forEach(el => {
+                if (!el.closest('main') && el.id && !incomingModalIds.has(el.id)) {
+                    el.remove();
+                }
+            });
+
+            // Add or update incoming modals
+            incomingModals.forEach(el => {
+                if (el.id) {
+                    const existing = document.getElementById(el.id);
+                    if (existing) {
+                        existing.replaceWith(el.cloneNode(true));
+                        return;
+                    }
+                }
                 document.body.appendChild(el.cloneNode(true));
+            });
+
+            // Synchronize Footer smoothly without destroying layout
+            const incomingFooter = doc.querySelector('footer');
+            const currentFooter = document.querySelector('footer');
+
+            if (incomingFooter) {
+                if (currentFooter) {
+                    // Update content in-place to avoid layout shift / scroll jerk
+                    if (currentFooter.innerHTML !== incomingFooter.innerHTML) {
+                        currentFooter.innerHTML = incomingFooter.innerHTML;
+                    }
+                    currentFooter.className = incomingFooter.className;
+                } else {
+                    const footerClone = incomingFooter.cloneNode(true);
+                    const bottomNav = document.querySelector('.customer-bottom-nav');
+                    if (bottomNav) {
+                        document.body.insertBefore(footerClone, bottomNav);
+                    } else {
+                        document.body.appendChild(footerClone);
+                    }
+                }
+            } else if (currentFooter) {
+                currentFooter.remove();
             }
-        });
 
-        // 5. Update Document Title & Mobile Header Title
-        const pageTitle = targetInfo.title || doc.title || '';
-        if (pageTitle) {
-            document.title = pageTitle;
-            const mobileHeaderTitle = document.querySelector('header.mobile-header h2');
-            if (mobileHeaderTitle) {
-                const cleanTitle = pageTitle.split('-')[0].trim();
-                if (cleanTitle) mobileHeaderTitle.textContent = cleanTitle;
+            // Sync body classes safely (strip 'preload' to allow smooth transitions)
+            if (doc.body && doc.body.className) {
+                const cleanBodyClass = doc.body.className.replace(/\bpreload\b/g, '').trim();
+                document.body.className = cleanBodyClass;
             }
-        }
 
-        // 6. Update History
-        if (pushState) {
-            history.pushState({ path: pathname }, '', pathname + search + hash);
-        }
+            // Ensure html always stays visible and smooth
+            document.documentElement.style.opacity = '1';
+            document.documentElement.classList.add('rendered');
 
-        // 7. Scroll to top
-        window.scrollTo({ top: 0, behavior: 'instant' });
-
-        // 8. Update Active Navigation States
-        if (targetInfo.category === 'customer') {
-            updateActiveNavLinks(pathname);
-            updateGlobalCartCount();
-            updateNavProfile();
-
-            // Run Modular Customer Page Initializer
-            if (typeof targetInfo.init === 'function') {
-                targetInfo.init();
+            // 5. Update Document Title & Mobile Header Title
+            const pageTitle = targetInfo.title || doc.title || '';
+            if (pageTitle) {
+                document.title = pageTitle;
+                const mobileHeaderTitle = document.querySelector('header.mobile-header h2');
+                if (mobileHeaderTitle) {
+                    const cleanTitle = pageTitle.split('-')[0].trim();
+                    if (cleanTitle) mobileHeaderTitle.textContent = cleanTitle;
+                }
             }
-        } else if (targetInfo.category === 'admin' || targetInfo.category === 'staff') {
-            updateActiveMenu(pathname);
-        }
 
-        // 9. Re-execute Page-specific Scripts for Admin/Staff pages safely
-        executePageScripts(doc);
+            // 6. Update History
+            if (pushState) {
+                history.pushState({ path: pathname }, '', pathname + search + hash);
+            }
+
+            // 7. Scroll to top
+            window.scrollTo({ top: 0, behavior: 'instant' });
+
+            // 8. Update Active Navigation States & Run Modular Initializers NOW that new DOM is mounted!
+            if (targetInfo.category === 'customer') {
+                updateActiveNavLinks(pathname);
+                updateGlobalCartCount();
+                updateNavProfile();
+
+                // Run Modular Customer Page Initializer
+                if (typeof targetInfo.init === 'function') {
+                    try {
+                        targetInfo.init();
+                    } catch (initErr) {
+                        console.error('Error in customer page init:', initErr);
+                    }
+                }
+            } else if (targetInfo.category === 'admin' || targetInfo.category === 'staff') {
+                updateActiveMenu(pathname);
+            }
+
+            // 9. Re-execute Page-specific Scripts for Admin/Staff pages safely
+            executePageScripts(doc);
+        };
+
+        // If browser supports native View Transitions, use it; otherwise execute directly
+        if (typeof document.startViewTransition === 'function') {
+            document.startViewTransition(() => {
+                applyDOMUpdates();
+            });
+        } else {
+            applyDOMUpdates();
+        }
 
     } catch (error) {
         console.error('SPA Navigation Error:', error);
@@ -339,8 +413,9 @@ function executePageScripts(doc) {
         let scriptContent = oldScript.textContent.trim();
         if (!scriptContent && !oldScript.src) return;
 
-        // Skip pure mobile check boilerplate
+        // Skip pure mobile check or rendered opacity boilerplate
         if (scriptContent.includes('document.documentElement.classList.add(\'mobile-device\')')) return;
+        if (scriptContent.includes('classList.add(\'rendered\')')) return;
 
         try {
             // Find all function declarations to export to window so inline onclick handlers work seamlessly

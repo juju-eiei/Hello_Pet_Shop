@@ -648,7 +648,13 @@ body.preload .menu-arrow,
         opacity: 0;
         transition: 0.3s;
     }
-    .sidebar-overlay.active, .sidebar-overlay.show { display: block !important; opacity: 1 !important; }
+    .sidebar-overlay.active, .sidebar-overlay.show {
+        display: block !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        visibility: visible !important;
+        cursor: pointer;
+    }
 
     .mobile-header {
         display: flex;

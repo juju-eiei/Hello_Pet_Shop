@@ -49,6 +49,9 @@ export function initCheckoutPage() {
     let pendingOrderData = null;
     let attachedSlipData = null;
     let paymentSettings = null;
+    let rewardSettings = { point_earning_baht: 100, point_earning_qty: 1 };
+    let userPoints = 0;
+    let pointsUsed = 0;
 
     // Initialization
     async function init() {
@@ -66,8 +69,23 @@ export function initCheckoutPage() {
 
         renderSummary();
         prefillAddress();
-        await Promise.all([fetchDeliveryCompanies(), fetchPaymentSettings()]);
+        await Promise.all([fetchDeliveryCompanies(), fetchPaymentSettings(), fetchRewardSettings(), fetchUserPoints()]);
         attachEvents();
+    }
+
+    async function fetchRewardSettings() {
+        try {
+            const res = await fetch('/api/rewards/settings');
+            if (res.ok) {
+                const result = await res.json();
+                if (result.data) {
+                    rewardSettings = result.data;
+                }
+            }
+        } catch (e) {
+            console.error("Error fetching reward settings:", e);
+        }
+        renderSummary();
     }
 
     async function fetchPaymentSettings() {
@@ -80,6 +98,101 @@ export function initCheckoutPage() {
         } catch (e) {
             console.error("Error fetching payment settings:", e);
         }
+    }
+
+    async function fetchUserPoints() {
+        try {
+            const res = await fetch('/api/customers/details');
+            if (res.ok) {
+                const result = await res.json();
+                if (result.data && result.data.points !== undefined) {
+                    userPoints = parseInt(result.data.points) || 0;
+                    initPointsUI();
+                }
+            }
+        } catch (e) {
+            console.error("Error fetching user points:", e);
+        }
+    }
+
+    function getMaxRedeemablePoints() {
+        const maxFromPoints = Math.floor(userPoints / 10) * 10;
+        const maxFromSubtotal = Math.floor(subtotal / 10) * 10;
+        return Math.max(0, Math.min(maxFromPoints, maxFromSubtotal));
+    }
+
+    function initPointsUI() {
+        const card = document.getElementById('checkoutPointsCard');
+        if (!card) return;
+
+        card.style.display = 'block';
+        const badge = document.getElementById('checkoutUserPointsBadge');
+        if (badge) badge.textContent = `${userPoints.toLocaleString()} แต้ม`;
+
+        const chk = document.getElementById('usePointsCheckbox');
+        const selectorArea = document.getElementById('checkoutPointsSelectorArea');
+        const notice = document.getElementById('checkoutPointsNotice');
+        const input = document.getElementById('checkoutPointsInput');
+        const minusBtn = document.getElementById('btnPointsMinus');
+        const plusBtn = document.getElementById('btnPointsPlus');
+        const maxBtn = document.getElementById('btnPointsMax');
+
+        if (userPoints < 10) {
+            if (chk) { chk.disabled = true; chk.checked = false; }
+            if (selectorArea) selectorArea.classList.add('hidden');
+            if (notice) {
+                notice.classList.remove('hidden');
+                const nPts = document.getElementById('checkoutNoticePts');
+                if (nPts) nPts.textContent = userPoints;
+            }
+            pointsUsed = 0;
+            renderSummary();
+            return;
+        }
+
+        if (chk) {
+            chk.disabled = false;
+            chk.onchange = () => {
+                if (chk.checked) {
+                    if (selectorArea) selectorArea.classList.remove('hidden');
+                    const maxPts = getMaxRedeemablePoints();
+                    setPointsUsed(maxPts >= 10 ? 10 : 0);
+                } else {
+                    if (selectorArea) selectorArea.classList.add('hidden');
+                    setPointsUsed(0);
+                }
+            };
+        }
+
+        if (minusBtn) minusBtn.onclick = () => setPointsUsed(pointsUsed - 10);
+        if (plusBtn) plusBtn.onclick = () => setPointsUsed(pointsUsed + 10);
+        if (maxBtn) maxBtn.onclick = () => setPointsUsed(getMaxRedeemablePoints());
+        if (input) {
+            input.onchange = (e) => {
+                let val = parseInt(e.target.value) || 0;
+                setPointsUsed(val);
+            };
+        }
+    }
+
+    function setPointsUsed(pts) {
+        const maxPts = getMaxRedeemablePoints();
+        let target = Math.floor((parseInt(pts) || 0) / 10) * 10;
+        if (target > maxPts) target = maxPts;
+        if (target < 0) target = 0;
+        pointsUsed = target;
+
+        const input = document.getElementById('checkoutPointsInput');
+        const discountAmt = document.getElementById('checkoutPointsDiscountAmount');
+        if (input) {
+            input.value = pointsUsed;
+            input.max = maxPts;
+        }
+        if (discountAmt) {
+            discountAmt.textContent = ((pointsUsed / 10) * 10).toFixed(2);
+        }
+
+        renderSummary();
     }
 
     function calculateTotalWeight() {
@@ -122,10 +235,38 @@ export function initCheckoutPage() {
     function updateCardUI() {
         document.querySelectorAll('.option-card').forEach(label => {
             const radio = label.querySelector('input[type="radio"]');
+            const cardDiv = label.querySelector(':scope > div');
+            const circle = label.querySelector('.radio-circle');
+            const dot = label.querySelector('.radio-dot');
+
             if (radio && radio.checked) {
                 label.classList.add('active-card');
+                if (cardDiv) {
+                    cardDiv.classList.add('border-[#16a34a]', 'bg-emerald-50/60', 'shadow-sm');
+                    cardDiv.classList.remove('border-gray-100');
+                }
+                if (circle) {
+                    circle.classList.add('border-[#16a34a]', 'bg-[#16a34a]');
+                    circle.classList.remove('border-gray-300');
+                }
+                if (dot) {
+                    dot.classList.add('scale-100', 'opacity-100');
+                    dot.classList.remove('scale-0', 'opacity-0');
+                }
             } else {
                 label.classList.remove('active-card');
+                if (cardDiv) {
+                    cardDiv.classList.remove('border-[#16a34a]', 'bg-emerald-50/60', 'shadow-sm');
+                    cardDiv.classList.add('border-gray-100');
+                }
+                if (circle) {
+                    circle.classList.remove('border-[#16a34a]', 'bg-[#16a34a]');
+                    circle.classList.add('border-gray-300');
+                }
+                if (dot) {
+                    dot.classList.remove('scale-100', 'opacity-100');
+                    dot.classList.add('scale-0', 'opacity-0');
+                }
             }
         });
     }
@@ -146,25 +287,30 @@ export function initCheckoutPage() {
                 : `อัตราปกติเริ่มต้น (น้ำหนัก ${totalWeight > 0 ? totalWeight.toFixed(2) + ' กก.' : 'ไม่เกิน 1 กก.'})`;
 
             return `
-                <label class="option-card block cursor-pointer ${activeClass}">
+                <label class="option-card block cursor-pointer ${activeClass}" data-company-id="${c.company_id}">
                     <input type="radio" name="deliveryMethod" value="${c.company_id}" data-fee="${fee}" data-company-name="${c.company_name}" class="sr-only" ${isChecked}>
-                    <div class="border-2 border-gray-100 rounded-2xl p-4 md:p-5 flex items-center justify-between hover:border-gray-300 hover:bg-gray-50/80 transition-all duration-200">
-                        <div class="flex items-center space-x-4">
+                    <div class="border-2 border-gray-100 rounded-2xl p-3.5 sm:p-4 md:p-5 flex items-center justify-between gap-3 hover:border-gray-300 hover:bg-gray-50/80 transition-all duration-200">
+                        <div class="flex items-center space-x-3 sm:space-x-3.5 min-w-0 flex-1">
                             <div class="radio-circle w-5 h-5 rounded-full border-2 border-gray-300 relative flex items-center justify-center transition-all shrink-0">
                                 <div class="radio-dot w-2 h-2 rounded-full bg-white scale-0 opacity-0 transition-all duration-200"></div>
                             </div>
                             <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-sm">
-                                <i class="fas fa-truck text-lg"></i>
+                                <i class="fas fa-truck text-base sm:text-lg"></i>
                             </div>
-                            <div>
-                                <div class="font-bold text-gray-800 flex items-center gap-2">
+                            <div class="min-w-0 flex-1">
+                                <div class="font-bold text-gray-800 text-sm sm:text-base leading-tight">
                                     ${c.company_name}
-                                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-100/70 text-emerald-700">ขนส่งพันธมิตร</span>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-0.5">${weightDesc}</div>
+                                <div class="text-[11px] sm:text-xs text-gray-500 mt-1 leading-snug">
+                                    ${weightDesc}
+                                </div>
                             </div>
                         </div>
-                        <div class="font-bold text-[#FE7F9C] text-base">+฿${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="shrink-0 text-right pl-2">
+                            <div class="font-bold text-[#FE7F9C] text-sm sm:text-base whitespace-nowrap">
+                                +฿${fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </div>
+                        </div>
                     </div>
                 </label>
             `;
@@ -174,31 +320,38 @@ export function initCheckoutPage() {
         container.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 selectedCompanyId = parseInt(e.target.value);
-                shippingFee = parseFloat(e.target.dataset.fee);
+                shippingFee = parseFloat(e.target.dataset.fee) || 0;
                 updateCardUI();
                 renderSummary();
             });
         });
 
-        // Bind click on label cards
+        // Bind click on label cards to ensure selection works reliably
         container.querySelectorAll('.option-card').forEach(card => {
-            card.addEventListener('click', () => {
+            card.addEventListener('click', (e) => {
                 const radio = card.querySelector('input[name="deliveryMethod"]');
                 if (radio && !radio.checked) {
                     radio.checked = true;
-                    radio.dispatchEvent(new Event('change'));
+                    selectedCompanyId = parseInt(radio.value);
+                    shippingFee = parseFloat(radio.dataset.fee) || 0;
+                    updateCardUI();
+                    renderSummary();
                 }
             });
         });
 
         // Set initial selected company and fee
-        const firstRadio = container.querySelector('input[name="deliveryMethod"]:checked');
-        if (firstRadio) {
-            selectedCompanyId = parseInt(firstRadio.value);
-            shippingFee = parseFloat(firstRadio.dataset.fee);
+        if (deliveryCompanies.length > 0) {
+            const firstRadio = container.querySelector('input[name="deliveryMethod"]:checked') || container.querySelector('input[name="deliveryMethod"]');
+            if (firstRadio) {
+                firstRadio.checked = true;
+                selectedCompanyId = parseInt(firstRadio.value);
+                shippingFee = parseFloat(firstRadio.dataset.fee) || 0;
+            }
         }
 
         updateCardUI();
+        renderSummary();
     }
 
     function renderSummary() {
@@ -225,10 +378,39 @@ export function initCheckoutPage() {
             `;
         });
 
-        // Update Totals
+        // Update Totals with Points Discount
+        const pointsDiscount = (pointsUsed / 10) * 10.0;
+        const netTotal = Math.max(0, (subtotal - pointsDiscount) + shippingFee);
+
+        const summaryPointsRow = document.getElementById('summaryPointsRow');
+        if (summaryPointsRow) {
+            if (pointsUsed > 0) {
+                summaryPointsRow.style.display = 'flex';
+                const ptsUsedText = document.getElementById('summaryPointsUsedText');
+                const ptsDiscText = document.getElementById('summaryPointsDiscount');
+                if (ptsUsedText) ptsUsedText.textContent = pointsUsed.toLocaleString();
+                if (ptsDiscText) ptsDiscText.textContent = `-฿${pointsDiscount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            } else {
+                summaryPointsRow.style.display = 'none';
+            }
+        }
+
         if (summarySubtotal) summarySubtotal.textContent = `฿${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         if (summaryShipping) summaryShipping.textContent = `฿${shippingFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        if (summaryTotal) summaryTotal.textContent = `฿${(subtotal + shippingFee).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        if (summaryTotal) summaryTotal.textContent = `฿${netTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // Calculate Points to be Earned
+        const peBaht = parseFloat(rewardSettings.point_earning_baht) || 100;
+        const peQty = parseInt(rewardSettings.point_earning_qty) || 1;
+        let pointsEarned = 0;
+        if (peBaht > 0 && peQty > 0) {
+            pointsEarned = Math.floor(netTotal / peBaht) * peQty;
+        }
+
+        const summaryPointsEarned = document.getElementById('summaryPointsEarned');
+        if (summaryPointsEarned) {
+            summaryPointsEarned.textContent = `+${pointsEarned.toLocaleString()} แต้ม`;
+        }
     }
 
     function prefillAddress() {
@@ -252,14 +434,13 @@ export function initCheckoutPage() {
     }
 
     function attachEvents() {
-        document.querySelectorAll('.option-card').forEach(card => {
+        document.querySelectorAll('#paymentOptionsContainer .option-card').forEach(card => {
             card.addEventListener('click', () => {
                 const radio = card.querySelector('input[type="radio"]');
-                if (radio) {
+                if (radio && !radio.checked) {
                     radio.checked = true;
-                    radio.dispatchEvent(new Event('change'));
+                    updateCardUI();
                 }
-                updateCardUI();
             });
         });
         updateCardUI();
@@ -291,7 +472,16 @@ export function initCheckoutPage() {
                 const deliveryMethod = checkedDeliveryInput ? checkedDeliveryInput.value : 'standard';
                 const companyName = checkedDeliveryInput?.dataset?.companyName || 'ขนส่งเอกชน';
                 const fakeId = Math.floor(100000 + Math.random() * 900000);
-                const totalAmount = subtotal + shippingFee;
+                const pointsDiscount = (pointsUsed / 10) * 10.0;
+                const totalAmount = Math.max(0, (subtotal - pointsDiscount) + shippingFee);
+
+                // Calculate Points to be Earned
+                const peBaht = parseFloat(rewardSettings.point_earning_baht) || 100;
+                const peQty = parseInt(rewardSettings.point_earning_qty) || 1;
+                let pointsEarned = 0;
+                if (peBaht > 0 && peQty > 0) {
+                    pointsEarned = Math.floor(totalAmount / peBaht) * peQty;
+                }
 
                 // Create Order Draft
                 pendingOrderData = {
@@ -302,6 +492,9 @@ export function initCheckoutPage() {
                     items: checkoutItems,
                     subtotal: subtotal,
                     shipping: shippingFee,
+                    points_used: pointsUsed,
+                    points_discount: pointsDiscount,
+                    points_earned: pointsEarned,
                     total: totalAmount,
                     deliveryMethod: deliveryMethod,
                     paymentMethod: 'transfer',
@@ -319,6 +512,8 @@ export function initCheckoutPage() {
                 // Display in QR Payment Modal for Bank Transfer / PromptPay
                 if (qrModalOrderId) qrModalOrderId.textContent = fakeId;
                 if (qrModalAmount) qrModalAmount.textContent = `฿${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                const qrModalPointsEarned = document.getElementById('qrModalPointsEarned');
+                if (qrModalPointsEarned) qrModalPointsEarned.textContent = `+${pointsEarned.toLocaleString()} แต้ม`;
                 openQrModal();
             };
         }
@@ -495,6 +690,7 @@ export function initCheckoutPage() {
                 })),
                 shipping_fee: pendingOrderData.shipping,
                 discount_amount: 0,
+                points_used: pendingOrderData.points_used || 0,
                 payment_method: pendingOrderData.paymentMethod || 'transfer',
                 slip_image: pendingOrderData.slipImage,
                 csrf_token: csrfToken

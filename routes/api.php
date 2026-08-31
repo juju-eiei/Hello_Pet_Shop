@@ -4,6 +4,7 @@ require_once __DIR__ . '/../controllers/OrderController.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/PasswordResetController.php';
 require_once __DIR__ . '/../controllers/CategoryController.php';
+require_once __DIR__ . '/../controllers/PetTypeController.php';
 require_once __DIR__ . '/../controllers/PromotionController.php';
 require_once __DIR__ . '/../controllers/RestockController.php';
 require_once __DIR__ . '/../controllers/DeliveryController.php';
@@ -96,6 +97,32 @@ if (preg_match('/\/api\/products$/', $path)) {
     } else {
         http_response_code(405);
     }
+} elseif (preg_match('/\/api\/pet-types$/', $path)) {
+    $controller = new PetTypeController();
+    if ($request_method === 'GET') {
+        $controller->index();
+    } elseif ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('products_manage');
+        $controller->create();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/pet-types\/update$/', $path)) {
+    $controller = new PetTypeController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::checkPermission('products_manage');
+        $controller->update();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/pet-types\/delete$/', $path)) {
+    $controller = new PetTypeController();
+    if ($request_method === 'DELETE' || $request_method === 'POST') {
+        AuthMiddleware::checkPermission('products_manage');
+        $controller->delete();
+    } else {
+        http_response_code(405);
+    }
 } elseif (preg_match('/\/api\/products\/update-stock$/', $path)) {
     $controller = new ProductController();
     if ($request_method === 'POST') {
@@ -178,8 +205,24 @@ if (preg_match('/\/api\/products$/', $path)) {
 } elseif (preg_match('/\/api\/orders\/verify-slip$/', $path)) {
     $controller = new OrderController();
     if ($request_method === 'POST') {
-        AuthMiddleware::checkPermission('orders_manage');
+        AuthMiddleware::checkAnyPermission(['orders_manage', 'pos_access']);
         $controller->verifySlip();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/orders\/refunds$/', $path)) {
+    $controller = new OrderController();
+    if ($request_method === 'GET') {
+        AuthMiddleware::checkAnyPermission(['orders_manage', 'pos_access']);
+        $controller->getRefundOrders();
+    } else {
+        http_response_code(405);
+    }
+} elseif (preg_match('/\/api\/orders\/update-refund-status$/', $path)) {
+    $controller = new OrderController();
+    if ($request_method === 'POST') {
+        AuthMiddleware::checkAnyPermission(['orders_manage', 'pos_access']);
+        $controller->updateRefundStatus();
     } else {
         http_response_code(405);
     }

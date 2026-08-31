@@ -8,6 +8,15 @@
     <title>จัดการโปรโมชั่น - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Cropper.js (Local with CDN fallback) -->
+    <link rel="stylesheet" href="/libs/cropper/cropper.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="/libs/cropper/cropper.min.js"></script>
+    <script>
+        if (typeof Cropper === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"><\/script>');
+        }
+    </script>
 
     <!-- Mobile User-Agent Check -->
     <script>
@@ -339,6 +348,188 @@
                 height: 40px;
             }
         }
+
+        /* Cropper Modal & Styling */
+        .crop-modal-card {
+            max-width: 760px;
+            width: 95%;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 0 !important;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .modal-header-custom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 22px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .close-crop-btn {
+            background: none;
+            border: none;
+            font-size: 26px;
+            color: #94a3b8;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+            transition: color 0.15s;
+        }
+        .close-crop-btn:hover {
+            color: #ef4444;
+        }
+        .cropper-ratio-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .ratio-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ratio-btn-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .ratio-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .ratio-btn:hover {
+            border-color: #16a34a;
+            color: #16a34a;
+            background: #f0fdf4;
+        }
+        .ratio-btn.active {
+            background: #16a34a;
+            color: white;
+            border-color: #16a34a;
+            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.25);
+        }
+        .crop-area-container {
+            width: 100%;
+            height: 380px;
+            max-height: 52vh;
+            background-color: #0f172a;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .crop-area-container img {
+            max-width: 100%;
+            display: block;
+        }
+        .cropper-tools-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .tools-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .tool-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            color: #475569;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 14px;
+        }
+        .tool-btn:hover {
+            background: #f1f5f9;
+            color: #16a34a;
+            border-color: #16a34a;
+        }
+        .tool-divider {
+            width: 1px;
+            height: 22px;
+            background: #e2e8f0;
+            margin: 0 4px;
+        }
+        .crop-dimension-info {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+        .crop-dimension-info span {
+            color: #16a34a;
+            font-weight: 700;
+            font-family: monospace;
+        }
+        .action-pill-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.15s;
+        }
+        .action-pill-btn:hover {
+            background: #f0fdf4;
+            border-color: #86efac;
+            color: #15803d;
+        }
+
+        /* Custom Cropper Accent Styles */
+        .cropper-view-box {
+            outline: 2px solid #16a34a !important;
+            outline-color: #16a34a !important;
+        }
+        .cropper-line {
+            background-color: #16a34a !important;
+        }
+        .cropper-point {
+            background-color: #16a34a !important;
+            width: 8px !important;
+            height: 8px !important;
+        }
+        .upload-dropzone.dragover {
+            border-color: #16a34a;
+            background-color: #dcfce7;
+        }
     </style>
 </head>
 <body class="preload">
@@ -462,19 +653,35 @@
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">
                         รูปภาพแบนเนอร์ <span style="color: red;">*</span>
-                        <span style="font-size: 12px; font-weight: normal; color: #16a34a; margin-left: 6px;">(แนะนำ 1200 x 500 px)</span>
+                        <span style="font-size: 12px; font-weight: normal; color: #16a34a; margin-left: 6px;">(แนะนำ 1200 x 500 px หรือสัดส่วน 12:5)</span>
                     </label>
                     
-                    <div class="upload-dropzone" id="bannerDropzone" onclick="document.getElementById('bannerFileInput').click()">
-                        <div id="uploadPrompt">
+                    <div class="upload-dropzone" id="bannerDropzone">
+                        <div id="uploadPrompt" onclick="document.getElementById('bannerFileInput').click()">
                             <i class="fas fa-cloud-upload-alt" style="font-size: 36px; color: #94a3b8; margin-bottom: 8px;"></i>
                             <p style="margin: 0; font-size: 13px; color: #475569; font-weight: 500;">คลิกเพื่อเลือกรูปภาพ หรือลากไฟล์มาวางที่นี่</p>
-                            <span style="font-size: 11px; color: #94a3b8;">รองรับไฟล์ JPG, PNG, WebP</span>
+                            <span style="font-size: 11px; color: #94a3b8;">รองรับไฟล์ JPG, PNG, WebP (พร้อมเครื่องมือครอบตัด Crop ทันที)</span>
                         </div>
                         <div class="preview-img-container" id="bannerPreviewContainer">
                             <img id="bannerPreviewImg" src="" alt="Preview">
                         </div>
                     </div>
+
+                    <!-- Toolbar when image is selected -->
+                    <div id="bannerPreviewToolbar" style="display: none; margin-top: 10px; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 12px; color: #16a34a; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-check-circle"></i> ภาพพร้อมบันทึก
+                        </span>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="action-pill-btn" onclick="reOpenCropper()" title="ปรับกรอบการครอบตัดภาพนี้">
+                                <i class="fas fa-crop-alt" style="color: #16a34a;"></i> ครอป/ปรับแต่งภาพ
+                            </button>
+                            <button type="button" class="action-pill-btn" onclick="document.getElementById('bannerFileInput').click()" title="เลือกรูปภาพไฟล์ใหม่">
+                                <i class="fas fa-redo" style="color: #64748b;"></i> เปลี่ยนรูปภาพ
+                            </button>
+                        </div>
+                    </div>
+
                     <input type="file" id="bannerFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;" onchange="handleBannerFileSelect(this)">
                 </div>
 
@@ -549,6 +756,83 @@
         </div>
     </div>
 
+    <!-- ================= MODAL: IMAGE CROPPER ================= -->
+    <div id="cropModal" class="modal-overlay" style="z-index: 2100;">
+        <div class="modal-card crop-modal-card">
+            <div class="modal-header-custom">
+                <div class="modal-title" style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; color: #1e293b;">
+                    <i class="fas fa-crop-alt" style="color: #16a34a;"></i> ครอปและปรับแต่งรูปภาพแบนเนอร์
+                </div>
+                <button type="button" class="close-crop-btn" onclick="closeCropModal(false)">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="padding: 16px 20px 20px;">
+                <!-- Aspect Ratio Selector -->
+                <div class="cropper-ratio-bar">
+                    <span class="ratio-label"><i class="fas fa-vector-square" style="color: #64748b;"></i> สัดส่วน:</span>
+                    <div class="ratio-btn-group">
+                        <button type="button" class="ratio-btn active" data-ratio="2.4" onclick="setAspectRatio(2.4, this)" title="1200 x 500 px (อัตราส่วน 12:5 แนะนำสำหรับแบนเนอร์)">
+                            <i class="fas fa-star" style="color: #eab308; font-size: 11px;"></i> 12:5 (แนะนำ)
+                        </button>
+                        <button type="button" class="ratio-btn" data-ratio="1.7777777777777777" onclick="setAspectRatio(16/9, this)" title="16:9 ไวด์สกรีน">
+                            16:9
+                        </button>
+                        <button type="button" class="ratio-btn" data-ratio="2.3333333333333335" onclick="setAspectRatio(21/9, this)" title="21:9 อัลตร้าไวด์">
+                            21:9
+                        </button>
+                        <button type="button" class="ratio-btn" data-ratio="1" onclick="setAspectRatio(1, this)" title="1:1 สี่เหลี่ยมจัตุรัส">
+                            1:1
+                        </button>
+                        <button type="button" class="ratio-btn" data-ratio="NaN" onclick="setAspectRatio(NaN, this)" title="ปรับกรอบได้อย่างอิสระ">
+                            อิสระ (Free)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cropper Canvas Container -->
+                <div class="crop-area-container">
+                    <img id="cropperSourceImg" src="" alt="To crop">
+                </div>
+
+                <!-- Cropper Tools Bar -->
+                <div class="cropper-tools-bar">
+                    <div class="tools-left">
+                        <button type="button" class="tool-btn" onclick="cropperZoom(0.1)" title="ซูมเข้า (+)">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button type="button" class="tool-btn" onclick="cropperZoom(-0.1)" title="ซูมออก (-)">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <span class="tool-divider"></span>
+                        <button type="button" class="tool-btn" onclick="cropperRotate(-90)" title="หมุนซ้าย 90°">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button type="button" class="tool-btn" onclick="cropperRotate(90)" title="หมุนขวา 90°">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <span class="tool-divider"></span>
+                        <button type="button" class="tool-btn" onclick="cropperFlipX()" title="พลิกภาพแนวนอน">
+                            <i class="fas fa-arrows-alt-h"></i>
+                        </button>
+                        <button type="button" class="tool-btn" onclick="cropperReset()" title="รีเซ็ตตำแหน่งเริ่มต้น">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="crop-dimension-info" id="cropDimensionInfo">
+                        ขนาดกรอบ: <span>-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-btns" style="border-top: 1px solid #e2e8f0; padding: 14px 20px; background-color: #f8fafc; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="modal-btn modal-btn-cancel" onclick="closeCropModal(false)">ยกเลิก</button>
+                <button type="button" class="premium-btn" onclick="applyCrop()" style="padding: 10px 22px;">
+                    <i class="fas fa-check"></i> นำไปใช้ (บันทึกรูปที่ครอป)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script>
@@ -558,9 +842,17 @@
         let deleteTargetId = null;
         let selectedBannerFile = null;
 
+        // Cropper Variables
+        let cropperInstance = null;
+        let rawBannerImageSrc = null;
+        let currentScaleX = 1;
+        let currentScaleY = 1;
+        let currentAspectRatio = 2.4; // Default 12:5 (1200x500 px)
+
         checkAuth();
         fetchBanners();
         fetchGiftRules();
+        setupDropzone();
 
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
@@ -678,10 +970,12 @@
             const fileInput = document.getElementById('bannerFileInput');
             const uploadPrompt = document.getElementById('uploadPrompt');
             const previewContainer = document.getElementById('bannerPreviewContainer');
+            const previewToolbar = document.getElementById('bannerPreviewToolbar');
             const previewImg = document.getElementById('bannerPreviewImg');
 
             fileInput.value = '';
             selectedBannerFile = null;
+            rawBannerImageSrc = null;
 
             if (bannerId) {
                 title.innerText = 'แก้ไขแบนเนอร์โปรโมชั่น';
@@ -695,6 +989,7 @@
                 if (b.image_url) {
                     previewImg.src = b.image_url;
                     previewContainer.style.display = 'block';
+                    if (previewToolbar) previewToolbar.style.display = 'flex';
                     uploadPrompt.style.display = 'none';
                 }
             } else {
@@ -707,6 +1002,7 @@
 
                 previewImg.src = '';
                 previewContainer.style.display = 'none';
+                if (previewToolbar) previewToolbar.style.display = 'none';
                 uploadPrompt.style.display = 'block';
             }
 
@@ -718,20 +1014,250 @@
             const modal = document.getElementById('bannerModal');
             modal.classList.remove('show');
             setTimeout(() => modal.style.display = 'none', 300);
+            selectedBannerFile = null;
+            rawBannerImageSrc = null;
+            const fileInput = document.getElementById('bannerFileInput');
+            if (fileInput) fileInput.value = '';
         }
 
         function handleBannerFileSelect(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
-                selectedBannerFile = file;
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    document.getElementById('bannerPreviewImg').src = e.target.result;
-                    document.getElementById('bannerPreviewContainer').style.display = 'block';
-                    document.getElementById('uploadPrompt').style.display = 'none';
+                    rawBannerImageSrc = e.target.result;
+                    // Automatically open crop modal with the selected file
+                    openCropModal(rawBannerImageSrc);
                 };
                 reader.readAsDataURL(file);
             }
+        }
+
+        // ==========================================
+        // CROPPER FUNCTIONS
+        // ==========================================
+        function openCropModal(imageSrc) {
+            const modal = document.getElementById('cropModal');
+            const image = document.getElementById('cropperSourceImg');
+
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+
+            currentScaleX = 1;
+            currentScaleY = 1;
+            image.src = imageSrc;
+
+            // Reset ratio buttons - set 12:5 (2.4) active
+            currentAspectRatio = 2.4;
+            document.querySelectorAll('.ratio-btn').forEach(b => {
+                if (b.dataset.ratio === '2.4') {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+            });
+
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('show');
+                if (image.complete && image.naturalWidth > 0) {
+                    initCropper();
+                } else {
+                    image.onload = () => initCropper();
+                }
+            }, 80);
+        }
+
+        function initCropper() {
+            const image = document.getElementById('cropperSourceImg');
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+
+            cropperInstance = new Cropper(image, {
+                aspectRatio: currentAspectRatio,
+                viewMode: 1,
+                autoCropArea: 0.95,
+                responsive: true,
+                background: false,
+                zoomable: true,
+                rotatable: true,
+                scalable: true,
+                crop(event) {
+                    const data = event.detail;
+                    const dimSpan = document.querySelector('#cropDimensionInfo span');
+                    if (dimSpan) {
+                        dimSpan.innerText = `${Math.round(data.width)} x ${Math.round(data.height)} px`;
+                    }
+                }
+            });
+        }
+
+        function setAspectRatio(ratio, btn) {
+            currentAspectRatio = ratio;
+            document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            if (cropperInstance) {
+                cropperInstance.setAspectRatio(ratio);
+            }
+        }
+
+        function cropperZoom(val) {
+            if (cropperInstance) cropperInstance.zoom(val);
+        }
+
+        function cropperRotate(deg) {
+            if (cropperInstance) cropperInstance.rotate(deg);
+        }
+
+        function cropperFlipX() {
+            if (!cropperInstance) return;
+            currentScaleX = -currentScaleX;
+            cropperInstance.scaleX(currentScaleX);
+        }
+
+        function cropperReset() {
+            if (!cropperInstance) return;
+            currentScaleX = 1;
+            currentScaleY = 1;
+            cropperInstance.reset();
+        }
+
+        function closeCropModal(canceled = true) {
+            const modal = document.getElementById('cropModal');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+            }, 250);
+
+            // If user canceled without applying crop, but selected a file and no previous file
+            if (canceled && !selectedBannerFile && rawBannerImageSrc) {
+                // Fallback to display raw image
+                const previewImg = document.getElementById('bannerPreviewImg');
+                const previewContainer = document.getElementById('bannerPreviewContainer');
+                const previewToolbar = document.getElementById('bannerPreviewToolbar');
+                const uploadPrompt = document.getElementById('uploadPrompt');
+
+                previewImg.src = rawBannerImageSrc;
+                previewContainer.style.display = 'block';
+                if (previewToolbar) previewToolbar.style.display = 'flex';
+                uploadPrompt.style.display = 'none';
+
+                // Keep original file for upload
+                const fileInput = document.getElementById('bannerFileInput');
+                if (fileInput && fileInput.files && fileInput.files[0]) {
+                    selectedBannerFile = fileInput.files[0];
+                }
+            }
+        }
+
+        function applyCrop() {
+            if (!cropperInstance) return;
+
+            const canvas = cropperInstance.getCroppedCanvas({
+                maxWidth: 2400,
+                maxHeight: 1200,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+
+            if (!canvas) {
+                showToast("ไม่สามารถประมวลผลรูปภาพได้", "error");
+                return;
+            }
+
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    showToast("เกิดข้อผิดพลาดในการสร้างไฟล์รูปภาพ", "error");
+                    return;
+                }
+
+                const fileName = `banner_cropped_${Date.now()}.jpg`;
+                selectedBannerFile = new File([blob], fileName, { type: 'image/jpeg' });
+
+                const previewUrl = URL.createObjectURL(blob);
+                document.getElementById('bannerPreviewImg').src = previewUrl;
+                document.getElementById('bannerPreviewContainer').style.display = 'block';
+                const previewToolbar = document.getElementById('bannerPreviewToolbar');
+                if (previewToolbar) previewToolbar.style.display = 'flex';
+                document.getElementById('uploadPrompt').style.display = 'none';
+
+                closeCropModal(false);
+                showToast("ครอบตัดรูปภาพเรียบร้อยแล้ว", "success");
+            }, 'image/jpeg', 0.92);
+        }
+
+        async function reOpenCropper() {
+            if (rawBannerImageSrc) {
+                openCropModal(rawBannerImageSrc);
+            } else {
+                const previewImg = document.getElementById('bannerPreviewImg');
+                if (previewImg && previewImg.src) {
+                    try {
+                        showToast("กำลังเปิดตัวครอบตัดภาพ...", "info");
+                        const dataUrl = await fetchImageAsDataURL(previewImg.src);
+                        rawBannerImageSrc = dataUrl;
+                        openCropModal(dataUrl);
+                    } catch (err) {
+                        console.error("reOpenCropper error:", err);
+                        openCropModal(previewImg.src);
+                    }
+                }
+            }
+        }
+
+        async function fetchImageAsDataURL(url) {
+            try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                console.warn("fetchImageAsDataURL fallback:", e);
+                return url;
+            }
+        }
+
+        function setupDropzone() {
+            const dropzone = document.getElementById('bannerDropzone');
+            if (!dropzone) return;
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('dragover');
+                }, false);
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    const fileInput = document.getElementById('bannerFileInput');
+                    fileInput.files = files;
+                    handleBannerFileSelect(fileInput);
+                }
+            });
         }
 
         async function saveBanner() {

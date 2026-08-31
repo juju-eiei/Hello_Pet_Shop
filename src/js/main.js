@@ -61,8 +61,26 @@ if (!window.__csrfInterceptorInstalled) {
         options = options || {};
         const method = (options.method || "GET").toUpperCase();
         
+        options.headers = options.headers || {};
+
+        // Attach X-User-Id and X-User-Role for resilient auth
+        try {
+            const curUser = JSON.parse(localStorage.getItem("user") || "{}");
+            if (curUser && curUser.user_id) {
+                if (options.headers instanceof Headers) {
+                    if (!options.headers.has("X-User-Id")) options.headers.set("X-User-Id", curUser.user_id);
+                    if (curUser.role_name && !options.headers.has("X-User-Role")) options.headers.set("X-User-Role", curUser.role_name);
+                } else if (Array.isArray(options.headers)) {
+                    if (!options.headers.some(h => h[0].toLowerCase() === "x-user-id")) options.headers.push(["X-User-Id", curUser.user_id]);
+                    if (curUser.role_name && !options.headers.some(h => h[0].toLowerCase() === "x-user-role")) options.headers.push(["X-User-Role", curUser.role_name]);
+                } else {
+                    if (!options.headers["X-User-Id"]) options.headers["X-User-Id"] = curUser.user_id;
+                    if (curUser.role_name && !options.headers["X-User-Role"]) options.headers["X-User-Role"] = curUser.role_name;
+                }
+            }
+        } catch(e) {}
+
         if (["POST", "PUT", "DELETE"].includes(method)) {
-            options.headers = options.headers || {};
             const token = localStorage.getItem("csrf_token");
             if (token) {
                 if (options.headers instanceof Headers) {

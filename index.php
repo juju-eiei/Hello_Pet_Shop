@@ -24,7 +24,7 @@ if ($origin) {
 }
 
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token, X-User-Id, X-User-Role");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -88,9 +88,11 @@ if (strpos($request_uri, '/api/') !== false) {
         '/admin/products/edit' => 'admin_product_edit.html',
         '/admin/stock' => 'admin_stock.html',
         '/admin/categories' => 'admin_categories.html',
+        '/admin/pet-types' => 'admin_pet_types.html',
         '/admin/promotions' => 'admin_promotions.html',
         '/admin/orders' => 'admin_orders.html',
         '/admin/orders/details' => 'admin_order_details.html',
+        '/admin/refunds' => 'admin_refunds.html',
         '/admin/customers' => 'admin_customers.html',
         '/admin/customers/details' => 'admin_customer_details.html',
         '/admin/delivery' => 'admin_delivery.html',
@@ -108,6 +110,7 @@ if (strpos($request_uri, '/api/') !== false) {
         '/staff/stock' => 'staff_stock.html',
         '/staff/orders' => 'staff_orders.html',
         '/staff/orders/details' => 'staff_order_details.html',
+        '/staff/refunds' => 'staff_refunds.html',
         '/staff/customers' => 'staff_customers.html',
         '/staff/customers/details' => 'staff_customer_details.html',
         '/staff/promotions' => 'staff_promotions.html',

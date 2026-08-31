@@ -280,6 +280,7 @@ class ProductController {
 
         // Default status and other fields if NOT in $data
         $data['status'] = $data['status'] ?? 'active';
+        $data['target_pet_type_id'] = isset($data['target_pet_type_id']) && $data['target_pet_type_id'] !== '' ? (int)$data['target_pet_type_id'] : 1;
         $data['weight'] = $data['weight'] ?? null;
         $data['weight_value'] = isset($data['weight_value']) && $data['weight_value'] !== '' ? (float)$data['weight_value'] : null;
         $data['weight_unit'] = $data['weight_unit'] ?? null;
@@ -461,6 +462,7 @@ class ProductController {
         }
 
         $data['status'] = $data['status'] ?? 'active';
+        $data['target_pet_type_id'] = isset($data['target_pet_type_id']) && $data['target_pet_type_id'] !== '' ? (int)$data['target_pet_type_id'] : 1;
         $data['weight'] = $data['weight'] ?? null;
         $data['weight_value'] = isset($data['weight_value']) && $data['weight_value'] !== '' ? (float)$data['weight_value'] : null;
         $data['weight_unit'] = $data['weight_unit'] ?? null;

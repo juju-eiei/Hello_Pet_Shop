@@ -523,6 +523,9 @@
                         <div class="card-header"><i class="fas fa-receipt" style="color: #8b5cf6;"></i> Payment Summary</div>
                         <div class="summary-row"><span>Subtotal</span> <span id="sSubtotal">฿0.00</span></div>
                         <div class="summary-row" id="shippingFeeRow"><span>Shipping Fee (<span id="sShippingProvider" style="color: #64748b; font-weight: 500;">-</span>)</span> <span id="sShipping">฿0.00</span></div>
+                        <div class="summary-row" id="pointsUsedRow" style="display: none; color: #ea580c; font-weight: 600;">
+                            <span>ใช้แต้มสะสม (<span id="sPointsUsed">0</span> แต้ม)</span> <span id="sPointsDiscount">-฿0.00</span>
+                        </div>
                         <div class="summary-row" style="color: #10b981;"><span>Discount</span> <span id="sDiscount">-฿0.00</span></div>
                         <div class="summary-total"><span>Grand Total</span> <span id="sTotal" style="color: var(--secondary-berry);">฿0.00</span></div>
                         
@@ -569,6 +572,8 @@
                     </div>
                 </div>
             </div>
+        </main>
+    </div>
 
     <!-- Full Slip Lightbox Modal -->
     <div id="slipViewModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeSlipModal()">
@@ -649,7 +654,12 @@
 
         function checkAuth() {
             const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || user.role_name.toLowerCase() !== 'admin') {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const role = (user.role_name || '').toLowerCase();
+            if (role !== 'admin' && role !== 'employee' && role !== 'staff') {
                 window.location.href = 'login.html';
             }
         }
@@ -687,65 +697,98 @@
                     return;
                 }
 
-            let data = null;
-            try {
-                const res = await fetch('/api/orders/details?id=' + orderId);
-                if (res.ok) {
-                    const json = await res.json();
-                    data = json.data;
+                let data = null;
+                try {
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    const headers = { 'Accept': 'application/json' };
+                    if (user && user.user_id) headers['X-User-Id'] = user.user_id;
+                    if (user && user.role_name) headers['X-User-Role'] = user.role_name;
+                    const token = localStorage.getItem('token') || (user && user.token);
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                    const res = await fetch('/api/orders/details?id=' + orderId, {
+                        headers: headers
+                    });
+                    if (res.ok) {
+                        const json = await res.json();
+                        data = json.data;
+                    }
+                } catch (err) {
+                    console.warn("API order details warning:", err);
                 }
-            } catch (err) {
-                console.warn("API order details warning:", err);
-            }
 
-            if (!data) {
-                const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-                const found = myOrders.find(o => String(o.id) === String(orderId));
-                if (found) {
-                    let adminStatus = 'Pending';
-                    const st = found.status;
-                    if (st === 'Preparing' || st === 'ที่ต้องจัดส่ง' || st === 'กำลังเตรียมสินค้า') adminStatus = 'Processing';
-                    else if (st === 'Shipping' || st === 'ที่ต้องได้รับ' || st === 'กำลังจัดส่ง') adminStatus = 'In Transit';
-                    else if (st === 'Completed' || st === 'สำเร็จแล้ว' || st === 'สำเร็จ') adminStatus = 'Completed';
-                    else if (st === 'Cancelled' || st === 'ยกเลิกแล้ว') adminStatus = 'Cancelled';
-
-                    const subtotalVal = parseFloat(found.subtotal || 0) || (parseFloat(found.total || found.amount || 0) - parseFloat(found.shipping || found.shipping_fee || 0));
-                    const shippingVal = parseFloat(found.shipping || found.shipping_fee || 0);
-                    const totalVal = parseFloat(found.total || found.amount || (subtotalVal + shippingVal));
-
-                    data = {
-                        id: found.id,
-                        number: found.number || `ORD-2026-${String(found.id).padStart(3, '0')}`,
-                        date: found.date ? new Date(typeof found.date === 'string' && found.date.includes(' ') && !found.date.includes('T') ? found.date.replace(' ', 'T') : found.date).toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString('th-TH'),
-                        status: adminStatus,
-                        order_type: 1,
-                        order_type_label: 'ออนไลน์',
-                        tracking_number: found.trackingNumber || null,
-                        company_id: found.company_id || null,
-                        company_name: found.company_name || found.deliveryCompany || found.shipping_provider || null,
-                        shipping_provider: found.company_name || found.deliveryCompany || found.shipping_provider || null,
-                        slip_image: found.slipImage || found.slip_image || null,
-                        has_slip: !!(found.slipImage || found.slip_image),
-                        payment_method: found.paymentMethod || 'transfer',
-                        payment_date: found.paidAt || found.date || null,
-                        customer: found.customer || { name: 'Success User', email: 'success@example.com', phone: '0812345678', address: '123 Test Road Bangkok 10110' },
-                        items: (found.items || []).map(i => ({ name: i.name, price: i.price, qty: i.quantity, image: i.image })),
-                        summary: {
-                            subtotal: subtotalVal,
-                            shipping: shippingVal,
-                            discount: parseFloat(found.discount || 0),
-                            total: totalVal
+                if (!data) {
+                    let localOrders = [];
+                    try {
+                        const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+                        const uid = userObj.user_id ? String(userObj.user_id) : String(userObj.username || '');
+                        if (uid) {
+                            const uOrders = JSON.parse(localStorage.getItem(`myOrders_${uid}`) || '[]');
+                            if (Array.isArray(uOrders)) localOrders = localOrders.concat(uOrders);
                         }
-                    };
+                    } catch(e) {}
+                    try {
+                        const savedOrders = JSON.parse(localStorage.getItem('savedUserOrders') || '{}');
+                        Object.values(savedOrders).forEach(arr => {
+                            if (Array.isArray(arr)) localOrders = localOrders.concat(arr);
+                        });
+                    } catch(e) {}
+                    try {
+                        const mo = JSON.parse(localStorage.getItem('myOrders') || '[]');
+                        if (Array.isArray(mo)) localOrders = localOrders.concat(mo);
+                    } catch(e) {}
+
+                    const found = localOrders.find(o => String(o.id || o.order_id) === String(orderId));
+                    if (found) {
+                        let adminStatus = 'Pending';
+                        const st = found.status;
+                        if (st === 'Preparing' || st === 'ที่ต้องจัดส่ง' || st === 'กำลังเตรียมสินค้า') adminStatus = 'Processing';
+                        else if (st === 'Shipping' || st === 'ที่ต้องได้รับ' || st === 'กำลังจัดส่ง') adminStatus = 'In Transit';
+                        else if (st === 'Completed' || st === 'สำเร็จแล้ว' || st === 'สำเร็จ') adminStatus = 'Completed';
+                        else if (st === 'Cancelled' || st === 'ยกเลิกแล้ว') adminStatus = 'Cancelled';
+
+                        const subtotalVal = parseFloat(found.subtotal || 0) || (parseFloat(found.total || found.amount || 0) - parseFloat(found.shipping || found.shipping_fee || 0));
+                        const shippingVal = parseFloat(found.shipping || found.shipping_fee || 0);
+                        const totalVal = parseFloat(found.total || found.amount || (subtotalVal + shippingVal));
+
+                        data = {
+                            id: found.id || found.order_id,
+                            number: found.number || `ORD-2026-${String(found.id || found.order_id).padStart(3, '0')}`,
+                            date: found.date ? new Date(typeof found.date === 'string' && found.date.includes(' ') && !found.date.includes('T') ? found.date.replace(' ', 'T') : found.date).toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString('th-TH'),
+                            status: adminStatus,
+                            order_type: found.order_type || 1,
+                            order_type_label: found.order_type === 2 ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์',
+                            tracking_number: found.trackingNumber || found.tracking_number || null,
+                            company_id: found.company_id || null,
+                            company_name: found.company_name || found.deliveryCompany || found.shipping_provider || null,
+                            shipping_provider: found.company_name || found.deliveryCompany || found.shipping_provider || null,
+                            slip_image: found.slip_image || found.slipImage || null,
+                            has_slip: !!(found.slip_image || found.slipImage),
+                            payment_method: found.paymentMethod || found.payment_method || 'transfer',
+                            payment_date: found.paidAt || found.payment_date || found.date || null,
+                            customer: found.customer || { name: 'Customer', email: '-', phone: '-', address: found.shippingAddress || '-' },
+                            items: (found.items || []).map(i => ({
+                                name: i.name || i.product_name || 'สินค้าในรายการ',
+                                price: parseFloat(i.price || i.unit_price || 0),
+                                qty: parseInt(i.qty || i.quantity || 1),
+                                image: i.image || i.image_url || '/image/non-image.png'
+                            })),
+                            summary: {
+                                subtotal: subtotalVal,
+                                shipping: shippingVal,
+                                discount: parseFloat(found.discount || found.discount_amount || 0),
+                                total: totalVal
+                            }
+                        };
+                    }
                 }
-            }
 
-            if (!data) {
-                showToast("ไม่พบข้อมูลคำสั่งซื้อ", "error");
-                return;
-            }
+                if (!data) {
+                    showToast("ไม่พบข้อมูลคำสั่งซื้อ", "error");
+                    return;
+                }
 
-            currentOrderData = data;
+                currentOrderData = data;
 
             // Header Elements
             document.getElementById('displayOrderId').textContent = data.number;
@@ -770,19 +813,25 @@
 
             // Items
             const tbody = document.getElementById('orderItemsBody');
-            tbody.innerHTML = data.items.map(item => `
+            tbody.innerHTML = (data.items && data.items.length > 0) ? data.items.map(item => `
                 <tr>
                     <td>
                         <div class="order-product">
-                            <img src="${item.image || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="">
-                            <div style="font-weight: 600; color: #334155;">${item.name}</div>
+                            <img src="${item.image || item.image_url || '/image/non-image.png'}" onerror="this.src='/image/non-image.png'" alt="">
+                            <div style="font-weight: 600; color: #334155;">${item.name || item.product_name || 'สินค้าในรายการ'}</div>
                         </div>
                     </td>
-                    <td style="text-align: center; color: #64748b;">฿${Number(item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td style="text-align: center; font-weight: 500;">x${Number(item.qty).toLocaleString()}</td>
-                    <td style="text-align: right; font-weight: 600; color: #0f172a;">฿${(Number(item.price) * Number(item.qty)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td style="text-align: center; color: #64748b;">฿${Number(item.price || item.unit_price || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td style="text-align: center; font-weight: 500;">x${Number(item.qty || item.quantity || 1).toLocaleString()}</td>
+                    <td style="text-align: right; font-weight: 600; color: #0f172a;">฿${(Number(item.price || item.unit_price || 0) * Number(item.qty || item.quantity || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 </tr>
-            `).join('');
+            `).join('') : `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 24px; color: #94a3b8;">
+                        ไม่มีรายการสินค้าในคำสั่งซื้อนี้
+                    </td>
+                </tr>
+            `;
 
             // Summary
             document.getElementById('sSubtotal').textContent = '฿' + Number(data.summary.subtotal || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -859,6 +908,20 @@
                 }
             }
 
+            // Hide/show points used
+            const pointsUsedRow = document.getElementById('pointsUsedRow');
+            if (pointsUsedRow) {
+                const ptsUsed = data.points_used || (data.summary && data.summary.points_used) || 0;
+                const ptsDisc = data.points_discount || (data.summary && data.summary.points_discount) || (ptsUsed > 0 ? (ptsUsed / 10) * 10 : 0);
+                if (ptsUsed > 0) {
+                    document.getElementById('sPointsUsed').textContent = Number(ptsUsed).toLocaleString();
+                    document.getElementById('sPointsDiscount').textContent = '-฿' + Number(ptsDisc).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    pointsUsedRow.style.display = 'flex';
+                } else {
+                    pointsUsedRow.style.display = 'none';
+                }
+            }
+
             // Hide/show points earned
             const pointsEarnedRow = document.getElementById('pointsEarnedRow');
             if (pointsEarnedRow) {
@@ -884,13 +947,14 @@
                     slipStatusBadge.textContent = 'เงินสด / POS';
                     slipStatusBadge.className = 'status-pill completed';
                 }
-            } else if (data.has_slip && data.slip_image) {
+            } else if (data.has_slip || data.slip_image || data.slipImage) {
+                const slipImg = data.slip_image || data.slipImage;
                 if (slipPosView) slipPosView.style.display = 'none';
                 if (slipMissingView) slipMissingView.style.display = 'none';
                 if (slipAttachedView) slipAttachedView.style.display = 'block';
                 
                 const slipPreview = document.getElementById('slipImagePreview');
-                if (slipPreview) slipPreview.src = data.slip_image;
+                if (slipPreview && slipImg) slipPreview.src = slipImg;
 
                 const slipDateText = document.getElementById('slipPayDateText');
                 if (slipDateText) slipDateText.textContent = data.payment_date || data.date || '-';
@@ -914,21 +978,22 @@
 
             toggleTrackingContainer(data.status);
             } catch (error) {
-                console.error(error);
+                console.error("Error initializing order details:", error);
                 showToast("เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
             }
         }
 
         function openSlipModal() {
-            if (!currentOrderData || !currentOrderData.slip_image) {
+            const slipImg = currentOrderData && (currentOrderData.slip_image || currentOrderData.slipImage);
+            if (!slipImg) {
                 showToast("ยังไม่มีหลักฐานการชำระเงินในคำสั่งซื้อนี้", "warning");
                 return;
             }
             const modal = document.getElementById('slipViewModal');
             const img = document.getElementById('modalSlipImage');
             const dl = document.getElementById('modalSlipDownloadLink');
-            if (img) img.src = currentOrderData.slip_image;
-            if (dl) dl.href = currentOrderData.slip_image;
+            if (img) img.src = slipImg;
+            if (dl) dl.href = slipImg;
             if (modal) {
                 modal.style.display = 'flex';
                 setTimeout(() => modal.classList.add('show'), 10);
@@ -1160,6 +1225,11 @@
                     <span>฿${parseFloat(currentOrderData.summary.shipping).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
                 ` : ''}
+                ${(currentOrderData.points_used && currentOrderData.points_used > 0) ? `
+                <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px; color: #b45309;">
+                    <span>ส่วนลดแต้มสะสม (${Number(currentOrderData.points_used).toLocaleString()} แต้ม)</span>
+                    <span>-฿${parseFloat(currentOrderData.points_discount || currentOrderData.points_used).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                </div>` : ''}
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px;">
                     <span>ส่วนลด (Discount)</span>
                     <span>-฿${parseFloat(currentOrderData.summary.discount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
@@ -1370,10 +1440,75 @@
                 localStorage.setItem('myOrders', JSON.stringify(myOrders));
             }
 
+            function showCancelRefundNotice(orderNumber, customerName, amount) {
+                const formattedAmount = parseFloat(amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                const ordNum = orderNumber || (currentOrderData ? currentOrderData.number : '');
+                const custName = customerName || (currentOrderData && currentOrderData.customer ? currentOrderData.customer.name : 'ลูกค้า');
+
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: '<span style="color: #e11d48; font-weight: 800; font-size: 20px;">⚠️ แจ้งหลักฐานการโอนเงินคืนลูกค้า</span>',
+                        html: `
+                            <div style="text-align: center; font-family: 'Kanit', sans-serif;">
+                                <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 14px; padding: 14px; margin-bottom: 16px; text-align: left;">
+                                    <div style="font-weight: 700; color: #9f1239; font-size: 14px; margin-bottom: 6px;">
+                                        📌 ข้อความสำหรับส่งให้ลูกค้า / แคปรูปภาพ:
+                                    </div>
+                                    <div style="color: #881337; font-size: 13px; line-height: 1.5; font-weight: 600; background: white; padding: 12px; border-radius: 10px; border: 1px dashed #fda4af;">
+                                        "ให้แคปรูปภาพข้อความนี้เพื่อเป็นหลักฐานในการโอนเงินคืนผ่านทาง LINE โดยให้ลูกค้าส่งข้อความมาทาง LINE ร้าน"
+                                    </div>
+                                    <div style="margin-top: 12px; font-size: 12px; color: #334155; line-height: 1.6;">
+                                        <div><b>คำสั่งซื้อ:</b> ${ordNum}</div>
+                                        <div><b>ชื่อลูกค้า:</b> ${custName}</div>
+                                        <div><b>ยอดเงินที่ต้องคืน:</b> <span style="color: #e11d48; font-weight: bold; font-size: 15px;">฿${formattedAmount}</span></div>
+                                    </div>
+                                </div>
+                                
+                                <div style="font-weight: 700; color: #1e293b; font-size: 13px; margin-bottom: 8px;">
+                                    📲 QR Code สแกนเพิ่มเพื่อน LINE ร้านค้า
+                                </div>
+                                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
+                                    <img src="/image/line_qr.png" alt="LINE QR Code" style="width: 170px; height: 170px; border-radius: 12px; border: 2px solid #06C755; padding: 6px; background: white; box-shadow: 0 4px 12px rgba(6,199,85,0.15);" onerror="this.src='/image/non-image.png'">
+                                </div>
+                                <a href="https://lin.ee/XxKOiGF" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #06C755; font-weight: 700; font-size: 13px; text-decoration: none; background: #f0fdf4; padding: 6px 16px; border-radius: 20px; border: 1px solid #bbf7d0;">
+                                    <i class="fab fa-line text-lg"></i> LINE Official: @HelloPetShop
+                                </a>
+                            </div>
+                        `,
+                        confirmButtonText: 'เข้าใจแล้ว / ปิดหน้าต่าง',
+                        confirmButtonColor: '#1b4332',
+                        borderRadius: '20px',
+                        width: '460px'
+                    });
+                } else {
+                    alert(`คำสั่งซื้อได้รับการยกเลิกเรียบร้อยแล้ว\n\nยอดคืนเงิน: ฿${formattedAmount}\nให้แคปรูปภาพข้อความนี้เพื่อเป็นหลักฐานในการโอนเงินคืนผ่านทาง LINE โดยให้ลูกค้าส่งข้อความมาทาง LINE ร้าน`);
+                }
+            }
+
             const headerStatus = document.getElementById('headerStatus');
             headerStatus.textContent = getStatusLabel(newStatus);
             headerStatus.className = 'status-pill ' + getStatusClass(newStatus);
-            showToast("อัปเดตสถานะและข้อมูลขนส่งสำเร็จ!", "success");
+
+            if (newStatus === 'Cancelled') {
+                if (updatedInfo?.require_refund_notice || currentOrderData?.has_slip || currentOrderData?.slip_image) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว',
+                            text: 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว ให้รอลูกค้าทักมาขอเงินคืนผ่านทาง LINE',
+                            confirmButtonText: 'รับทราบ',
+                            confirmButtonColor: '#1b4332',
+                            borderRadius: '16px'
+                        });
+                    } else {
+                        alert("ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว ให้รอลูกค้าทักมาขอเงินคืนผ่านทาง LINE");
+                    }
+                } else {
+                    showToast("ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว", "success");
+                }
+            } else {
+                showToast("อัปเดตสถานะและข้อมูลขนส่งสำเร็จ!", "success");
+            }
         });
 
         function showToast(message, type) {

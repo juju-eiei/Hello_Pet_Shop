@@ -19,6 +19,7 @@ export const menuConfig = {
                 { url: '/admin/products', icon: 'fas fa-boxes', title: 'จัดการสินค้า', permission: 'products_manage' },
                 { url: '/admin/stock', icon: 'fas fa-warehouse', title: 'จัดการคลังสินค้า', permission: 'stock_view' },
                 { url: '/admin/categories', icon: 'fas fa-tags', title: 'จัดการหมวดหมู่', permission: 'products_manage' },
+                { url: '/admin/pet-types', icon: 'fas fa-paw', title: 'ประเภทสัตว์เลี้ยง', permission: 'products_manage' },
                 { url: '/admin/promotions', icon: 'fas fa-gift', title: 'โปรโมชั่น', permission: 'promotions_manage' }
             ]
         },
@@ -30,6 +31,7 @@ export const menuConfig = {
             items: [
                 { url: '/pos', icon: 'fas fa-cash-register', title: 'ขายหน้าร้าน', permission: 'pos_access' },
                 { url: '/admin/orders', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', permission: 'orders_manage' },
+                { url: '/admin/refunds', icon: 'fas fa-undo-alt', title: 'จัดการการคืนเงิน', permission: 'orders_manage' },
                 { url: '/admin/customers', icon: 'fas fa-users', title: 'ลูกค้า', permission: 'customers_view' },
                 { url: '/admin/delivery', icon: 'fas fa-truck', title: 'จัดการขนส่ง', permission: 'delivery_manage' },
                 { url: '/admin/rewards', icon: 'fas fa-star', title: 'จัดการแต้มสะสม', permission: 'rewards_manage' }
@@ -68,6 +70,7 @@ export const menuConfig = {
             items: [
                 { url: '/pos', icon: 'fas fa-cash-register', title: 'ขายหน้าร้าน', permission: 'pos_access' },
                 { url: '/staff/orders', icon: 'fas fa-file-invoice', title: 'คำสั่งซื้อ', permission: 'orders_manage' },
+                { url: '/staff/refunds', icon: 'fas fa-undo-alt', title: 'จัดการการคืนเงิน', permission: 'orders_manage' },
                 { url: '/staff/customers', icon: 'fas fa-users', title: 'ลูกค้า', permission: 'customers_view' }
             ]
         },

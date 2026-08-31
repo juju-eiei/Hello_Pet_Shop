@@ -79,6 +79,11 @@ class OrderController {
                 $stmtInsertAddr = $this->db->prepare("INSERT INTO addresses (customer_id, recipient_name, phone, address_detail, province, zip_code, is_default) VALUES (?, ?, ?, ?, ?, ?, 1)");
                 $stmtInsertAddr->execute([$customerId, $rName, $rPhone, $rAddr, $rProv, $rZip]);
                 $addressId = (int)$this->db->lastInsertId();
+
+                if (!empty($rPhone)) {
+                    $this->db->prepare("UPDATE customers SET phone = ? WHERE customer_id = ? AND (phone IS NULL OR phone = '')")
+                        ->execute([$rPhone, $customerId]);
+                }
             }
 
             if (!$addressId) {
@@ -145,6 +150,36 @@ class OrderController {
                 }
             }
             
+            // Points redemption logic (10 points = 10 Baht, minimum 10 points in multiples of 10)
+            $pointsUsed = isset($data['points_used']) ? (int)$data['points_used'] : 0;
+            $pointsDiscount = 0.0;
+            if ($customerId && $pointsUsed > 0) {
+                if ($pointsUsed < 10 || ($pointsUsed % 10) !== 0) {
+                    $this->db->rollBack();
+                    Response::json(400, "การใช้แต้มสะสมต้องใช้ขั้นต่ำ 10 แต้ม และเพิ่มขึ้นทีละ 10 แต้ม");
+                    return;
+                }
+
+                $stmtCustPoints = $this->db->prepare("SELECT points FROM customers WHERE customer_id = ?");
+                $stmtCustPoints->execute([$customerId]);
+                $custRow = $stmtCustPoints->fetch(PDO::FETCH_ASSOC);
+                $curPoints = $custRow ? (int)$custRow['points'] : 0;
+
+                if ($curPoints < $pointsUsed) {
+                    $this->db->rollBack();
+                    Response::json(400, "แต้มสะสมของคุณไม่เพียงพอ (คุณมี $curPoints แต้ม)");
+                    return;
+                }
+
+                $pointsDiscount = (float)(($pointsUsed / 10) * 10.0);
+                if (($discount + $pointsDiscount) > $subtotal) {
+                    $pointsDiscount = max(0, $subtotal - $discount);
+                    $pointsUsed = (int)(floor($pointsDiscount / 10) * 10);
+                    $pointsDiscount = (float)$pointsUsed;
+                }
+                $discount += $pointsDiscount;
+            }
+
             // Cap discount
             if ($discount > $subtotal) {
                 $discount = $subtotal;
@@ -218,10 +253,10 @@ class OrderController {
                 } catch (Exception $ePts) {}
             }
             
-            // 3. Insert into orders
-            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, order_type, free_gift, points_earned) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)");
+            // 3. Insert into orders (including points_used)
+            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, points_used, status, order_type, free_gift, points_earned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)");
             $promo_id = !empty($data['promo_id']) ? $data['promo_id'] : null;
-            $stmtOrder->execute([$customerId, $addressId, $promo_id, $subtotal, $discount, $shipping_fee, $net_total, $freeGift, $pointsEarned]);
+            $stmtOrder->execute([$customerId, $addressId, $promo_id, $subtotal, $discount, $shipping_fee, $net_total, $pointsUsed, $freeGift, $pointsEarned]);
             $order_id = (int)$this->db->lastInsertId();
 
             // Insert into deliveries table
@@ -258,6 +293,20 @@ class OrderController {
                 $stmtLog->execute([$detail['product_id'], $order_id, -$detail['quantity'], $detail['unit_cost']]); 
             }
             
+            // Deduct points redeemed if any
+            if ($customerId && $pointsUsed > 0) {
+                try {
+                    $stmtDeductPoints = $this->db->prepare("UPDATE customers SET points = GREATEST(0, points - ?) WHERE customer_id = ?");
+                    $stmtDeductPoints->execute([$pointsUsed, $customerId]);
+
+                    $orderNum = "ORD-" . date('Y') . "-" . str_pad($order_id, 3, '0', STR_PAD_LEFT);
+                    $stmtLogDeduct = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
+                    $stmtLogDeduct->execute([$customerId, $order_id, -$pointsUsed, "ใช้แต้มสะสม {$pointsUsed} แต้มเป็นส่วนลด ฿" . number_format($pointsDiscount, 2) . " สำหรับคำสั่งซื้อ #{$orderNum}"]);
+                } catch (Exception $exDeduct) {
+                    error_log("Failed to deduct points on order #$order_id: " . $exDeduct->getMessage());
+                }
+            }
+
             // Award reward points to customer
             if ($customerId && $pointsEarned > 0) {
                 try {
@@ -289,7 +338,9 @@ class OrderController {
                 "shipping_fee" => $shipping_fee,
                 "net_total" => $net_total,
                 "free_gift" => $freeGift,
-                "points_earned" => $pointsEarned
+                "points_earned" => $pointsEarned,
+                "points_used" => $pointsUsed,
+                "points_discount" => $pointsDiscount
             ]);
             
         } catch (Exception $e) {
@@ -410,6 +461,42 @@ class OrderController {
                 }
             }
 
+            // Points redemption logic for POS (10 points = 10 Baht, minimum 10 points in multiples of 10)
+            $pointsUsed = isset($data['points_used']) ? (int)$data['points_used'] : 0;
+            $pointsDiscount = 0.0;
+            $curCustomerPoints = 0;
+            if ($customerId && $pointsUsed > 0) {
+                if ($pointsUsed < 10 || ($pointsUsed % 10) !== 0) {
+                    $this->db->rollBack();
+                    Response::json(400, "การใช้แต้มสะสมต้องใช้ขั้นต่ำ 10 แต้ม และเพิ่มขึ้นทีละ 10 แต้ม");
+                    return;
+                }
+
+                $stmtCustPoints = $this->db->prepare("SELECT points FROM customers WHERE customer_id = ?");
+                $stmtCustPoints->execute([$customerId]);
+                $custRow = $stmtCustPoints->fetch(PDO::FETCH_ASSOC);
+                $curCustomerPoints = $custRow ? (int)$custRow['points'] : 0;
+
+                if ($curCustomerPoints < $pointsUsed) {
+                    $this->db->rollBack();
+                    Response::json(400, "แต้มสะสมของลูกค้ามีไม่เพียงพอ (มี $curCustomerPoints แต้ม แต่เลือกใช้ $pointsUsed แต้ม)");
+                    return;
+                }
+
+                $pointsDiscount = (float)(($pointsUsed / 10) * 10.0);
+                if (($discount + $pointsDiscount) > $subtotal) {
+                    $pointsDiscount = max(0, $subtotal - $discount);
+                    $pointsUsed = (int)(floor($pointsDiscount / 10) * 10);
+                    $pointsDiscount = (float)$pointsUsed;
+                }
+                $discount += $pointsDiscount;
+            } else if ($customerId) {
+                $stmtCustPoints = $this->db->prepare("SELECT points FROM customers WHERE customer_id = ?");
+                $stmtCustPoints->execute([$customerId]);
+                $custRow = $stmtCustPoints->fetch(PDO::FETCH_ASSOC);
+                $curCustomerPoints = $custRow ? (int)$custRow['points'] : 0;
+            }
+
             if ($discount > $subtotal) {
                 $discount = $subtotal;
             }
@@ -428,7 +515,7 @@ class OrderController {
                 $freeGift = $giftRow['gift_name'];
             }
 
-            // Calculate reward points first
+            // Calculate reward points first (from net_total after points discount)
             $pointsEarned = 0;
             if ($customerId) {
                 $stmtSettings = $this->db->query("SELECT point_earning_baht, point_earning_qty FROM store_settings LIMIT 1");
@@ -445,9 +532,9 @@ class OrderController {
             $cashReceived = isset($data['cash_received']) ? (float)$data['cash_received'] : $net_total;
             $changeAmount = max(0, $cashReceived - $net_total);
 
-            // 5. Insert into orders (status = 4 for Completed, order_type = 2 for POS)
-            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, employee_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, status, order_type, free_gift, points_earned, cash_received) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 4, 2, ?, ?, ?)");
-            $stmtOrder->execute([$customerId, $employeeId, $addressId, $promoId ? $promoId : null, $subtotal, $discount, $net_total, $freeGift, $pointsEarned, $cashReceived]);
+            // 5. Insert into orders (status = 4 for Completed, order_type = 2 for POS, with points_used)
+            $stmtOrder = $this->db->prepare("INSERT INTO orders (customer_id, employee_id, address_id, promo_id, subtotal, discount_amount, shipping_fee, net_total, points_used, status, order_type, free_gift, points_earned, cash_received) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 4, 2, ?, ?, ?)");
+            $stmtOrder->execute([$customerId, $employeeId, $addressId, $promoId ? $promoId : null, $subtotal, $discount, $net_total, $pointsUsed, $freeGift, $pointsEarned, $cashReceived]);
             $orderId = (int)$this->db->lastInsertId();
 
             // Insert into payments table
@@ -480,16 +567,34 @@ class OrderController {
                 $stmtLog->execute([$detail['product_id'], $employeeId, $orderId, -$detail['quantity'], $detail['unit_cost']]);
             }
 
+            // Deduct points redeemed if any
+            if ($customerId && $pointsUsed > 0) {
+                try {
+                    $stmtDeductPoints = $this->db->prepare("UPDATE customers SET points = GREATEST(0, points - ?) WHERE customer_id = ?");
+                    $stmtDeductPoints->execute([$pointsUsed, $customerId]);
+
+                    $orderNum = "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
+                    $stmtLogDeduct = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
+                    $stmtLogDeduct->execute([$customerId, $orderId, -$pointsUsed, "ใช้แต้มสะสม {$pointsUsed} แต้มเป็นส่วนลด ฿" . number_format($pointsDiscount, 2) . " สำหรับบิล POS #{$orderNum}"]);
+                } catch (Exception $exDeduct) {
+                    error_log("Failed to deduct points on POS order #$orderId: " . $exDeduct->getMessage());
+                }
+            }
+
             // Award reward points to customer
             if ($customerId && $pointsEarned > 0) {
-                // Update points in customers
-                $stmtUpdatePoints = $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?");
-                $stmtUpdatePoints->execute([$pointsEarned, $customerId]);
+                try {
+                    // Update points in customers
+                    $stmtUpdatePoints = $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?");
+                    $stmtUpdatePoints->execute([$pointsEarned, $customerId]);
 
-                // Insert log
-                $orderNum = "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
-                $stmtLogPoints = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
-                $stmtLogPoints->execute([$customerId, $orderId, $pointsEarned, "ได้รับแต้มสะสมจากรายการสั่งซื้อ POS #$orderNum"]);
+                    // Insert log
+                    $orderNum = "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
+                    $stmtLogPoints = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
+                    $stmtLogPoints->execute([$customerId, $orderId, $pointsEarned, "ได้รับแต้มสะสมจากรายการสั่งซื้อ POS #$orderNum"]);
+                } catch (Exception $exLog) {
+                    error_log("Failed to award points on POS order #$orderId: " . $exLog->getMessage());
+                }
             }
 
             // Retrieve employee name for cashier on receipt
@@ -515,20 +620,26 @@ class OrderController {
                 error_log("LINE Auto-Notification failed on POS order #$orderId: " . $exLine->getMessage());
             }
 
+            $remainingPoints = max(0, $curCustomerPoints - $pointsUsed + $pointsEarned);
+
             Response::json(201, "POS Order completed successfully", [
                 "order_id" => $orderId,
                 "order_number" => "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT),
                 "date" => date('Y-m-d H:i:s'),
                 "subtotal" => $subtotal,
                 "discount" => $discount,
+                "points_used" => $pointsUsed,
+                "points_discount" => $pointsDiscount,
                 "net_total" => $net_total,
                 "cash_received" => $cashReceived,
                 "change" => $changeAmount,
                 "payment_method" => $paymentMethod,
                 "cashier_name" => $cashierName,
                 "customer_name" => $customerName,
+                "customer_id" => $customerId,
                 "free_gift" => $freeGift,
-                "points_earned" => $pointsEarned
+                "points_earned" => $pointsEarned,
+                "remaining_points" => $remainingPoints
             ]);
 
         } catch (Exception $e) {
@@ -544,16 +655,28 @@ class OrderController {
             $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
 
             $baseQuery = "SELECT o.order_id as id, 
+                             o.order_id,
                              o.order_date as date, 
+                             o.order_date,
+                             o.customer_id,
                              CASE WHEN o.order_type = 2 THEN CONCAT('ORD-POS-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0'))
                                   ELSE CONCAT('ORD-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0')) END as number, 
+                             o.subtotal,
+                             o.shipping_fee,
+                             o.discount_amount,
+                             o.points_used,
+                             o.points_earned,
                              o.net_total as amount, 
+                             o.net_total as total_amount,
                              o.status,
                              o.order_type,
+                             c.first_name,
+                             c.last_name,
                              p.slip_image,
                              p.payment_method,
                              p.status as payment_status
                       FROM orders o 
+                      LEFT JOIN customers c ON o.customer_id = c.customer_id
                       LEFT JOIN (
                           SELECT p1.order_id, p1.slip_image, p1.payment_method, p1.status
                           FROM payments p1
@@ -580,6 +703,38 @@ class OrderController {
 
             $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            // Fetch items for all loaded orders
+            $itemsByOrder = [];
+            if (!empty($orders)) {
+                $orderIds = array_column($orders, 'id');
+                $placeholders = implode(',', array_fill(0, count($orderIds), '?'));
+                $stmtItems = $this->db->prepare("SELECT od.order_id, od.product_id, od.quantity, od.unit_price, 
+                                                         p.product_name, p.image_url
+                                                  FROM order_details od
+                                                  JOIN products p ON od.product_id = p.product_id
+                                                  WHERE od.order_id IN ($placeholders)");
+                $stmtItems->execute($orderIds);
+                $allDetails = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($allDetails as $row) {
+                    $oid = $row['order_id'];
+                    if (!isset($itemsByOrder[$oid])) {
+                        $itemsByOrder[$oid] = [];
+                    }
+                    $itemsByOrder[$oid][] = [
+                        'product_id' => (int)$row['product_id'],
+                        'product_name' => $row['product_name'],
+                        'name' => $row['product_name'],
+                        'quantity' => (int)$row['quantity'],
+                        'qty' => (int)$row['quantity'],
+                        'unit_price' => (float)$row['unit_price'],
+                        'price' => (float)$row['unit_price'],
+                        'image_url' => $row['image_url'] ?: '/image/713815-00-allonline-hg.jpg',
+                        'image' => $row['image_url'] ?: '/image/713815-00-allonline-hg.jpg'
+                    ];
+                }
+            }
+
             $statusMap = [
                 1 => 'Pending',
                 2 => 'Processing',
@@ -589,14 +744,33 @@ class OrderController {
             ];
 
             foreach ($orders as &$order) {
+                $order['items'] = $itemsByOrder[$order['id']] ?? [];
                 $order['amount'] = (float)$order['amount'];
+                $order['total_amount'] = (float)$order['amount'];
+                $order['subtotal'] = (float)($order['subtotal'] ?? 0);
+                $order['shipping_fee'] = (float)($order['shipping_fee'] ?? 0);
+                $order['discount_amount'] = (float)($order['discount_amount'] ?? 0);
+                $order['points_used'] = (int)($order['points_used'] ?? 0);
+                $order['points_discount'] = (float)($order['points_used'] > 0 ? ($order['points_used'] / 10) * 10.0 : 0.0);
+                $order['points_earned'] = (int)($order['points_earned'] ?? 0);
                 $sId = (int)$order['status'];
+                $order['status_id'] = $sId;
                 $order['status'] = isset($statusMap[$sId]) ? $statusMap[$sId] : 'Pending';
+                $order['status_label'] = [
+                    1 => 'รอดำเนินการ',
+                    2 => 'กำลังแพ็คสินค้า',
+                    3 => 'กำลังจัดส่ง',
+                    4 => 'จัดส่งสำเร็จ',
+                    5 => 'ยกเลิกแล้ว'
+                ][$sId] ?? 'รอดำเนินการ';
                 $order['date'] = date('Y-m-d H:i:s', strtotime($order['date']));
+                $order['order_date'] = $order['date'];
                 $order['order_type'] = (int)($order['order_type'] ?? 1);
                 $order['order_type_label'] = ($order['order_type'] == 2) ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์';
                 $order['has_slip'] = !empty($order['slip_image']);
                 $order['slip_image'] = $order['slip_image'] ?? null;
+                $custName = trim(($order['first_name'] ?? '') . ' ' . ($order['last_name'] ?? ''));
+                $order['customer_name'] = !empty($custName) ? $custName : 'ลูกค้าออนไลน์';
             }
 
             Response::json(200, "Orders retrieved successfully", $orders);
@@ -618,7 +792,7 @@ class OrderController {
             $qOrder = "SELECT o.order_id, o.customer_id, o.order_date, 
                               CASE WHEN o.order_type = 2 THEN CONCAT('ORD-POS-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0'))
                                    ELSE CONCAT('ORD-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0')) END as number, 
-                              o.status, o.subtotal, o.shipping_fee, o.discount_amount, o.net_total, o.order_type, o.free_gift, o.points_earned, o.cash_received,
+                              o.status, o.subtotal, o.shipping_fee, o.discount_amount, o.points_used, o.net_total, o.order_type, o.free_gift, o.points_earned, o.cash_received,
                               c.first_name, c.last_name, c.phone, u.email,
                               a.address_detail, a.province, a.zip_code, a.recipient_name, a.phone as recipient_phone,
                               e.first_name as employee_first_name, e.last_name as employee_last_name
@@ -728,11 +902,22 @@ class OrderController {
             $addressParts = array_filter([$order['address_detail'] ?? '', $order['province'] ?? '', $order['zip_code'] ?? '']);
             $cAddress = count($addressParts) > 0 ? implode(' ', $addressParts) : '-';
 
+            $pointsUsedVal = (int)($order['points_used'] ?? 0);
+            $pointsDiscountVal = $pointsUsedVal > 0 ? (float)(($pointsUsedVal / 10) * 10.0) : 0.0;
+
             $data = [
                 'id' => $order['order_id'],
                 'date' => date('Y-m-d H:i:s', strtotime($order['order_date'])),
                 'number' => $order['number'],
                 'status' => $statusStr,
+                'status_id' => $sId,
+                'status_label' => [
+                    1 => 'รอดำเนินการ',
+                    2 => 'กำลังแพ็คสินค้า',
+                    3 => 'กำลังจัดส่ง',
+                    4 => 'จัดส่งสำเร็จ',
+                    5 => 'ยกเลิกแล้ว'
+                ][$sId] ?? 'รอดำเนินการ',
                 'order_type' => (int)($order['order_type'] ?? 1),
                 'order_type_label' => ((int)($order['order_type'] ?? 1) == 2) ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์',
                 'tracking_number' => $tracking_number,
@@ -746,6 +931,8 @@ class OrderController {
                 'payment_date' => $payment_date ? date('Y-m-d H:i:s', strtotime($payment_date)) : null,
                 'free_gift' => $order['free_gift'],
                 'points_earned' => (int)($order['points_earned'] ?? 0),
+                'points_used' => $pointsUsedVal,
+                'points_discount' => $pointsDiscountVal,
                 'cash_received' => $order['cash_received'] !== null ? (float)$order['cash_received'] : null,
                 'change' => $order['cash_received'] !== null ? max(0, (float)$order['cash_received'] - (float)$order['net_total']) : 0.00,
                 'cashier_name' => $order['employee_first_name'] ? trim($order['employee_first_name'] . ' ' . $order['employee_last_name']) : 'System',
@@ -760,6 +947,8 @@ class OrderController {
                     'subtotal' => (float)$order['subtotal'],
                     'shipping' => (float)$order['shipping_fee'],
                     'discount' => (float)$order['discount_amount'],
+                    'points_used' => $pointsUsedVal,
+                    'points_discount' => $pointsDiscountVal,
                     'total' => (float)$order['net_total']
                 ]
             ];
@@ -797,6 +986,16 @@ class OrderController {
             $roleLower = strtolower($user['role'] ?? '');
             $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
 
+            $stmtOrderCheck = $this->db->prepare("SELECT status, customer_id, net_total FROM orders WHERE order_id = ?");
+            $stmtOrderCheck->execute([$orderId]);
+            $orderRow = $stmtOrderCheck->fetch(PDO::FETCH_ASSOC);
+            $currentStatus = $orderRow ? (int)$orderRow['status'] : 1;
+
+            $stmtPayCheck = $this->db->prepare("SELECT payment_id, slip_image, status FROM payments WHERE order_id = ? AND ((slip_image IS NOT NULL AND slip_image != '') OR status = 1)");
+            $stmtPayCheck->execute([$orderId]);
+            $payCheck = $stmtPayCheck->fetch(PDO::FETCH_ASSOC);
+            $wasPaid = !empty($payCheck) || $currentStatus >= 2;
+
             if (!$isStaffOrAdmin) {
                 // Verify customer ownership
                 $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
@@ -804,23 +1003,28 @@ class OrderController {
                 $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
                 $cid = $cRow ? (int)$cRow['customer_id'] : -1;
 
-                $stmtCheck = $this->db->prepare("SELECT customer_id, status FROM orders WHERE order_id = ?");
-                $stmtCheck->execute([$orderId]);
-                $orderRow = $stmtCheck->fetch(PDO::FETCH_ASSOC);
-
                 if (!$orderRow || (int)$orderRow['customer_id'] !== $cid) {
                     Response::json(403, "Forbidden: You do not have permission to modify this order");
                     return;
                 }
 
-                $currentStatus = (int)$orderRow['status'];
                 // Allowed transitions for customer:
                 // 1. Confirm receive: status -> Completed (4) from In Transit (3) or Processing (2)
-                // 2. Cancel: status -> Cancelled (5) from Pending (1)
-                if ($sId === 4 && ($currentStatus === 2 || $currentStatus === 3)) {
-                    // Allowed
-                } elseif ($sId === 5 && $currentStatus === 1) {
-                    // Allowed
+                // 2. Cancel: status -> Cancelled (5) ONLY if not paid yet and status is Pending (1)
+                if ($sId === 5) {
+                    if ($wasPaid) {
+                        Response::json(400, "คำสั่งซื้อนี้ได้รับการชำระเงินแล้ว ไม่สามารถยกเลิกคำสั่งซื้อได้ด้วยตนเอง หากต้องการยกเลิกคำสั่งซื้อ กรุณาติดต่อทางร้านผ่านช่องทาง LINE");
+                        return;
+                    }
+                    if ($currentStatus !== 1) {
+                        Response::json(400, "ไม่สามารถยกเลิกคำสั่งซื้อในสถานะนี้ได้");
+                        return;
+                    }
+                } elseif ($sId === 4) {
+                    if ($currentStatus !== 2 && $currentStatus !== 3) {
+                        Response::json(403, "Forbidden: Invalid status transition for customer");
+                        return;
+                    }
                 } else {
                     Response::json(403, "Forbidden: Invalid status transition for customer");
                     return;
@@ -877,7 +1081,7 @@ class OrderController {
             }
 
             // Retrieve previous status for comparison
-            $prevStmt = $this->db->prepare("SELECT status, customer_id, points_earned FROM orders WHERE order_id = ?");
+            $prevStmt = $this->db->prepare("SELECT status, customer_id, points_earned, points_used FROM orders WHERE order_id = ?");
             $prevStmt->execute([$orderId]);
             $prevOrder = $prevStmt->fetch(PDO::FETCH_ASSOC);
             $prevStatus = $prevOrder ? (int)$prevOrder['status'] : 1;
@@ -927,6 +1131,15 @@ class OrderController {
                                 $this->db->prepare("UPDATE customers SET points = GREATEST(0, points - ?) WHERE customer_id = ?")->execute([$pts, $cid]);
                                 $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)")
                                          ->execute([$cid, $orderId, -$pts, "ดึงแต้มคืนเนื่องจากคำสั่งซื้อ #$orderId ถูกยกเลิก"]);
+                            }
+
+                            // Refund points used back to customer if any
+                            if (!empty($prevOrder['customer_id']) && !empty($prevOrder['points_used']) && (int)$prevOrder['points_used'] > 0) {
+                                $ptsUsed = (int)$prevOrder['points_used'];
+                                $cid = (int)$prevOrder['customer_id'];
+                                $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?")->execute([$ptsUsed, $cid]);
+                                $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)")
+                                         ->execute([$cid, $orderId, $ptsUsed, "คืนแต้มสะสม {$ptsUsed} แต้ม เนื่องจากคำสั่งซื้อ #$orderId ถูกยกเลิก"]);
                             }
                         } catch (Exception $exRestock) {
                             error_log("Restock on cancel order #$orderId error: " . $exRestock->getMessage());
@@ -985,7 +1198,10 @@ class OrderController {
                     "company_id" => $companyIdReq,
                     "company_name" => $updatedCompanyName,
                     "shipping_fee" => $updatedShippingFee,
-                    "net_total" => $updatedNetTotal
+                    "net_total" => $updatedNetTotal,
+                    "was_paid" => $wasPaid,
+                    "require_refund_notice" => ($sId == 5 && $wasPaid),
+                    "refund_message" => ($sId == 5 && $wasPaid) ? "ให้แคปรูปภาพข้อความนี้เพื่อเป็นหลักฐานในการโอนเงินคืนผ่านทาง LINE โดยให้ลูกค้าส่งข้อความมาทาง LINE ร้าน" : null
                 ]);
             } else {
                 Response::json(500, "Failed to update status");
@@ -1105,7 +1321,7 @@ class OrderController {
                 ]);
             } else {
                 // Retrieve current order info before cancel
-                $curStmt = $this->db->prepare("SELECT status, customer_id, points_earned FROM orders WHERE order_id = ?");
+                $curStmt = $this->db->prepare("SELECT status, customer_id, points_earned, points_used FROM orders WHERE order_id = ?");
                 $curStmt->execute([$orderId]);
                 $curOrder = $curStmt->fetch(PDO::FETCH_ASSOC);
                 $prevStatus = $curOrder ? (int)$curOrder['status'] : 1;
@@ -1142,6 +1358,15 @@ class OrderController {
                             $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)")
                                      ->execute([$cid, $orderId, -$pts, "ดึงแต้มคืนเนื่องจากคำสั่งซื้อ #$orderId ถูกยกเลิก"]);
                         }
+
+                        // Refund points used back to customer if any
+                        if (!empty($curOrder['customer_id']) && !empty($curOrder['points_used']) && (int)$curOrder['points_used'] > 0) {
+                            $ptsUsed = (int)$curOrder['points_used'];
+                            $cid = (int)$curOrder['customer_id'];
+                            $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?")->execute([$ptsUsed, $cid]);
+                            $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)")
+                                     ->execute([$cid, $orderId, $ptsUsed, "คืนแต้มสะสม {$ptsUsed} แต้ม เนื่องจากคำสั่งซื้อ #$orderId ถูกยกเลิก"]);
+                        }
                     } catch (Exception $exRestock) {
                         error_log("Restock on reject slip order #$orderId error: " . $exRestock->getMessage());
                     }
@@ -1174,6 +1399,89 @@ class OrderController {
             Response::json(200, "Success", $companies);
         } catch (Exception $e) {
             Response::json(500, "Error loading companies", ["error" => $e->getMessage()]);
+        }
+    }
+
+    public function getRefundOrders() {
+        try {
+            $user = AuthMiddleware::authenticate();
+
+            $query = "SELECT o.order_id,
+                             o.order_date,
+                             CASE WHEN o.order_type = 2 THEN CONCAT('ORD-POS-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0'))
+                                  ELSE CONCAT('ORD-', DATE_FORMAT(o.order_date, '%Y'), '-', LPAD(o.order_id, 3, '0')) END as number,
+                             o.net_total as amount,
+                             o.status,
+                             o.refund_status,
+                             o.refund_date,
+                             o.refund_notes,
+                             c.customer_id,
+                             c.first_name,
+                             c.last_name,
+                             c.phone,
+                             p.slip_image,
+                             p.payment_method,
+                             p.payment_date
+                      FROM orders o
+                      LEFT JOIN customers c ON o.customer_id = c.customer_id
+                      LEFT JOIN (
+                          SELECT p1.order_id, p1.slip_image, p1.payment_method, p1.payment_date
+                          FROM payments p1
+                          INNER JOIN (
+                              SELECT order_id, MAX(payment_id) as max_payment_id
+                              FROM payments
+                              GROUP BY order_id
+                          ) p2 ON p1.order_id = p2.order_id AND p1.payment_id = p2.max_payment_id
+                      ) p ON o.order_id = p.order_id
+                      WHERE o.status = 5 OR (p.slip_image IS NOT NULL AND p.slip_image != '') OR o.refund_status > 0
+                      ORDER BY o.order_date DESC";
+
+            $stmt = $this->db->query($query);
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($orders as &$order) {
+                $order['order_id'] = (int)$order['order_id'];
+                $order['amount'] = (float)$order['amount'];
+                $order['refund_status'] = (int)($order['refund_status'] ?? 0);
+                $order['refund_status_label'] = $order['refund_status'] === 1 ? 'คืนเงินแล้ว' : 'ยังไม่ได้คืนเงิน';
+                $custName = trim(($order['first_name'] ?? '') . ' ' . ($order['last_name'] ?? ''));
+                $order['customer_name'] = !empty($custName) ? $custName : 'ลูกค้า';
+                $order['phone'] = !empty($order['phone']) ? $order['phone'] : '-';
+                $order['has_slip'] = !empty($order['slip_image']);
+            }
+
+            Response::json(200, "Refund orders loaded successfully", $orders);
+        } catch (Exception $e) {
+            Response::json(500, "Failed to load refund orders", ["error" => $e->getMessage()]);
+        }
+    }
+
+    public function updateRefundStatus() {
+        try {
+            $user = AuthMiddleware::authenticate();
+
+            $data = json_decode(file_get_contents("php://input"), true);
+            if (!isset($data['order_id']) || !isset($data['refund_status'])) {
+                Response::json(400, "Missing order_id or refund_status");
+                return;
+            }
+
+            $orderId = (int)$data['order_id'];
+            $refundStatus = (int)$data['refund_status']; // 0: Pending, 1: Refunded
+            $refundNotes = isset($data['refund_notes']) ? trim($data['refund_notes']) : null;
+            $refundDate = ($refundStatus === 1) ? date('Y-m-d H:i:s') : null;
+
+            $stmt = $this->db->prepare("UPDATE orders SET refund_status = ?, refund_date = ?, refund_notes = ? WHERE order_id = ?");
+            $stmt->execute([$refundStatus, $refundDate, $refundNotes, $orderId]);
+
+            Response::json(200, "อัปเดตสถานะการคืนเงินเรียบร้อยแล้ว", [
+                "order_id" => $orderId,
+                "refund_status" => $refundStatus,
+                "refund_status_label" => $refundStatus === 1 ? "คืนเงินแล้ว" : "ยังไม่ได้คืนเงิน",
+                "refund_date" => $refundDate
+            ]);
+        } catch (Exception $e) {
+            Response::json(500, "Failed to update refund status", ["error" => $e->getMessage()]);
         }
     }
 }

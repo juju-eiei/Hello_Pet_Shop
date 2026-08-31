@@ -13,7 +13,9 @@ class CustomerController {
 
     public function index() {
         try {
-            $query = "SELECT c.customer_id, c.first_name, c.last_name, c.phone, c.points, u.email,
+            $query = "SELECT c.customer_id, c.first_name, c.last_name, 
+                             COALESCE(NULLIF(c.phone, ''), (SELECT a.phone FROM addresses a WHERE a.customer_id = c.customer_id AND a.phone IS NOT NULL AND a.phone != '' ORDER BY a.is_default DESC, a.address_id DESC LIMIT 1)) as phone,
+                             c.points, u.email,
                              COUNT(p.pet_id) as pet_count
                       FROM customers c
                       JOIN users u ON c.user_id = u.user_id
@@ -50,11 +52,18 @@ class CustomerController {
         try {
             $user = AuthMiddleware::authenticate();
 
-            if (!isset($_GET['id'])) {
+            $customerId = isset($_GET['id']) ? (int)$_GET['id'] : null;
+            if (!$customerId) {
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
+                $stmtCust->execute([$user['user_id']]);
+                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
+                $customerId = $cRow ? (int)$cRow['customer_id'] : null;
+            }
+
+            if (!$customerId) {
                 Response::json(400, "Customer ID is required");
                 return;
             }
-            $customerId = (int)$_GET['id'];
 
             $roleLower = strtolower($user['role'] ?? '');
             $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
@@ -75,7 +84,9 @@ class CustomerController {
             }
 
             // Customer Info
-            $qCust = "SELECT c.customer_id, c.first_name, c.last_name, c.phone, c.points, 
+            $qCust = "SELECT c.customer_id, c.first_name, c.last_name, 
+                             COALESCE(NULLIF(c.phone, ''), (SELECT a.phone FROM addresses a WHERE a.customer_id = c.customer_id AND a.phone IS NOT NULL AND a.phone != '' ORDER BY a.is_default DESC, a.address_id DESC LIMIT 1)) as phone, 
+                             c.points, 
                              u.username, u.email, u.created_at
                       FROM customers c
                       JOIN users u ON c.user_id = u.user_id
@@ -101,6 +112,11 @@ class CustomerController {
             $stmtO->execute([$customerId]);
             $orderStats = $stmtO->fetch(PDO::FETCH_ASSOC);
 
+            // Default Address Info
+            $stmtAddr = $this->db->prepare("SELECT address_detail, province, zip_code FROM addresses WHERE customer_id = ? ORDER BY is_default DESC, address_id DESC LIMIT 1");
+            $stmtAddr->execute([$customerId]);
+            $defAddr = $stmtAddr->fetch(PDO::FETCH_ASSOC);
+
             $data = [
                 'id' => $customer['customer_id'],
                 'name' => trim($customer['first_name'] . ' ' . $customer['last_name']),
@@ -109,6 +125,9 @@ class CustomerController {
                 'username' => $customer['username'] ? $customer['username'] : '',
                 'email' => $customer['email'] ? $customer['email'] : '',
                 'phone' => $customer['phone'] ? $customer['phone'] : '',
+                'address' => $defAddr ? ($defAddr['address_detail'] ?: '') : '',
+                'province' => $defAddr ? ($defAddr['province'] ?: '') : '',
+                'zipcode' => $defAddr ? ($defAddr['zip_code'] ?: '') : '',
                 'points' => (int)$customer['points'],
                 'joined_date' => date('d M Y', strtotime($customer['created_at'])),
                 'total_orders' => (int)$orderStats['total_orders'],
@@ -139,26 +158,39 @@ class CustomerController {
             $roleLower = strtolower($user['role'] ?? '');
             $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
 
-            if ($isStaffOrAdmin) {
-                AuthMiddleware::checkPermission('customers_manage');
-                if (empty($data['customer_id'])) {
-                    Response::json(400, "กรุณาระบุรหัสลูกค้า");
-                    return;
+            if (!empty($data['customer_id'])) {
+                if ($isStaffOrAdmin) {
+                    AuthMiddleware::checkPermission('customers_manage');
                 }
                 $customerId = (int)$data['customer_id'];
-                $points = isset($data['points']) ? (int)$data['points'] : 0;
+                $stmtCheckOwn = $this->db->prepare("SELECT points FROM customers WHERE customer_id = ?");
+                $stmtCheckOwn->execute([$customerId]);
+                $rowPts = $stmtCheckOwn->fetch(PDO::FETCH_ASSOC);
+                $points = ($isStaffOrAdmin && isset($data['points'])) ? (int)$data['points'] : ($rowPts ? (int)$rowPts['points'] : 0);
             } else {
-                // Customer can only update their own profile and cannot modify points
+                // If customer_id is not passed, resolve to logged-in user's customer record
                 $stmtOwnCust = $this->db->prepare("SELECT customer_id, points FROM customers WHERE user_id = ?");
                 $stmtOwnCust->execute([$user['user_id']]);
                 $ownCust = $stmtOwnCust->fetch(PDO::FETCH_ASSOC);
 
-                if (!$ownCust) {
+                if ($ownCust) {
+                    $customerId = (int)$ownCust['customer_id'];
+                    $points = (int)$ownCust['points'];
+                } else if ($isStaffOrAdmin) {
+                    // Auto-create customer record for admin/staff if they don't have one yet
+                    $stmtCreateCust = $this->db->prepare("INSERT INTO customers (user_id, first_name, last_name, phone, points) VALUES (?, ?, ?, ?, 0)");
+                    $stmtCreateCust->execute([
+                        $user['user_id'], 
+                        trim($data['first_name']), 
+                        isset($data['last_name']) ? trim($data['last_name']) : '', 
+                        isset($data['phone']) ? trim($data['phone']) : null
+                    ]);
+                    $customerId = (int)$this->db->lastInsertId();
+                    $points = 0;
+                } else {
                     Response::json(404, "ไม่พบข้อมูลลูกค้าในระบบ");
                     return;
                 }
-                $customerId = (int)$ownCust['customer_id'];
-                $points = (int)$ownCust['points']; // Preserve existing points
             }
 
             $firstName = trim($data['first_name']);
@@ -179,36 +211,45 @@ class CustomerController {
 
             $userId = $cust['user_id'];
 
-            // Validate username unique if updated
-            if (!empty($username)) {
-                $stmtCheckUser = $this->db->prepare("SELECT user_id FROM users WHERE username = ? AND user_id != ?");
-                $stmtCheckUser->execute([$username, $userId]);
-                if ($stmtCheckUser->fetch()) {
-                    Response::json(400, "ชื่อผู้ใช้ (Username) นี้ถูกใช้งานแล้วในระบบ");
-                    return;
-                }
-            }
-
-            // Validate email unique if updated
-            if (!empty($email)) {
-                $stmtCheckEmail = $this->db->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
-                $stmtCheckEmail->execute([$email, $userId]);
-                if ($stmtCheckEmail->fetch()) {
-                    Response::json(400, "อีเมลนี้ถูกใช้งานแล้วในระบบ");
-                    return;
-                }
-            }
-
             // Update customers table
             $qUpCust = "UPDATE customers SET first_name = ?, last_name = ?, phone = ?, points = ? WHERE customer_id = ?";
             $stmtUpCust = $this->db->prepare($qUpCust);
             $stmtUpCust->execute([$firstName, $lastName, $phone, $points, $customerId]);
 
-            // Update users table (username & email) if provided
-            if ($username !== null || $email !== null) {
-                $qUpUser = "UPDATE users SET username = COALESCE(?, username), email = COALESCE(?, email) WHERE user_id = ?";
-                $stmtUpUser = $this->db->prepare($qUpUser);
-                $stmtUpUser->execute([$username, $email, $userId]);
+            // Sync with default address if address details or phone provided
+            if (!empty($phone) || !empty($data['address'])) {
+                $addrDetail = isset($data['address']) ? trim($data['address']) : '';
+                $prov = isset($data['province']) ? trim($data['province']) : '';
+                $zip = isset($data['zipcode']) ? trim($data['zipcode']) : '';
+                $recip = trim($firstName . ' ' . $lastName);
+
+                $stmtA = $this->db->prepare("SELECT address_id FROM addresses WHERE customer_id = ? ORDER BY is_default DESC, address_id DESC LIMIT 1");
+                $stmtA->execute([$customerId]);
+                $exAddr = $stmtA->fetch(PDO::FETCH_ASSOC);
+                if ($exAddr) {
+                    $uAddr = $this->db->prepare("UPDATE addresses SET recipient_name = ?, phone = ?, address_detail = COALESCE(NULLIF(?, ''), address_detail), province = COALESCE(NULLIF(?, ''), province), zip_code = COALESCE(NULLIF(?, ''), zip_code) WHERE address_id = ?");
+                    $uAddr->execute([$recip, $phone, $addrDetail, $prov, $zip, $exAddr['address_id']]);
+                } else if (!empty($addrDetail)) {
+                    $iAddr = $this->db->prepare("INSERT INTO addresses (customer_id, recipient_name, phone, address_detail, province, zip_code, is_default) VALUES (?, ?, ?, ?, ?, ?, 1)");
+                    $iAddr->execute([$customerId, $recip, $phone, $addrDetail, $prov, $zip]);
+                }
+            }
+
+            // Validate and update username & email if provided
+            if (!empty($username)) {
+                $stmtCheckUser = $this->db->prepare("SELECT user_id FROM users WHERE username = ? AND user_id != ?");
+                $stmtCheckUser->execute([$username, $userId]);
+                if (!$stmtCheckUser->fetch()) {
+                    $this->db->prepare("UPDATE users SET username = ? WHERE user_id = ?")->execute([$username, $userId]);
+                }
+            }
+
+            if (!empty($email)) {
+                $stmtCheckEmail = $this->db->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
+                $stmtCheckEmail->execute([$email, $userId]);
+                if (!$stmtCheckEmail->fetch()) {
+                    $this->db->prepare("UPDATE users SET email = ? WHERE user_id = ?")->execute([$email, $userId]);
+                }
             }
 
             Response::json(200, "อัปเดตข้อมูลลูกค้าเรียบร้อยแล้ว");

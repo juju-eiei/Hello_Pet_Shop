@@ -11,9 +11,11 @@ function normalizeRoute(urlOrPath) {
         'admin_product_edit.html': 'admin/products/edit',
         'admin_stock.html': 'admin/stock',
         'admin_categories.html': 'admin/categories',
+        'admin_pet_types.html': 'admin/pet-types',
         'admin_promotions.html': 'admin/promotions',
         'admin_orders.html': 'admin/orders',
         'admin_order_details.html': 'admin/orders/details',
+        'admin_refunds.html': 'admin/refunds',
         'admin_customers.html': 'admin/customers',
         'admin_customer_details.html': 'admin/customers/details',
         'admin_delivery.html': 'admin/delivery',
@@ -28,6 +30,7 @@ function normalizeRoute(urlOrPath) {
         'staff_stock.html': 'staff/stock',
         'staff_orders.html': 'staff/orders',
         'staff_order_details.html': 'staff/orders/details',
+        'staff_refunds.html': 'staff/refunds',
         'staff_customers.html': 'staff/customers',
         'staff_customer_details.html': 'staff/customers/details',
         'staff_promotions.html': 'staff/promotions',
@@ -403,20 +406,43 @@ function bindLayoutEvents() {
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const sidebar = document.querySelector('aside.sidebar');
 
-    if (hamburgerBtn && sidebarOverlay && sidebar) {
+    const closeMobileSidebar = () => {
+        if (sidebar) sidebar.classList.remove('mobile-open', 'active');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active', 'show');
+    };
+
+    if (hamburgerBtn && sidebar) {
         hamburgerBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            sidebar.classList.toggle('mobile-open');
-            sidebar.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
-            sidebarOverlay.classList.toggle('show');
-        });
-
-        sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.remove('mobile-open', 'active');
-            sidebarOverlay.classList.remove('active', 'show');
+            const isOpen = sidebar.classList.contains('mobile-open') || sidebar.classList.contains('active');
+            if (isOpen) {
+                closeMobileSidebar();
+            } else {
+                sidebar.classList.add('mobile-open', 'active');
+                if (sidebarOverlay) sidebarOverlay.classList.add('active', 'show');
+            }
         });
     }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeMobileSidebar();
+        });
+        sidebarOverlay.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            closeMobileSidebar();
+        }, { passive: true });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (sidebar && (sidebar.classList.contains('mobile-open') || sidebar.classList.contains('active'))) {
+            if (!sidebar.contains(e.target) && hamburgerBtn && !hamburgerBtn.contains(e.target)) {
+                closeMobileSidebar();
+            }
+        }
+    });
 
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {

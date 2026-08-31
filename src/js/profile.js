@@ -95,10 +95,11 @@ export function initProfilePage() {
     }
 
     // 1. Initial Load & Pre-fill
-    function loadProfile() {
+    async function loadProfile() {
         seedDemoOrdersIfEmpty();
 
-        const profile = getUserProfileData();
+        // 1. Pre-fill immediately from local cache
+        let profile = getUserProfileData();
         
         if (profile.name) {
             inputName.value = profile.name;
@@ -113,6 +114,56 @@ export function initProfilePage() {
         if (profile.profileImage) {
             tempImageSrc = profile.profileImage;
             updateAvatarDisplays(tempImageSrc);
+        }
+
+        // 2. Fetch authoritative profile data from backend MySQL database
+        try {
+            const userRes = await fetch('/api/customers/details');
+            if (userRes.ok) {
+                const jsonRes = await userRes.json();
+                const cust = jsonRes.data || jsonRes;
+                if (cust) {
+                    if (cust.phone && (!inputPhone.value || inputPhone.value.trim() === '')) {
+                        inputPhone.value = cust.phone;
+                        profile.phone = cust.phone;
+                    }
+                    if (cust.name && (!inputName.value || inputName.value.trim() === '' || inputName.value.trim() === 'ผู้ใช้ทั่วไป')) {
+                        inputName.value = cust.name;
+                        if (displayName) displayName.textContent = cust.name;
+                        profile.name = cust.name;
+                    }
+                    if (cust.email && (!inputEmail.value || inputEmail.value.trim() === '')) {
+                        inputEmail.value = cust.email;
+                        profile.email = cust.email;
+                    }
+                    if (cust.address && (!inputAddress.value || inputAddress.value.trim() === '')) {
+                        inputAddress.value = cust.address;
+                        profile.address = cust.address;
+                    }
+                    if (cust.province && (!inputProvince.value || inputProvince.value.trim() === '')) {
+                        inputProvince.value = cust.province;
+                        profile.province = cust.province;
+                    }
+                    if (cust.zipcode && (!inputZipcode.value || inputZipcode.value.trim() === '')) {
+                        inputZipcode.value = cust.zipcode;
+                        profile.zipcode = cust.zipcode;
+                    }
+
+                    // Save synced profile to local isolated store
+                    saveUserProfileData(profile);
+
+                    // Also sync to main user object in localStorage
+                    try {
+                        const curUser = JSON.parse(localStorage.getItem('user') || '{}');
+                        curUser.phone = cust.phone || curUser.phone || '';
+                        curUser.first_name = cust.first_name || cust.name || curUser.first_name || '';
+                        curUser.customer_id = cust.id || curUser.customer_id;
+                        localStorage.setItem('user', JSON.stringify(curUser));
+                    } catch(e) {}
+                }
+            }
+        } catch (err) {
+            console.warn("Could not fetch customer details from server:", err);
         }
 
         updateOrderBadges();
@@ -156,8 +207,8 @@ export function initProfilePage() {
             }
         } catch (e) {}
 
-        // 3. Fallback: Calculate from orders if DB points not present or 0
-        if (!fetchedFromDb || totalPoints === 0) {
+        // 3. Fallback: Calculate from orders only if DB points could not be fetched
+        if (!fetchedFromDb) {
             const storedOrders = localStorage.getItem('myOrders');
             let orders = [];
             if (storedOrders) {
@@ -178,9 +229,7 @@ export function initProfilePage() {
                     }
                 }
             });
-            if (!fetchedFromDb || calculatedPoints > totalPoints) {
-                totalPoints = Math.max(totalPoints, calculatedPoints);
-            }
+            totalPoints = calculatedPoints;
         }
 
         pointsDisplay.textContent = Number(totalPoints).toLocaleString();
@@ -203,14 +252,14 @@ export function initProfilePage() {
         let completedCount = 0;
 
         orders.forEach(o => {
-            const st = o.status;
-            if (st === 'Pending Payment' || st === 'ที่ต้องชำระ') {
+            const st = String(o.status || '').trim();
+            if (st === 'Pending Payment' || st === 'ที่ต้องชำระ' || st === 'Pending' || st === 'รอดำเนินการ') {
                 pendingCount++;
-            } else if (st === 'Preparing' || st === 'กำลังเตรียมสินค้า' || st === 'ที่ต้องจัดส่ง') {
+            } else if (st === 'Preparing' || st === 'กำลังเตรียมสินค้า' || st === 'ที่ต้องจัดส่ง' || st === 'Processing' || st === 'กำลังแพ็คสินค้า') {
                 preparingCount++;
-            } else if (st === 'Shipping' || st === 'กำลังจัดส่ง' || st === 'ที่ต้องได้รับ') {
+            } else if (st === 'Shipping' || st === 'กำลังจัดส่ง' || st === 'ที่ต้องได้รับ' || st === 'In Transit') {
                 shippingCount++;
-            } else if (st === 'Completed' || st === 'สำเร็จ' || st === 'สำเร็จแล้ว') {
+            } else if (st === 'Completed' || st === 'สำเร็จ' || st === 'สำเร็จแล้ว' || st === 'จัดส่งสำเร็จ') {
                 completedCount++;
             }
         });
@@ -269,8 +318,8 @@ export function initProfilePage() {
     }
 
     // 2. Modal Open/Close Controls
-    function openModal() {
-        loadProfile(); // ensure inputs match latest saved
+    async function openModal() {
+        await loadProfile(); // ensure inputs match latest saved from backend DB
         if (editProfileModal) {
             editProfileModal.classList.remove('opacity-0', 'pointer-events-none');
             const card = editProfileModal.querySelector('div');
@@ -324,7 +373,7 @@ export function initProfilePage() {
 
     // 4. Save Profile Action
     if (saveProfileModalBtn) {
-        saveProfileModalBtn.addEventListener('click', () => {
+        saveProfileModalBtn.addEventListener('click', async () => {
             const nameVal = inputName.value.trim();
             const phoneVal = inputPhone.value.trim();
             const addressVal = inputAddress.value.trim();
@@ -367,18 +416,28 @@ export function initProfilePage() {
             userObj.profileImage = finalImage;
             localStorage.setItem('user', JSON.stringify(userObj));
 
-            // Sync with backend database if available
+            // Sync with backend database
             try {
-                fetch('/api/customers/update', {
+                const csrfToken = userObj.csrf_token || localStorage.getItem('csrf_token') || '';
+                const headers = { 'Content-Type': 'application/json' };
+                if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+                await fetch('/api/customers/update', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({
+                        customer_id: userObj.customer_id,
                         first_name: nameVal,
                         phone: phoneVal,
-                        email: inputEmail.value.trim()
+                        email: inputEmail.value.trim(),
+                        address: addressVal,
+                        province: inputProvince.value.trim(),
+                        zipcode: inputZipcode.value.trim()
                     })
                 });
-            } catch (e) {}
+            } catch (e) {
+                console.error("Backend profile sync error:", e);
+            }
 
             // Update Page Header UI
             if (displayName) displayName.textContent = nameVal;

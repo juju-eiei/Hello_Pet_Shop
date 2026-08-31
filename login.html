@@ -121,13 +121,29 @@
                         loggedInUser.profileImage = savedProfile.profileImage;
                     }
                     if (savedProfile.address) loggedInUser.address = savedProfile.address;
-                    if (savedProfile.phone) loggedInUser.phone = savedProfile.phone;
+                    if (savedProfile.phone) {
+                        loggedInUser.phone = savedProfile.phone;
+                    } else if (loggedInUser.phone) {
+                        savedProfile.phone = loggedInUser.phone;
+                    }
                     if (savedProfile.name) {
                         loggedInUser.username = savedProfile.name;
                         loggedInUser.first_name = savedProfile.name;
                     }
 
                     localStorage.setItem('user', JSON.stringify(loggedInUser));
+
+                    // Sync initial profile state in localStorage so getUserProfileData has phone
+                    try {
+                        const userKey = `userProfileData_${userId}`;
+                        const currentProf = JSON.parse(localStorage.getItem(userKey) || '{}');
+                        localStorage.setItem(userKey, JSON.stringify({
+                            ...currentProf,
+                            name: loggedInUser.first_name || loggedInUser.username || currentProf.name || '',
+                            phone: loggedInUser.phone || currentProf.phone || '',
+                            email: loggedInUser.email || currentProf.email || ''
+                        }));
+                    } catch(e) {}
 
                     // Restore cart strictly for this account
                     try {

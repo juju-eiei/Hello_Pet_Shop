@@ -1,0 +1,419 @@
+// ==========================================
+// 1. กลุ่มผู้ใช้งาน สิทธิ์ และข้อมูลส่วนตัว 
+// ==========================================
+Table roles {
+  role_id int [pk, increment]
+  role_name varchar [unique]
+  permissions text
+}
+
+Table users {
+  user_id int [pk, increment]
+  role_id int
+  username varchar [unique]
+  password varchar
+  email varchar [unique]
+  line_user_id varchar 
+  created_at timestamp
+  permissions text
+}
+
+Table customers {
+  customer_id int [pk, increment]
+  user_id int [unique]
+  first_name varchar
+  last_name varchar
+  phone varchar
+  points int [default: 0]
+}
+
+Table employees {
+  employee_id int [pk, increment]
+  user_id int [unique]
+  first_name varchar
+  last_name varchar
+  phone varchar
+  address text
+  base_salary decimal(10,2) [default: 0.00]
+  payment_frequency varchar [default: 'Monthly']
+  bank_account_details varchar
+}
+
+Table pets {
+  pet_id int [pk, increment]
+  customer_id int
+  pet_name varchar
+  pet_type varchar 
+  breed varchar
+  birthdate date 
+  weight decimal(5,2) 
+  allergy_info text
+  notes text
+  image_url varchar
+}
+
+Table addresses {
+  address_id int [pk, increment]
+  customer_id int
+  recipient_name varchar
+  phone varchar
+  address_detail text
+  province varchar
+  zip_code varchar
+  is_default tinyint [default: 0]
+}
+
+// ==========================================
+// 2. กลุ่มสินค้า หมวดหมู่ และคลังสินค้า 
+// ==========================================
+Table product_categories {
+  category_id int [pk, increment]
+  category_name varchar
+  requires_expiration tinyint [default: 1]
+}
+
+Table pet_types {
+  pet_type_id int [pk, increment]
+  name varchar
+  code varchar [unique]
+  description text
+  created_at timestamp
+}
+
+Table products {
+  product_id int [pk, increment]
+  category_id int
+  target_pet_type_id int [null]
+  barcode varchar [unique]
+  weight decimal(10,3) [default: 0.000]
+  weight_value decimal(10,3) [default: 0.000]
+  weight_unit varchar [default: 'kg']
+  image_url varchar
+  product_name varchar
+  description text
+  cost_price decimal(10,2) [default: 0.00]
+  selling_price decimal(10,2) [default: 0.00]
+  stock_qty int [default: 0]
+  min_stock_level int [default: 5]
+  expiry_date date
+  is_active tinyint [default: 1]
+  created_by int
+  created_at timestamp
+}
+
+Table product_lots {
+  lot_id int [pk, increment]
+  product_id int
+  lot_number varchar
+  quantity int [default: 0]
+  expiry_date date
+  cost_price decimal(10,2) [default: 0.00]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ==========================================
+// 3. กลุ่มตะกร้าสินค้า และการสั่งซื้อเข้าสต็อก 
+// ==========================================
+Table carts {
+  cart_id int [pk, increment]
+  customer_id int [unique]
+  updated_at timestamp
+}
+
+Table cart_items {
+  cart_item_id int [pk, increment]
+  cart_id int
+  product_id int
+  quantity int [default: 1]
+}
+
+Table restock_orders {
+  restock_id int [pk, increment]
+  employee_id int 
+  supplier_name varchar
+  order_date datetime
+  total_cost decimal(10,2)
+  status tinyint [default: 0]
+  received_by int
+}
+
+Table restock_details {
+  restock_detail_id int [pk, increment]
+  restock_id int
+  product_id int
+  quantity int
+  unit_cost decimal(10,2)
+  lot_number varchar
+  expiry_date date
+}
+
+Table inventory_logs {
+  log_id int [pk, increment]
+  product_id int
+  employee_id int 
+  reference_id int
+  movement_type tinyint
+  quantity int 
+  unit_cost decimal(10,2) 
+  created_at timestamp
+}
+
+// ==========================================
+// 4. กลุ่มขนส่ง และโปรโมชั่น
+// ==========================================
+Table delivery_companies {
+  company_id int [pk, increment]
+  company_name varchar
+  base_rate decimal(10,2) [default: 0.00]
+  rate_per_kg decimal(10,2) [default: 0.00]
+}
+
+Table delivery_weight_rates {
+  rate_id int [pk, increment]
+  company_id int
+  min_weight decimal(10,3) [default: 0.000]
+  max_weight decimal(10,3) [default: 0.000]
+  price decimal(10,2) [default: 0.00]
+}
+
+Table promotions {
+  promo_id int [pk, increment]
+  employee_id int 
+  promo_name varchar
+  discount_type tinyint
+  discount_value decimal(10,2)
+  min_purchase_amount decimal(10,2) [default: 0.00]
+  start_date datetime
+  end_date datetime
+  is_active tinyint [default: 1]
+}
+
+// ==========================================
+// 5. กลุ่มการขาย ชำระเงิน จัดส่ง และแต้ม 
+// ==========================================
+Table orders {
+  order_id int [pk, increment]
+  customer_id int [null]
+  employee_id int [null]
+  address_id int [null]
+  promo_id int [null]
+  order_date datetime
+  subtotal decimal(10,2)
+  shipping_fee decimal(10,2) [default: 0.00]
+  discount_amount decimal(10,2) [default: 0.00]
+  net_total decimal(10,2) 
+  points_used int [default: 0]
+  points_earned int [default: 0]
+  order_type tinyint
+  status tinyint [default: 0]
+  refund_status tinyint [default: 0]
+  refund_date datetime [null]
+  refund_notes text [null]
+  free_gift varchar [null]
+  cash_received decimal(10,2) [default: 0.00]
+}
+
+Table order_details {
+  order_detail_id int [pk, increment]
+  order_id int
+  product_id int
+  quantity int
+  unit_price decimal(10,2) 
+  unit_cost decimal(10,2) 
+}
+
+Table reward_point_logs {
+  log_id int [pk, increment]
+  customer_id int
+  order_id int [null]
+  points_change int
+  description varchar 
+  created_at timestamp
+}
+
+Table payments {
+  payment_id int [pk, increment]
+  order_id int [unique]
+  payment_method tinyint
+  amount decimal(10,2)
+  slip_image varchar [null]
+  payment_date datetime
+  status tinyint [default: 0]
+}
+
+Table deliveries {
+  delivery_id int [pk, increment]
+  order_id int [unique]
+  company_id int
+  tracking_number varchar
+  status tinyint [default: 0]
+  shipped_date datetime [null]
+}
+
+// ==========================================
+// 6. กลุ่มการเงิน พนักงาน ข่าวสาร และตั้งค่า
+// ==========================================
+Table financial_records {
+  record_id int [pk, increment]
+  employee_id int 
+  record_type tinyint
+  category varchar 
+  description text
+  amount decimal(10,2)
+  record_date datetime
+}
+
+Table financial_transactions {
+  transaction_id int [pk, increment]
+  type varchar
+  category varchar
+  title varchar
+  amount decimal(12,2)
+  description text
+  transaction_date date
+  reference_type varchar
+  reference_id int
+  created_by int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table employee_pay_settings {
+  employee_id int [pk]
+  pay_frequency varchar
+  monthly_salary decimal(12,2)
+  weekly_rate decimal(12,2)
+  daily_rate decimal(12,2)
+  leave_deduction_per_day decimal(12,2)
+  absence_deduction_per_day decimal(12,2)
+  updated_at timestamp
+}
+
+Table salary_payments {
+  payment_id int [pk, increment]
+  employee_id int
+  pay_period varchar
+  base_salary decimal(12,2) [default: 0.00]
+  bonus decimal(12,2) [default: 0.00]
+  deductions decimal(12,2) [default: 0.00]
+  net_paid decimal(12,2)
+  payment_date date
+  payment_method varchar
+  notes text
+  transaction_id int
+  created_by int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table attendance_logs {
+  log_id int [pk, increment]
+  employee_id int
+  work_date date
+  created_at timestamp
+}
+
+Table attendance_verifications {
+  verification_id int [pk, increment]
+  employee_id int
+  work_date date
+  attendance_status varchar
+  notes text
+  verified_by int
+  verified_at timestamp
+}
+
+Table work_schedules {
+  schedule_id int [pk, increment]
+  employee_id int
+  work_date date
+  shift_name varchar
+  start_time time
+  end_time time
+  booking_status varchar
+  attendance_status varchar
+  notes text
+  created_by int
+  verified_by int
+  verified_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table news {
+  news_id int [pk, increment]
+  employee_id int 
+  title varchar
+  content text
+  publish_date datetime
+  is_active tinyint [default: 1]
+}
+
+Table store_settings {
+  setting_id int [pk, increment]
+  updated_by int 
+  line_oa_token varchar
+  point_earning_rate decimal(8,2)
+  point_redemption_rate decimal(8,2)
+  point_min_redeem int [default: 10]
+  updated_at timestamp
+  point_earning_baht decimal(10,2)
+  point_earning_qty int
+  line_target_id varchar
+}
+
+// ==========================================
+// ความสัมพันธ์ (Foreign Keys & Relationships)
+// ==========================================
+Ref: users.role_id > roles.role_id
+Ref: customers.user_id - users.user_id
+Ref: employees.user_id - users.user_id
+Ref: addresses.customer_id > customers.customer_id
+Ref: pets.customer_id > customers.customer_id
+
+Ref: products.category_id > product_categories.category_id
+Ref: products.target_pet_type_id > pet_types.pet_type_id
+Ref: products.created_by > employees.employee_id
+Ref: product_lots.product_id > products.product_id
+
+Ref: carts.customer_id - customers.customer_id
+Ref: cart_items.cart_id > carts.cart_id
+Ref: cart_items.product_id > products.product_id
+
+Ref: restock_orders.employee_id > employees.employee_id
+Ref: restock_orders.received_by > employees.employee_id
+Ref: restock_details.restock_id > restock_orders.restock_id
+Ref: restock_details.product_id > products.product_id
+Ref: inventory_logs.product_id > products.product_id
+Ref: inventory_logs.employee_id > employees.employee_id
+
+Ref: delivery_weight_rates.company_id > delivery_companies.company_id
+
+Ref: orders.customer_id > customers.customer_id
+Ref: orders.employee_id > employees.employee_id
+Ref: orders.address_id > addresses.address_id
+Ref: orders.promo_id > promotions.promo_id
+Ref: order_details.order_id > orders.order_id
+Ref: order_details.product_id > products.product_id
+
+Ref: reward_point_logs.customer_id > customers.customer_id
+Ref: reward_point_logs.order_id > orders.order_id
+Ref: payments.order_id - orders.order_id
+
+Ref: deliveries.order_id - orders.order_id
+Ref: deliveries.company_id > delivery_companies.company_id
+
+Ref: promotions.employee_id > employees.employee_id
+Ref: news.employee_id > employees.employee_id
+Ref: financial_records.employee_id > employees.employee_id
+Ref: financial_transactions.created_by > users.user_id
+Ref: employee_pay_settings.employee_id - employees.employee_id
+Ref: salary_payments.employee_id > employees.employee_id
+Ref: salary_payments.transaction_id > financial_transactions.transaction_id
+Ref: salary_payments.created_by > users.user_id
+Ref: attendance_logs.employee_id > employees.employee_id
+Ref: attendance_verifications.employee_id > employees.employee_id
+Ref: attendance_verifications.verified_by > users.user_id
+Ref: work_schedules.employee_id > employees.employee_id
+Ref: store_settings.updated_by > employees.employee_id
