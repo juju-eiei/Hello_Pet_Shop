@@ -15,7 +15,6 @@ Table users {
   email varchar [unique]
   line_user_id varchar 
   created_at timestamp
-  permissions text
 }
 
 Table customers {
