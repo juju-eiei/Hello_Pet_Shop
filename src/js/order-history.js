@@ -444,6 +444,10 @@ export function initOrderHistoryPage() {
                         ` : ''}
                         ${order.status === 'Pending Payment' ? (
                             isSlipRejected ? `
+                                <button class="cancel-order-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 flex items-center space-x-1 cursor-pointer" data-id="${order.id}">
+                                    <i class="fas fa-times-circle text-[11px]"></i>
+                                    <span>ยกเลิกคำสั่งซื้อ</span>
+                                </button>
                                 <button class="pay-now-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
                                     <i class="fas fa-file-upload"></i>
                                     <span>แนบสลิปใหม่</span>
@@ -451,7 +455,7 @@ export function initOrderHistoryPage() {
                             ` : !hasSlip ? `
                                 <button class="cancel-order-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 flex items-center space-x-1 cursor-pointer" data-id="${order.id}">
                                     <i class="fas fa-times-circle text-[11px]"></i>
-                                    <span>ยกเลิก</span>
+                                    <span>ยกเลิกคำสั่งซื้อ</span>
                                 </button>
                                 <button class="pay-now-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
                                     <i class="fas fa-qrcode"></i>
@@ -579,7 +583,11 @@ export function initOrderHistoryPage() {
         const targetOrder = orders.find(o => o.id == orderId);
         if (!targetOrder) return;
 
-        if (targetOrder.slipImage || targetOrder.status !== 'Pending Payment') {
+        const isSlipRejected = Number(targetOrder.payment_status) === 2;
+        const hasSlip = !!(targetOrder.has_slip || targetOrder.hasSlip || targetOrder.slipImage || targetOrder.slip_image);
+        const canCancel = targetOrder.status === 'Pending Payment' && (!hasSlip || isSlipRejected);
+
+        if (!canCancel) {
             showToast("คำสั่งซื้อนี้ได้รับการชำระเงินแล้ว ไม่สามารถยกเลิกคำสั่งซื้อได้ด้วยตนเอง หากต้องการยกเลิกกรุณาติดต่อทางร้านผ่านช่องทาง LINE", "error");
             return;
         }
@@ -587,18 +595,25 @@ export function initOrderHistoryPage() {
         let confirmed = false;
         if (typeof Swal !== 'undefined') {
             const res = await Swal.fire({
-                title: 'ยืนยันการยกเลิกคำสั่งซื้อ?',
-                text: `คุณต้องการยกเลิกคำสั่งซื้อ #${orderId} หรือไม่? รายการสินค้าจะถูกยกเลิกและคืนเข้าสต็อกร้านค้า`,
+                title: 'ต้องการยกเลิกคำสั่งซื้อนี้หรือไม่?',
+                text: `คุณต้องการยกเลิกคำสั่งซื้อ #${orderId} หรือไม่?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#e11d48',
                 cancelButtonColor: '#94a3b8',
-                confirmButtonText: 'ยืนยันการยกเลิก',
-                cancelButtonText: 'ย้อนกลับ'
+                confirmButtonText: 'ยกเลิกคำสั่งซื้อ',
+                cancelButtonText: 'กลับ',
+                didOpen: () => {
+                    const btn = Swal.getConfirmButton();
+                    if (btn) {
+                        btn.style.setProperty('background-color', '#e11d48', 'important');
+                        btn.style.setProperty('box-shadow', '0 4px 6px -1px rgba(225, 29, 72, 0.25)', 'important');
+                    }
+                }
             });
             confirmed = res.isConfirmed;
         } else {
-            confirmed = confirm(`คุณต้องการยกเลิกคำสั่งซื้อ #${orderId} หรือไม่?`);
+            confirmed = confirm('ต้องการยกเลิกคำสั่งซื้อนี้หรือไม่?');
         }
 
         if (!confirmed) return;
@@ -894,6 +909,10 @@ export function initOrderHistoryPage() {
             } else if (order.status === 'Pending Payment') {
                 if (isSlipRejected) {
                     actionsHtml += `
+                        <button type="button" class="modal-cancel-order-btn px-4 py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 flex items-center space-x-1 cursor-pointer" data-id="${order.id}">
+                            <i class="fas fa-times-circle text-[11px]"></i>
+                            <span>ยกเลิกคำสั่งซื้อ</span>
+                        </button>
                         <button type="button" class="modal-pay-now-btn px-4 py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
                             <i class="fas fa-file-upload"></i>
                             <span>แนบสลิปใหม่</span>
@@ -901,6 +920,10 @@ export function initOrderHistoryPage() {
                     `;
                 } else if (!hasSlip) {
                     actionsHtml += `
+                        <button type="button" class="modal-cancel-order-btn px-4 py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 flex items-center space-x-1 cursor-pointer" data-id="${order.id}">
+                            <i class="fas fa-times-circle text-[11px]"></i>
+                            <span>ยกเลิกคำสั่งซื้อ</span>
+                        </button>
                         <button type="button" class="modal-pay-now-btn px-4 py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
                             <i class="fas fa-qrcode"></i>
                             <span>ชำระเงิน</span>
@@ -915,6 +938,18 @@ export function initOrderHistoryPage() {
                 }
             }
             modalDynamicActions.innerHTML = actionsHtml;
+
+            const modalCancelBtn = modalDynamicActions.querySelector('.modal-cancel-order-btn');
+            if (modalCancelBtn) {
+                modalCancelBtn.onclick = async () => {
+                    if (orderDetailModal) {
+                        orderDetailModal.classList.add('opacity-0', 'pointer-events-none');
+                        orderDetailModal.classList.add('hidden');
+                        orderDetailModal.style.display = 'none';
+                    }
+                    await cancelOrderAction(order.id);
+                };
+            }
 
             const modalConfirmBtn = modalDynamicActions.querySelector('.modal-confirm-received-btn');
             if (modalConfirmBtn) {

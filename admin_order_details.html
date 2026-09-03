@@ -882,7 +882,8 @@
                     slipStatusBadge.className = 'status-pill completed';
                 }
             } else if (data.has_slip || data.slip_image || data.slipImage) {
-                const slipImg = data.slip_image || data.slipImage;
+                const rawSlip = data.slip_image || data.slipImage;
+                const slipImg = formatSlipUrl(rawSlip);
                 if (slipPosView) slipPosView.style.display = 'none';
                 if (slipMissingView) slipMissingView.style.display = 'none';
                 if (slipAttachedView) slipAttachedView.style.display = 'block';
@@ -917,12 +918,21 @@
             }
         }
 
+        function formatSlipUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+                return url;
+            }
+            return url.startsWith('/') ? url : '/' + url;
+        }
+
         function openSlipModal() {
-            const slipImg = currentOrderData && (currentOrderData.slip_image || currentOrderData.slipImage);
-            if (!slipImg) {
+            const rawSlip = currentOrderData && (currentOrderData.slip_image || currentOrderData.slipImage);
+            if (!rawSlip) {
                 showToast("ยังไม่มีหลักฐานการชำระเงินในคำสั่งซื้อนี้", "warning");
                 return;
             }
+            const slipImg = formatSlipUrl(rawSlip);
             const modal = document.getElementById('slipViewModal');
             const img = document.getElementById('modalSlipImage');
             const dl = document.getElementById('modalSlipDownloadLink');
