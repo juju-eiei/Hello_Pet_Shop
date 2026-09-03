@@ -1230,10 +1230,33 @@
             if (pointsRow) {
                 const peBaht = parseFloat(rewardSettings.point_earning_baht) || 100;
                 const peQty = parseInt(rewardSettings.point_earning_qty) || 1;
-                const pointsEarned = Math.floor(netTotal / peBaht) * peQty;
-                if (pointsEarned > 0) {
-                    document.getElementById('summaryPointsEarned').textContent = `+${pointsEarned.toLocaleString()} แต้ม`;
-                    pointsRow.style.display = 'flex';
+
+                // 1. แต้มที่คำนวณได้สำหรับสมาชิก (Calculated Potential Points / Preview)
+                const calculatedPotentialPoints = (peBaht > 0 && peQty > 0) ? Math.floor(netTotal / peBaht) * peQty : 0;
+
+                // 2. ตรวจสอบสถานะสมาชิกจริง (Real Member Check)
+                const hasMember = !!(selectedCustomer && (selectedCustomer.customer_id || selectedCustomer.id));
+
+                // 3. แต้มที่ได้รับจริง (Actual Points Earned)
+                const actualPointsEarned = hasMember ? calculatedPotentialPoints : 0;
+
+                const labelSpan = pointsRow.querySelector('span:first-child');
+                const valueSpan = document.getElementById('summaryPointsEarned');
+
+                if (calculatedPotentialPoints > 0) {
+                    if (hasMember) {
+                        // มีสมาชิก: แสดงแต้มสะสมที่จะได้รับจริง (สีเขียว)
+                        if (labelSpan) labelSpan.textContent = 'แต้มสะสมที่จะได้รับ';
+                        if (valueSpan) valueSpan.textContent = `+${actualPointsEarned.toLocaleString()} แต้ม`;
+                        pointsRow.style.color = '#16a34a';
+                        pointsRow.style.display = 'flex';
+                    } else {
+                        // ไม่มีสมาชิก (ลูกค้าทั่วไป Walk-in): แสดงเพียง Preview Informational (สีเทา)
+                        if (labelSpan) labelSpan.textContent = 'หากเป็นสมาชิกจะได้';
+                        if (valueSpan) valueSpan.textContent = `+${calculatedPotentialPoints.toLocaleString()} แต้ม`;
+                        pointsRow.style.color = '#64748b';
+                        pointsRow.style.display = 'flex';
+                    }
                 } else {
                     pointsRow.style.display = 'none';
                 }
@@ -1312,7 +1335,7 @@
                 return;
             }
 
-            const customerId = selectedCustomer ? (selectedCustomer.customer_id || selectedCustomer.id) : '';
+            const customerId = (selectedCustomer && (selectedCustomer.customer_id || selectedCustomer.id)) ? (selectedCustomer.customer_id || selectedCustomer.id) : null;
             const promoId = null;
             const cashReceived = parseFloat(document.getElementById('cashReceivedInput').value) || 0;
 
@@ -1347,7 +1370,7 @@
                 if (response.ok) {
                     showToast("บันทึกการขายสำเร็จ!", "success");
                     // Update remaining points in memory if available
-                    if (selectedCustomer && result.data && result.data.remaining_points !== undefined) {
+                    if (selectedCustomer && result.data && result.data.remaining_points !== undefined && result.data.remaining_points !== null) {
                         selectedCustomer.points = result.data.remaining_points;
                         const cInList = allCustomers.find(c => (c.customer_id || c.id) == (selectedCustomer.customer_id || selectedCustomer.id));
                         if (cInList) cInList.points = result.data.remaining_points;
@@ -1386,7 +1409,7 @@
                         <div>เลขที่ใบเสร็จ: ${orderData.order_number}</div>
                         <div>วันที่: ${orderData.date}</div>
                         <div>พนักงานขาย: ${orderData.cashier_name}</div>
-                        <div>ลูกค้า: ${orderData.customer_name}</div>
+                        <div>ลูกค้า: ${orderData.customer_name || (orderData.customer_id ? 'สมาชิก' : 'ลูกค้าทั่วไป (Walk-in)')}</div>
                     </div>
                 </div>
                 <div class="receipt-divider"></div>
@@ -1422,12 +1445,12 @@
                     <span>เงินทอน</span>
                     <span>฿${parseFloat(orderData.change).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
-                ${(orderData.points_earned && orderData.points_earned > 0) ? `
+                ${(orderData.customer_id && orderData.points_earned && orderData.points_earned > 0) ? `
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px; color: #16a34a;">
                     <span>แต้มได้รับครั้งนี้</span>
                     <span>+${Number(orderData.points_earned).toLocaleString()} แต้ม</span>
                 </div>` : ''}
-                ${(orderData.remaining_points !== undefined && orderData.customer_id) ? `
+                ${(orderData.customer_id && orderData.remaining_points !== undefined && orderData.remaining_points !== null) ? `
                 <div class="receipt-summary-row" style="font-weight: normal; font-size: 10px; color: #475569;">
                     <span>แต้มสะสมคงเหลือล่าสุด</span>
                     <span>${Number(orderData.remaining_points).toLocaleString()} แต้ม</span>

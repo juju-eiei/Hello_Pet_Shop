@@ -394,10 +394,12 @@ class OrderController {
         $this->db->beginTransaction();
 
         try {
-            // 1. Resolve customer_id
-            $customerId = !empty($data['customer_id']) ? (int)$data['customer_id'] : null;
+            // 1. Resolve customer_id and member status
+            $isMember = !empty($data['customer_id']);
+            $memberCustomerId = $isMember ? (int)$data['customer_id'] : null;
+            $customerId = $memberCustomerId;
             if (!$customerId) {
-                // Default to the first customer in the DB
+                // Default to the first customer in the DB strictly to satisfy DB foreign key constraint if non-nullable
                 $stmtCust = $this->db->query("SELECT customer_id FROM customers ORDER BY customer_id ASC LIMIT 1");
                 $cust = $stmtCust->fetch(PDO::FETCH_ASSOC);
                 $customerId = $cust ? (int)$cust['customer_id'] : 1;
@@ -420,18 +422,20 @@ class OrderController {
             // 3. Resolve address_id (since it is required by DB relations)
             $addressId = null;
             try {
-                $stmtAddr = $this->db->prepare("SELECT address_id FROM addresses WHERE customer_id = ? LIMIT 1");
-                $stmtAddr->execute([$customerId]);
-                $addr = $stmtAddr->fetch(PDO::FETCH_ASSOC);
-                
-                if ($addr && isset($addr['address_id'])) {
-                    $addressId = (int)$addr['address_id'];
-                } else {
+                if ($isMember && $memberCustomerId) {
+                    $stmtAddr = $this->db->prepare("SELECT address_id FROM addresses WHERE customer_id = ? LIMIT 1");
+                    $stmtAddr->execute([$memberCustomerId]);
+                    $addr = $stmtAddr->fetch(PDO::FETCH_ASSOC);
+                    if ($addr && isset($addr['address_id'])) {
+                        $addressId = (int)$addr['address_id'];
+                    }
+                }
+                if (!$addressId) {
                     $stmtCustInfo = $this->db->prepare("SELECT first_name, last_name, phone FROM customers WHERE customer_id = ?");
                     $stmtCustInfo->execute([$customerId]);
                     $cInfo = $stmtCustInfo->fetch(PDO::FETCH_ASSOC);
-                    $rName = $cInfo ? trim($cInfo['first_name'] . ' ' . $cInfo['last_name']) : 'Walk-in Customer';
-                    $rPhone = ($cInfo && !empty($cInfo['phone'])) ? $cInfo['phone'] : '0000000000';
+                    $rName = ($isMember && $cInfo) ? trim($cInfo['first_name'] . ' ' . $cInfo['last_name']) : 'ลูกค้าทั่วไป (Walk-in)';
+                    $rPhone = ($isMember && $cInfo && !empty($cInfo['phone'])) ? $cInfo['phone'] : '0000000000';
 
                     $stmtInsertAddr = $this->db->prepare("INSERT INTO addresses (customer_id, recipient_name, phone, address_detail, province, zip_code, is_default) VALUES (?, ?, ?, 'POS Store', 'Bangkok', '10400', 1)");
                     $stmtInsertAddr->execute([$customerId, $rName, $rPhone]);
@@ -489,11 +493,11 @@ class OrderController {
                 }
             }
 
-            // Points redemption logic for POS (10 points = 10 Baht, minimum 10 points in multiples of 10)
-            $pointsUsed = isset($data['points_used']) ? (int)$data['points_used'] : 0;
+            // Points redemption logic for POS (10 points = 10 Baht, minimum 10 points in multiples of 10) - ONLY FOR MEMBERS
+            $pointsUsed = ($isMember && isset($data['points_used'])) ? (int)$data['points_used'] : 0;
             $pointsDiscount = 0.0;
             $curCustomerPoints = 0;
-            if ($customerId && $pointsUsed > 0) {
+            if ($isMember && $memberCustomerId && $pointsUsed > 0) {
                 if ($pointsUsed < 10 || ($pointsUsed % 10) !== 0) {
                     $this->db->rollBack();
                     Response::json(400, "การใช้แต้มสะสมต้องใช้ขั้นต่ำ 10 แต้ม และเพิ่มขึ้นทีละ 10 แต้ม");
@@ -501,7 +505,7 @@ class OrderController {
                 }
 
                 $stmtCustPoints = $this->db->prepare("SELECT points FROM customers WHERE customer_id = ?");
-                $stmtCustPoints->execute([$customerId]);
+                $stmtCustPoints->execute([$memberCustomerId]);
                 $custRow = $stmtCustPoints->fetch(PDO::FETCH_ASSOC);
                 $curCustomerPoints = $custRow ? (int)$custRow['points'] : 0;
 
@@ -518,9 +522,9 @@ class OrderController {
                     $pointsDiscount = (float)$pointsUsed;
                 }
                 $discount += $pointsDiscount;
-            } else if ($customerId) {
+            } else if ($isMember && $memberCustomerId) {
                 $stmtCustPoints = $this->db->prepare("SELECT points FROM customers WHERE customer_id = ?");
-                $stmtCustPoints->execute([$customerId]);
+                $stmtCustPoints->execute([$memberCustomerId]);
                 $custRow = $stmtCustPoints->fetch(PDO::FETCH_ASSOC);
                 $curCustomerPoints = $custRow ? (int)$custRow['points'] : 0;
             }
@@ -543,9 +547,9 @@ class OrderController {
                 $freeGift = $giftRow['gift_name'];
             }
 
-            // Calculate reward points first (from net_total after points discount)
+            // Calculate reward points (from net_total after points discount) - STRICTLY ONLY FOR MEMBERS!
             $pointsEarned = 0;
-            if ($customerId) {
+            if ($isMember && $memberCustomerId) {
                 $stmtSettings = $this->db->query("SELECT point_earning_baht, point_earning_qty FROM store_settings LIMIT 1");
                 $settings = $stmtSettings->fetch(PDO::FETCH_ASSOC);
                 $peBaht = $settings && isset($settings['point_earning_baht']) ? (float)$settings['point_earning_baht'] : 100.00;
@@ -595,31 +599,31 @@ class OrderController {
                 $stmtLog->execute([$detail['product_id'], $employeeId, $orderId, -$detail['quantity'], $detail['unit_cost']]);
             }
 
-            // Deduct points redeemed if any
-            if ($customerId && $pointsUsed > 0) {
+            // Deduct points redeemed if any (STRICTLY ONLY FOR MEMBERS)
+            if ($isMember && $memberCustomerId && $pointsUsed > 0) {
                 try {
                     $stmtDeductPoints = $this->db->prepare("UPDATE customers SET points = GREATEST(0, points - ?) WHERE customer_id = ?");
-                    $stmtDeductPoints->execute([$pointsUsed, $customerId]);
+                    $stmtDeductPoints->execute([$pointsUsed, $memberCustomerId]);
 
                     $orderNum = "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
                     $stmtLogDeduct = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
-                    $stmtLogDeduct->execute([$customerId, $orderId, -$pointsUsed, "ใช้แต้มสะสม {$pointsUsed} แต้มเป็นส่วนลด ฿" . number_format($pointsDiscount, 2) . " สำหรับบิล POS #{$orderNum}"]);
+                    $stmtLogDeduct->execute([$memberCustomerId, $orderId, -$pointsUsed, "ใช้แต้มสะสม {$pointsUsed} แต้มเป็นส่วนลด ฿" . number_format($pointsDiscount, 2) . " สำหรับบิล POS #{$orderNum}"]);
                 } catch (Exception $exDeduct) {
                     error_log("Failed to deduct points on POS order #$orderId: " . $exDeduct->getMessage());
                 }
             }
 
-            // Award reward points to customer
-            if ($customerId && $pointsEarned > 0) {
+            // Award reward points to customer (STRICTLY ONLY FOR MEMBERS)
+            if ($isMember && $memberCustomerId && $pointsEarned > 0) {
                 try {
                     // Update points in customers
                     $stmtUpdatePoints = $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?");
-                    $stmtUpdatePoints->execute([$pointsEarned, $customerId]);
+                    $stmtUpdatePoints->execute([$pointsEarned, $memberCustomerId]);
 
                     // Insert log
                     $orderNum = "ORD-POS-" . date('Y') . "-" . str_pad($orderId, 3, '0', STR_PAD_LEFT);
                     $stmtLogPoints = $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)");
-                    $stmtLogPoints->execute([$customerId, $orderId, $pointsEarned, "ได้รับแต้มสะสมจากรายการสั่งซื้อ POS #$orderNum"]);
+                    $stmtLogPoints->execute([$memberCustomerId, $orderId, $pointsEarned, "ได้รับแต้มสะสมจากรายการสั่งซื้อ POS #$orderNum"]);
                 } catch (Exception $exLog) {
                     error_log("Failed to award points on POS order #$orderId: " . $exLog->getMessage());
                 }
@@ -632,10 +636,14 @@ class OrderController {
             $cashierName = $empName ? trim($empName['first_name'] . ' ' . $empName['last_name']) : 'System';
 
             // Retrieve customer name for receipt
-            $stmtCustName = $this->db->prepare("SELECT first_name, last_name FROM customers WHERE customer_id = ?");
-            $stmtCustName->execute([$customerId]);
-            $custName = $stmtCustName->fetch(PDO::FETCH_ASSOC);
-            $customerName = $custName ? trim($custName['first_name'] . ' ' . $custName['last_name']) : 'Walk-in Customer';
+            if ($isMember && $memberCustomerId) {
+                $stmtCustName = $this->db->prepare("SELECT first_name, last_name FROM customers WHERE customer_id = ?");
+                $stmtCustName->execute([$memberCustomerId]);
+                $custName = $stmtCustName->fetch(PDO::FETCH_ASSOC);
+                $customerName = $custName ? trim($custName['first_name'] . ' ' . $custName['last_name']) : 'ลูกค้าสมาชิก';
+            } else {
+                $customerName = 'ลูกค้าทั่วไป (Walk-in)';
+            }
 
             $this->db->commit();
 
@@ -648,7 +656,7 @@ class OrderController {
                 error_log("LINE Auto-Notification failed on POS order #$orderId: " . $exLine->getMessage());
             }
 
-            $remainingPoints = max(0, $curCustomerPoints - $pointsUsed + $pointsEarned);
+            $remainingPoints = $isMember ? max(0, $curCustomerPoints - $pointsUsed + $pointsEarned) : null;
 
             Response::json(201, "POS Order completed successfully", [
                 "order_id" => $orderId,
@@ -664,9 +672,9 @@ class OrderController {
                 "payment_method" => $paymentMethod,
                 "cashier_name" => $cashierName,
                 "customer_name" => $customerName,
-                "customer_id" => $customerId,
+                "customer_id" => $isMember ? $memberCustomerId : null,
                 "free_gift" => $freeGift,
-                "points_earned" => $pointsEarned,
+                "points_earned" => $isMember ? $pointsEarned : 0,
                 "remaining_points" => $remainingPoints
             ]);
 
@@ -1071,7 +1079,7 @@ class OrderController {
             $orderRow = $stmtOrderCheck->fetch(PDO::FETCH_ASSOC);
             $currentStatus = $orderRow ? (int)$orderRow['status'] : 1;
 
-            $stmtPayCheck = $this->db->prepare("SELECT payment_id, slip_image, status FROM payments WHERE order_id = ? AND ((slip_image IS NOT NULL AND slip_image != '') OR status = 1)");
+            $stmtPayCheck = $this->db->prepare("SELECT payment_id, slip_image, status FROM payments WHERE order_id = ? AND (((slip_image IS NOT NULL AND slip_image != '') AND status != 2) OR status = 1)");
             $stmtPayCheck->execute([$orderId]);
             $payCheck = $stmtPayCheck->fetch(PDO::FETCH_ASSOC);
             $wasPaid = !empty($payCheck) || $currentStatus >= 2;

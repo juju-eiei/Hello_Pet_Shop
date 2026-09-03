@@ -34,11 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // Normalize script base directory if running in a subdirectory (e.g. /Hello_Pet_Shop/ or Laragon)
-$scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
-if ($scriptDir !== '/' && $scriptDir !== '\\' && $scriptDir !== '.') {
-    $scriptDir = str_replace('\\', '/', $scriptDir);
-    if (strpos($request_uri, $scriptDir) === 0) {
-        $request_uri = substr($request_uri, strlen($scriptDir));
+if (php_sapi_name() !== 'cli-server' && basename($_SERVER['SCRIPT_NAME'] ?? '') === 'index.php') {
+    $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+    if ($scriptDir !== '/' && $scriptDir !== '\\' && $scriptDir !== '.') {
+        $scriptDir = str_replace('\\', '/', $scriptDir);
+        if (strpos($request_uri, $scriptDir) === 0) {
+            $request_uri = substr($request_uri, strlen($scriptDir));
+        }
     }
 }
 if (empty($request_uri)) {
@@ -214,6 +216,7 @@ if (strpos($request_uri, '/api/') !== false) {
                 header("Content-Type: " . $mime_types[$ext]);
             }
             readfile($file_path);
+            exit;
         } else {
             // Fallback for nested relative HTML links from deep URLs
             $basename = basename($request_uri);
