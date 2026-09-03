@@ -419,20 +419,27 @@ function executePageScripts(doc) {
 
         try {
             // Find all function declarations to export to window so inline onclick handlers work seamlessly
-            const exposedFunctions = [];
+            const exposedFunctions = new Set();
             const funcMatches = scriptContent.matchAll(/(?:async\s+)?function\s+([a-zA-Z0-9_$]+)\s*\(/g);
             for (const match of funcMatches) {
-                if (match[1]) {
-                    exposedFunctions.push(`window.${match[1]} = ${match[1]};`);
-                }
+                if (match[1]) exposedFunctions.add(match[1]);
             }
+            const varFuncMatches = scriptContent.matchAll(/(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[a-zA-Z0-9_$]+)\s*=>/g);
+            for (const match of varFuncMatches) {
+                if (match[1]) exposedFunctions.add(match[1]);
+            }
+            const varRegularFuncMatches = scriptContent.matchAll(/(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?function/g);
+            for (const match of varRegularFuncMatches) {
+                if (match[1]) exposedFunctions.add(match[1]);
+            }
+            const exposedExports = Array.from(exposedFunctions).map(fn => `window.${fn} = ${fn};`);
 
             // Wrap inside IIFE so variables (let/const/var) run in an isolated scope and never collide with existing window globals
             const wrappedScript = `
 (function() {
     try {
         ${scriptContent}
-        ${exposedFunctions.join('\n')}
+        ${exposedExports.join('\n')}
     } catch(err) {
         console.error("SPA Page Script Runtime Error:", err);
     }

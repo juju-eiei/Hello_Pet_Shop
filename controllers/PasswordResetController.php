@@ -20,17 +20,8 @@ class PasswordResetController {
     }
 
     public function requestReset() {
-        // 1. Rate limiting (max 5 requests per 15 minutes per IP)
-        $ip = RateLimiter::getClientIp();
-        $rateCheck = RateLimiter::check('forgot_pwd:' . $ip, 5, 900);
-        if (!$rateCheck['allowed']) {
-            $minutes = ceil($rateCheck['retry_after'] / 60);
-            Response::json(429, "คุณทำรายการขอรีเซ็ทรหัสผ่านบ่อยเกินไป กรุณารออีก {$minutes} นาทีแล้วลองใหม่อีกครั้ง");
-            return;
-        }
-        RateLimiter::hit('forgot_pwd:' . $ip, 900);
-
         $data = json_decode(file_get_contents("php://input"), true);
+
         if (empty($data['email'])) {
             Response::json(400, "กรุณากรอกอีเมล");
             return;

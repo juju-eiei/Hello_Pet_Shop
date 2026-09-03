@@ -1199,7 +1199,7 @@
         let selectedWeekEnd = weekRange.end;
 
         // Populate Calendar Popover Header (Months & Buddhist Era Years)
-        const renderCalendarHeader = () => {
+        function renderCalendarHeader() {
             const mSelect = document.getElementById('calMonthSelect');
             const ySelect = document.getElementById('calYearSelect');
             if (!mSelect || !ySelect) return;
@@ -1221,10 +1221,10 @@
             const modeNames = { daily: 'รายวัน', weekly: 'รายสัปดาห์', monthly: 'รายเดือน', yearly: 'รายปี' };
             const modeEl = document.getElementById('calModeIndicator');
             if (modeEl) modeEl.textContent = `โหมด: ${modeNames[currentPeriod] || 'รายเดือน'}`;
-        };
+        }
 
         // Render Calendar Days Grid (Exact UI match to Image 2)
-        const renderCalendarGrid = () => {
+        function renderCalendarGrid() {
             const grid = document.getElementById('calDaysGrid');
             if (!grid) return;
 
@@ -1283,10 +1283,10 @@
             }
 
             grid.innerHTML = cellsHtml;
-        };
+        }
 
         // Day cell click handler
-        const onDayCellClick = (dStr) => {
+        function onDayCellClick(dStr) {
             selectedDate = dStr;
             const parts = dStr.split('-');
             calYear = parseInt(parts[0]);
@@ -1310,18 +1310,18 @@
                 closeCalendarPopover();
                 onFilterPeriodChanged();
             }
-        };
+        }
 
-        const onCalMonthSelect = (mVal) => {
+        function onCalMonthSelect(mVal) {
             calMonth = parseInt(mVal);
             renderCalendarGrid();
             if (currentPeriod === 'monthly') {
                 selectedMonth = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
                 onFilterPeriodChanged();
             }
-        };
+        }
 
-        const onCalYearSelect = (yBe) => {
+        function onCalYearSelect(yBe) {
             calYear = parseInt(yBe) - 543;
             renderCalendarGrid();
             if (currentPeriod === 'yearly') {
@@ -1331,9 +1331,9 @@
                 selectedMonth = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
                 onFilterPeriodChanged();
             }
-        };
+        }
 
-        const navigateCalMonth = (delta) => {
+        function navigateCalMonth(delta) {
             calMonth += delta;
             if (calMonth < 0) {
                 calMonth = 11;
@@ -1348,9 +1348,9 @@
                 selectedMonth = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
                 onFilterPeriodChanged();
             }
-        };
+        }
 
-        const selectCalToday = () => {
+        function selectCalToday() {
             const d = new Date();
             calYear = d.getFullYear();
             calMonth = d.getMonth();
@@ -1365,9 +1365,9 @@
             renderCalendarGrid();
             closeCalendarPopover();
             onFilterPeriodChanged();
-        };
+        }
 
-        const toggleCalendarPopover = (e) => {
+        function toggleCalendarPopover(e) {
             if (e) e.stopPropagation();
             const pop = document.getElementById('thaiCalPopover');
             const btn = document.getElementById('calTriggerBtn');
@@ -1382,14 +1382,14 @@
                 renderCalendarHeader();
                 renderCalendarGrid();
             }
-        };
+        }
 
-        const closeCalendarPopover = () => {
+        function closeCalendarPopover() {
             const pop = document.getElementById('thaiCalPopover');
             const btn = document.getElementById('calTriggerBtn');
             if (pop) pop.style.display = 'none';
             if (btn) btn.classList.remove('open');
-        };
+        }
 
         // Close on click outside
         document.addEventListener('click', (e) => {
@@ -1400,7 +1400,7 @@
         });
 
         // Set Dashboard Period (Daily, Weekly, Monthly, Yearly)
-        const setDashboardPeriod = (period) => {
+        function setDashboardPeriod(period) {
             currentPeriod = period;
 
             // Sync Header period pill buttons
@@ -1424,10 +1424,10 @@
 
             renderCalendarGrid();
             onFilterPeriodChanged();
-        };
+        }
 
         // Update display text on trigger button and stat cards
-        const updateSelectedPeriodLabels = () => {
+        function updateSelectedPeriodLabels() {
             let labelText = '';
             let triggerText = '';
 
@@ -1465,16 +1465,16 @@
 
             const triggerEl = document.getElementById('calTriggerText');
             if (triggerEl) triggerEl.textContent = triggerText;
-        };
+        }
 
-        const onFilterPeriodChanged = () => {
+        function onFilterPeriodChanged() {
             updateSelectedPeriodLabels();
             loadFinancialStats();
             loadFilteredTopProducts();
             loadAndFilterOrders();
-        };
+        }
 
-        const loadFinancialStats = () => {
+        function loadFinancialStats() {
             let queryUrl = `/api/dashboard/financials?period=${currentPeriod}`;
             if (currentPeriod === 'daily') {
                 queryUrl += `&date=${selectedDate}`;
@@ -1689,9 +1689,9 @@
                     });
                 })
                 .catch(err => console.error("Error loading financials:", err));
-        };
+        }
 
-        const loadFilteredTopProducts = () => {
+        function loadFilteredTopProducts() {
             let queryUrl = `/api/products/top?period=${currentPeriod}`;
             if (currentPeriod === 'daily') {
                 queryUrl += `&date=${selectedDate}`;
@@ -1729,9 +1729,9 @@
                     const topList = document.getElementById('topProductsList');
                     if (topList) topList.innerHTML = '<li style="color: #dc2626; justify-content: center; border: none;">ไม่สามารถโหลดข้อมูลสินค้ายอดฮิตได้</li>';
                 });
-        };
+        }
 
-        const loadAndFilterOrders = () => {
+        function loadAndFilterOrders() {
             fetch('/api/orders')
                 .then(res => res.json())
                 .then(result => {
@@ -1789,9 +1789,9 @@
                     document.getElementById('statOrders').textContent = '0';
                     document.getElementById('recentOrdersBody').innerHTML = '<tr><td colspan="4" style="text-align: center; color: #dc2626;">ไม่สามารถโหลดข้อมูลคำสั่งซื้อได้</td></tr>';
                 });
-        };
+        }
 
-        const loadMockData = () => {
+        function loadMockData() {
             renderCalendarHeader();
             renderCalendarGrid();
             updateSelectedPeriodLabels();
@@ -1868,7 +1868,22 @@
                     const lowStockList = document.getElementById('lowStockList');
                     if (lowStockList) lowStockList.innerHTML = '<li style="color: #dc2626; justify-content: center; border: none;">ไม่สามารถโหลดข้อมูลสต็อกได้</li>';
                 });
-        };
+        }
+
+        // Export functions to window for reliable onclick handlers
+        window.setDashboardPeriod = setDashboardPeriod;
+        window.toggleCalendarPopover = toggleCalendarPopover;
+        window.closeCalendarPopover = closeCalendarPopover;
+        window.onCalMonthSelect = onCalMonthSelect;
+        window.onCalYearSelect = onCalYearSelect;
+        window.navigateCalMonth = navigateCalMonth;
+        window.selectCalToday = selectCalToday;
+        window.onDayCellClick = onDayCellClick;
+        window.onFilterPeriodChanged = onFilterPeriodChanged;
+        window.loadFinancialStats = loadFinancialStats;
+        window.loadFilteredTopProducts = loadFilteredTopProducts;
+        window.loadAndFilterOrders = loadAndFilterOrders;
+        window.loadMockData = loadMockData;
 
         checkAuth();
         loadMockData();

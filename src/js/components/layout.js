@@ -88,8 +88,18 @@ export async function initLayout() {
             return;
         }
         
-        const permissions = user.permissions || [];
+        let permissions = user.permissions || [];
+        if (permissions.length === 0 && (roleNameLower === 'employee' || roleNameLower === 'staff')) {
+            permissions = [
+                'pos_access', 'orders_manage', 'orders_view', 'customers_view',
+                'stock_view', 'stock_manage', 'promotions_view', 'staff_profile_manage', 'rewards_view'
+            ];
+        }
         
+        // Filter menu items for display
+        const rawItems = menuConfig[role] || menuConfig.staff;
+        const filteredItems = filterMenuByPermissions(rawItems, permissions, roleNameLower === 'admin');
+
         // Dynamic Guard Check: Is user allowed to view this page?
         let allowed = true;
         const allMenuUrlMaps = [];
@@ -134,13 +144,21 @@ export async function initLayout() {
             } else {
                 alert('คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้ (Access Denied)');
             }
-            window.location.href = roleNameLower === 'admin' ? '/admin/orders' : '/staff/orders';
+
+            if (roleNameLower === 'admin') {
+                if (cleanRoute !== 'admin/orders') {
+                    window.location.href = '/admin/orders';
+                }
+            } else {
+                const firstAllowed = filteredItems[0]?.items?.[0]?.url || filteredItems[0]?.url || '/staff/orders';
+                if (normalizeRoute(firstAllowed) !== cleanRoute) {
+                    window.location.href = firstAllowed;
+                } else {
+                    window.location.href = '/products';
+                }
+            }
             return;
         }
-        
-        // Filter menu items for display
-        const rawItems = menuConfig[role] || menuConfig.staff;
-        const filteredItems = filterMenuByPermissions(rawItems, permissions, roleNameLower === 'admin');
         
         renderSidebar(filteredItems, currentPath, role);
         renderMobileHeader(currentPath);

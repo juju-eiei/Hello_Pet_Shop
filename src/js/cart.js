@@ -215,6 +215,7 @@ export function initCartPage() {
                 showRegisterPrompt('กรุณาสมัครสมาชิกเพื่อสั่งซื้อสินค้า');
                 return;
             }
+            sessionStorage.removeItem('checkout_completed');
             if (window.navigateTo) {
                 window.navigateTo('/checkout');
             } else {

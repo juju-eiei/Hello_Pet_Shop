@@ -8,15 +8,10 @@
     <title>จัดการโปรโมชั่น - Hello Pet Shop</title>
     <link rel="stylesheet" href="/css/admin_styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Cropper.js (Local with CDN fallback) -->
-    <link rel="stylesheet" href="/libs/cropper/cropper.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Cropper.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
-    <script src="/libs/cropper/cropper.min.js"></script>
-    <script>
-        if (typeof Cropper === 'undefined') {
-            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"><\/script>');
-        }
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
     <!-- Mobile User-Agent Check -->
     <script>
@@ -849,16 +844,30 @@
         let currentScaleY = 1;
         let currentAspectRatio = 2.4; // Default 12:5 (1200x500 px)
 
-        checkAuth();
-        fetchBanners();
-        fetchGiftRules();
-        setupDropzone();
-
         function checkAuth() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user || !['admin', 'employee'].includes((user.role_name || '').toLowerCase())) {
-                window.location.href = 'login.html';
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const role = (user?.role_name || user?.role || '').toLowerCase();
+                if (!user || role !== 'admin') {
+                    window.location.href = '/login';
+                }
+            } catch (e) {
+                console.error("Auth check error", e);
+                window.location.href = '/login';
             }
+        }
+
+        function initPage() {
+            checkAuth();
+            fetchBanners();
+            fetchGiftRules();
+            setupDropzone();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPage);
+        } else {
+            initPage();
         }
 
         function switchPromoTab(tab) {

@@ -67,8 +67,8 @@ class LineService {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 6); // Short timeout to avoid blocking main workflow
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 2); // Fast timeout to avoid blocking checkout workflow
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
             
             $result = curl_exec($ch);
@@ -270,12 +270,12 @@ class LineService {
             $qOrder = "SELECT o.order_id, o.order_date, o.net_total, o.order_type,
                               c.first_name, c.last_name, c.phone,
                               a.recipient_name, a.phone as recipient_phone,
-                              p.payment_method, p.amount as pay_amount, p.slip_image, p.payment_date
+                              p.payment_method, p.amount as pay_amount, p.payment_date
                        FROM orders o
                        LEFT JOIN customers c ON o.customer_id = c.customer_id
                        LEFT JOIN addresses a ON o.address_id = a.address_id
                        LEFT JOIN (
-                           SELECT p1.order_id, p1.payment_method, p1.amount, p1.slip_image, p1.payment_date
+                           SELECT p1.order_id, p1.payment_method, p1.amount, p1.payment_date
                            FROM payments p1
                            INNER JOIN (
                                SELECT order_id, MAX(payment_id) as max_pid

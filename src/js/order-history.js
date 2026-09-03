@@ -1,4 +1,4 @@
-import { showToast, escapeHTML, getUserOrdersData, saveUserOrdersData } from './utils.js';
+import { showToast, escapeHTML, getUserOrdersData, saveUserOrdersData, cleanLegacyOrderStorage } from './utils.js';
 
 export function initOrderHistoryPage() {
     const cleanPath = (window.location.pathname || '').toLowerCase();
@@ -70,6 +70,7 @@ export function initOrderHistoryPage() {
 
     // Load orders
     async function loadOrders() {
+        cleanLegacyOrderStorage();
         seedDemoOrdersIfEmpty();
         fetchPaymentSettings();
         
@@ -77,7 +78,10 @@ export function initOrderHistoryPage() {
 
         // 1. Instant Cache Render: If orders exist in local storage, render immediately (0ms)
         if (localOrders && localOrders.length > 0) {
-            orders = localOrders;
+            orders = localOrders.map(o => ({
+                ...o,
+                status: mapDbStatusToUi(o.status)
+            }));
             updatePendingBadge();
             renderOrders();
             updateActiveTabUI();
@@ -97,7 +101,7 @@ export function initOrderHistoryPage() {
                             name: i.product_name || i.name || 'สินค้าในรายการ',
                             price: parseFloat(i.unit_price || i.price || 0),
                             quantity: parseInt(i.quantity || i.qty || 1),
-                            image: i.image_url || i.image || '/image/713815-00-allonline-hg.jpg'
+                            image: (i.image_url || i.image || '').startsWith('data:') ? '/image/713815-00-allonline-hg.jpg' : (i.image_url || i.image || '/image/713815-00-allonline-hg.jpg')
                         }));
 
                         // If API didn't have items, check if local order had items
@@ -108,6 +112,8 @@ export function initOrderHistoryPage() {
                             }
                         }
 
+                        const hasSlip = Boolean(o.has_slip || o.slip_image);
+
                         return {
                             id: o.order_id || o.id,
                             date: o.date || o.order_date || o.created_at || new Date().toISOString(),
@@ -116,40 +122,74 @@ export function initOrderHistoryPage() {
                             subtotal: isNaN(rawSubtotal) ? 0 : rawSubtotal,
                             shipping: isNaN(rawShipping) ? 0 : rawShipping,
                             total: isNaN(rawTotal) ? 0 : rawTotal,
-                            deliveryMethod: o.company_name || 'Standard Express',
+                            deliveryMethod: o.company_name || o.shipping_provider || 'Standard Express',
                             paymentMethod: o.payment_method || 'transfer',
-                            slipImage: o.slip_image || null
+                            slipImage: null, // Never keep Base64 in frontend memory/storage
+                            slip_image: o.slip_image || null,
+                            has_slip: hasSlip,
+                            hasSlip: hasSlip,
+                            payment_status: o.payment_status !== null && o.payment_status !== undefined ? Number(o.payment_status) : null,
+                            customer: o.customer || null,
+                            shippingAddress: o.shippingAddress || null
                         };
                     });
 
-                    const merged = [...mappedApiOrders];
-                    localOrders.forEach(lo => {
-                        if (!merged.some(mo => String(mo.id) === String(lo.id))) {
-                            merged.push(lo);
-                        }
-                    });
-                    localOrders = merged;
+                    // Database/API is the single source of truth
+                    orders = mappedApiOrders;
+                    saveUserOrdersData(orders);
+                    updatePendingBadge();
+                    renderOrders();
+                    updateActiveTabUI();
+                    return;
                 }
             }
         } catch (e) {
             console.warn("Backend orders sync note:", e);
         }
 
-        orders = localOrders;
+        // Fallback to local cached orders only if network failed / offline
+        orders = localOrders.map(o => ({
+            ...o,
+            status: mapDbStatusToUi(o.status)
+        }));
         saveUserOrdersData(orders);
         updatePendingBadge();
         renderOrders();
         updateActiveTabUI();
     }
 
+    function isStatusPending(status) {
+        const s = String(status || '').toLowerCase().trim();
+        return s === '1' || s.includes('pending') || s.includes('unpaid') || s.includes('ที่ต้องชำระ') || s.includes('รอดำเนินการ');
+    }
+
+    function isStatusPreparing(status) {
+        const s = String(status || '').toLowerCase().trim();
+        return s === '2' || s.includes('preparing') || s.includes('processing') || s.includes('paid') || s.includes('กำลังแพ็คสินค้า') || s.includes('ที่ต้องจัดส่ง') || s.includes('จัดเตรียม') || s.includes('กำลังดำเนินการ') || s.includes('แพ็คสินค้า') || s.includes('กำลังเตรียมสินค้า');
+    }
+
+    function isStatusShipping(status) {
+        const s = String(status || '').toLowerCase().trim();
+        return s === '3' || s.includes('shipping') || s.includes('shipped') || s.includes('in transit') || s.includes('transit') || s.includes('กำลังจัดส่ง') || s.includes('ส่งแล้ว') || s.includes('ที่ต้องได้รับ') || s.includes('มอบให้ขนส่งแล้ว');
+    }
+
+    function isStatusCompleted(status) {
+        const s = String(status || '').toLowerCase().trim();
+        return s === '4' || s.includes('completed') || s.includes('success') || s.includes('สำเร็จ') || s.includes('จัดส่งสำเร็จ') || s.includes('ลูกค้าได้รับสินค้า');
+    }
+
+    function isStatusCancelled(status) {
+        const s = String(status || '').toLowerCase().trim();
+        return s === '5' || s.includes('cancel') || s.includes('ยกเลิก');
+    }
+
     function mapDbStatusToUi(dbStatus) {
         if (dbStatus === null || dbStatus === undefined) return 'Pending Payment';
-        const s = String(dbStatus).toLowerCase().trim();
-        if (s === '1' || s.includes('pending') || s.includes('unpaid') || s.includes('ที่ต้องชำระ') || s.includes('รอดำเนินการ')) return 'Pending Payment';
-        if (s === '2' || s.includes('preparing') || s.includes('processing') || s.includes('paid') || s.includes('กำลังแพ็คสินค้า') || s.includes('ที่ต้องจัดส่ง') || s.includes('จัดเตรียม') || s.includes('กำลังดำเนินการ') || s.includes('แพ็คสินค้า')) return 'Preparing';
-        if (s === '3' || s.includes('shipping') || s.includes('shipped') || s.includes('in transit') || s.includes('transit') || s.includes('กำลังจัดส่ง') || s.includes('ส่งแล้ว') || s.includes('ที่ต้องได้รับ') || s.includes('มอบให้ขนส่งแล้ว')) return 'Shipping';
-        if (s === '4' || s.includes('completed') || s.includes('success') || s.includes('สำเร็จ') || s.includes('จัดส่งสำเร็จ') || s.includes('ลูกค้าได้รับสินค้า')) return 'Completed';
-        if (s === '5' || s.includes('cancel') || s.includes('ยกเลิก')) return 'Cancelled';
+        if (isStatusPending(dbStatus)) return 'Pending Payment';
+        if (isStatusPreparing(dbStatus)) return 'Preparing';
+        if (isStatusShipping(dbStatus)) return 'Shipping';
+        if (isStatusCompleted(dbStatus)) return 'Completed';
+        if (isStatusCancelled(dbStatus)) return 'Cancelled';
         return 'Pending Payment';
     }
 
@@ -166,11 +206,54 @@ export function initOrderHistoryPage() {
                         { name: "แปรงหวีขนสัตว์เลี้ยง สแตนเลส", price: 320, quantity: 1, image: "/image/713815-00-allonline-hg.jpg" }
                     ],
                     subtotal: 320,
-                    shipping: 0,
-                    total: 320,
+                    shipping: 2,
+                    total: 322,
                     deliveryMethod: "standard",
                     paymentMethod: "transfer",
                     status: "Pending Payment",
+                    slipImage: null
+                },
+                {
+                    id: 739102,
+                    date: new Date(Date.now() - 3600000 * 24).toISOString(),
+                    items: [
+                        { name: "อาหารแมววิสการ์ส 1.2kg", price: 185, quantity: 2, image: "/image/713815-00-allonline-hg.jpg" }
+                    ],
+                    subtotal: 370,
+                    shipping: 2,
+                    total: 372,
+                    deliveryMethod: "standard",
+                    paymentMethod: "transfer",
+                    status: "Preparing",
+                    slipImage: null
+                },
+                {
+                    id: 619283,
+                    date: new Date(Date.now() - 3600000 * 48).toISOString(),
+                    items: [
+                        { name: "แชมพูสูตรกำจัดเห็บเหา 500ml", price: 250, quantity: 1, image: "/image/713815-00-allonline-hg.jpg" }
+                    ],
+                    subtotal: 250,
+                    shipping: 5,
+                    total: 255,
+                    deliveryMethod: "express",
+                    paymentMethod: "transfer",
+                    status: "Shipping",
+                    trackingNumber: "TH982341092",
+                    slipImage: null
+                },
+                {
+                    id: 510928,
+                    date: new Date(Date.now() - 3600000 * 96).toISOString(),
+                    items: [
+                        { name: "ของเล่นคอนโดแมว 3 ชั้น", price: 890, quantity: 1, image: "/image/713815-00-allonline-hg.jpg" }
+                    ],
+                    subtotal: 890,
+                    shipping: 5,
+                    total: 895,
+                    deliveryMethod: "express",
+                    paymentMethod: "transfer",
+                    status: "Completed",
                     slipImage: null
                 }
             ];
@@ -179,32 +262,36 @@ export function initOrderHistoryPage() {
     }
 
     function updatePendingBadge() {
-        const pendingCount = orders.filter(o => o.status === 'Pending Payment' || o.status === 'Pending' || o.status === 'ที่ต้องชำระ').length;
-        const preparingCount = orders.filter(o => o.status === 'Preparing' || o.status === 'Processing' || o.status === 'กำลังแพ็คสินค้า' || o.status === 'ที่ต้องจัดส่ง').length;
-        const shippingCount = orders.filter(o => o.status === 'Shipping' || o.status === 'In Transit' || o.status === 'กำลังจัดส่ง' || o.status === 'ที่ต้องได้รับ').length;
+        const pBadge = document.getElementById('pendingBadge');
+        const prepBadge = document.getElementById('preparingBadge');
+        const shipBadge = document.getElementById('shippingBadge');
 
-        if (pendingBadge) {
+        const pendingCount = orders.filter(o => isStatusPending(o.status)).length;
+        const preparingCount = orders.filter(o => isStatusPreparing(o.status)).length;
+        const shippingCount = orders.filter(o => isStatusShipping(o.status)).length;
+
+        if (pBadge) {
             if (pendingCount > 0) {
-                pendingBadge.textContent = pendingCount;
-                pendingBadge.classList.remove('hidden');
+                pBadge.textContent = pendingCount;
+                pBadge.classList.remove('hidden');
             } else {
-                pendingBadge.classList.add('hidden');
+                pBadge.classList.add('hidden');
             }
         }
-        if (preparingBadge) {
+        if (prepBadge) {
             if (preparingCount > 0) {
-                preparingBadge.textContent = preparingCount;
-                preparingBadge.classList.remove('hidden');
+                prepBadge.textContent = preparingCount;
+                prepBadge.classList.remove('hidden');
             } else {
-                preparingBadge.classList.add('hidden');
+                prepBadge.classList.add('hidden');
             }
         }
-        if (shippingBadge) {
+        if (shipBadge) {
             if (shippingCount > 0) {
-                shippingBadge.textContent = shippingCount;
-                shippingBadge.classList.remove('hidden');
+                shipBadge.textContent = shippingCount;
+                shipBadge.classList.remove('hidden');
             } else {
-                shippingBadge.classList.add('hidden');
+                shipBadge.classList.add('hidden');
             }
         }
     }
@@ -241,15 +328,15 @@ export function initOrderHistoryPage() {
     function renderOrders() {
         let filtered = orders;
         if (currentTab === 'pending_payment') {
-            filtered = orders.filter(o => o.status === 'Pending Payment' || o.status === 'Pending' || o.status === 'ที่ต้องชำระ');
+            filtered = orders.filter(o => isStatusPending(o.status));
         } else if (currentTab === 'preparing') {
-            filtered = orders.filter(o => o.status === 'Preparing' || o.status === 'Processing' || o.status === 'กำลังแพ็คสินค้า' || o.status === 'ที่ต้องจัดส่ง');
+            filtered = orders.filter(o => isStatusPreparing(o.status));
         } else if (currentTab === 'shipping') {
-            filtered = orders.filter(o => o.status === 'Shipping' || o.status === 'In Transit' || o.status === 'กำลังจัดส่ง' || o.status === 'ที่ต้องได้รับ');
+            filtered = orders.filter(o => isStatusShipping(o.status));
         } else if (currentTab === 'completed') {
-            filtered = orders.filter(o => o.status === 'Completed' || o.status === 'สำเร็จแล้ว' || o.status === 'จัดส่งสำเร็จ' || o.status === 'สำเร็จ');
+            filtered = orders.filter(o => isStatusCompleted(o.status));
         } else if (currentTab === 'cancelled') {
-            filtered = orders.filter(o => o.status === 'Cancelled' || o.status === 'ยกเลิกแล้ว' || o.status === 'ยกเลิก');
+            filtered = orders.filter(o => isStatusCancelled(o.status));
         }
 
         if (filtered.length === 0) {
@@ -261,7 +348,11 @@ export function initOrderHistoryPage() {
         if (emptyOrders) emptyOrders.classList.add('hidden');
 
         ordersContainer.innerHTML = filtered.map(order => {
-            const statusConfig = getStatusBadge(order.status);
+            const statusConfig = getStatusBadge(order);
+            const hasSlip = !!(order.has_slip || order.hasSlip || order.slipImage || order.slip_image);
+            const isSlipRejected = Number(order.payment_status) === 2;
+            const isSlipPendingReview = hasSlip && !isSlipRejected;
+
             const formattedDate = new Date(order.date).toLocaleDateString('th-TH', {
                 year: 'numeric',
                 month: 'short',
@@ -309,18 +400,22 @@ export function initOrderHistoryPage() {
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between mt-3.5 pt-3 border-t border-gray-50 gap-2.5">
                     <div class="flex items-center text-xs">
                         ${order.status === 'Pending Payment' ? (
-                            !order.slipImage ? `
-                                <span class="text-xs text-amber-600 flex items-center font-medium">
-                                    <i class="fas fa-info-circle mr-1"></i>กรุณาชำระเงินและแนบสลิปเพื่อดำเนินการ
+                            isSlipRejected ? `
+                                <span class="text-xs text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl font-semibold border border-rose-200/80 flex items-center">
+                                    <i class="fas fa-exclamation-circle mr-1.5 text-rose-500"></i>ชำระเงินไม่สำเร็จ / สลิปไม่ถูกต้อง (กรุณาแนบสลิปใหม่)
+                                </span>
+                            ` : isSlipPendingReview ? `
+                                <span class="text-xs text-blue-700 bg-blue-50 px-3 py-1.5 rounded-xl font-semibold border border-blue-200/80 flex items-center">
+                                    <i class="fas fa-hourglass-half mr-1.5 text-blue-500"></i>รอตรวจสอบการชำระเงิน (ร้านค้ากำลังตรวจสอบสลิป)
                                 </span>
                             ` : `
-                                <span class="text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl font-semibold border border-amber-200/60 flex items-center">
-                                    <i class="fas fa-clock mr-1 text-amber-500"></i>รอร้านค้าตรวจสอบสลิป (แจ้งชำระแล้ว)
+                                <span class="text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl font-semibold border border-amber-200/80 flex items-center">
+                                    <i class="fas fa-info-circle mr-1 text-amber-500"></i>ยังไม่ชำระเงิน (กรุณาชำระเงินและแนบสลิป)
                                 </span>
                             `
                         ) : (order.status === 'Preparing' || order.status === 'Processing') ? `
                             <span class="text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl font-semibold border border-emerald-200/60 flex items-center">
-                                <i class="fas fa-box-open mr-1.5 text-emerald-600"></i>ร้านค้ากำลังแพ็คสินค้าเพื่อจัดส่ง
+                                <i class="fas fa-box-open mr-1.5 text-emerald-600"></i>ชำระเงินแล้ว • ร้านค้ากำลังแพ็คสินค้าเพื่อจัดส่ง
                             </span>
                         ` : (order.status === 'Shipping' || order.status === 'In Transit') ? `
                             <span class="text-xs text-sky-700 bg-sky-50 px-3 py-1.5 rounded-xl font-semibold border border-sky-200/60 flex items-center">
@@ -338,21 +433,34 @@ export function initOrderHistoryPage() {
                     </div>
 
                     <div class="flex items-center space-x-2 self-end sm:self-auto">
-                        <button class="view-detail-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors" data-id="${order.id}">
+                        <button class="view-detail-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors cursor-pointer" data-id="${order.id}">
                             ดูรายละเอียด
                         </button>
-                        ${order.status === 'Pending Payment' && !order.slipImage ? `
-                            <button class="cancel-order-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 flex items-center space-x-1" data-id="${order.id}">
-                                <i class="fas fa-times-circle text-[11px]"></i>
-                                <span>ยกเลิก</span>
-                            </button>
-                            <button class="pay-now-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5" data-id="${order.id}">
-                                <i class="fas fa-qrcode"></i>
-                                <span>ชำระเงิน</span>
+                        ${(order.status === 'Shipping' || order.status === 'In Transit' || order.status === 'กำลังจัดส่ง' || order.status === 'ที่ต้องได้รับ') ? `
+                            <button class="confirm-received-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
+                                <i class="fas fa-check-circle text-xs"></i>
+                                <span>ยืนยันได้รับสินค้าแล้ว</span>
                             </button>
                         ` : ''}
+                        ${order.status === 'Pending Payment' ? (
+                            isSlipRejected ? `
+                                <button class="pay-now-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
+                                    <i class="fas fa-file-upload"></i>
+                                    <span>แนบสลิปใหม่</span>
+                                </button>
+                            ` : !hasSlip ? `
+                                <button class="cancel-order-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 flex items-center space-x-1 cursor-pointer" data-id="${order.id}">
+                                    <i class="fas fa-times-circle text-[11px]"></i>
+                                    <span>ยกเลิก</span>
+                                </button>
+                                <button class="pay-now-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
+                                    <i class="fas fa-qrcode"></i>
+                                    <span>ชำระเงิน</span>
+                                </button>
+                            ` : ''
+                        ) : ''}
                         ${(order.status === 'Cancelled' || order.status === 'ยกเลิกแล้ว') && (order.slipImage || order.has_slip || order.wasPaid) ? `
-                            <button class="show-refund-notice-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center space-x-1.5 shadow-2xs" data-id="${order.id}">
+                            <button class="show-refund-notice-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center space-x-1.5 shadow-2xs cursor-pointer" data-id="${order.id}">
                                 <i class="fab fa-line text-emerald-600 text-sm"></i>
                                 <span>แคปรูปขอเงินคืน</span>
                             </button>
@@ -390,6 +498,13 @@ export function initOrderHistoryPage() {
             btn.onclick = (e) => {
                 const id = e.currentTarget.dataset.id;
                 openDetailModal(id);
+            };
+        });
+
+        document.querySelectorAll('.confirm-received-btn').forEach(btn => {
+            btn.onclick = async (e) => {
+                const id = e.currentTarget.dataset.id;
+                await confirmOrderReceivedAction(id);
             };
         });
 
@@ -489,27 +604,39 @@ export function initOrderHistoryPage() {
         if (!confirmed) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : null;
+            const token = user?.csrf_token || localStorage.getItem('csrf_token') || '';
+            const uid = user?.user_id || user?.customer_id || user?.id || '';
+
             const res = await fetch('/api/orders/update-status', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    ...(token ? { 'X-CSRF-Token': token } : {}),
+                    ...(uid ? { 'X-User-Id': String(uid) } : {}),
+                    ...(user?.role_name ? { 'X-User-Role': String(user.role_name) } : {})
                 },
                 body: JSON.stringify({
-                    order_id: orderId,
+                    order_id: parseInt(orderId),
+                    customer_id: user?.customer_id || user?.id || null,
                     status: 'Cancelled',
-                    cancel_reason: 'ลูกค้ายกเลิกคำสั่งซื้อผ่านหน้าประวัติคำสั่งซื้อ'
+                    cancel_reason: 'ลูกค้ายกเลิกคำสั่งซื้อผ่านหน้าประวัติคำสั่งซื้อ',
+                    csrf_token: token
                 })
             });
 
-            const resData = await res.json();
-            if (res.ok) {
+            let resData = {};
+            try {
+                resData = await res.json();
+            } catch(e) {}
+
+            if (res.ok || res.status === 200) {
                 targetOrder.status = 'Cancelled';
                 if (typeof saveUserOrdersData === 'function') {
                     saveUserOrdersData(orders);
                 }
-                localStorage.setItem('myOrders', JSON.stringify(orders));
                 updatePendingBadge();
                 renderOrders();
                 showToast(`ยกเลิกคำสั่งซื้อ #${orderId} เรียบร้อยแล้ว`, "success");
@@ -518,48 +645,204 @@ export function initOrderHistoryPage() {
             }
         } catch (err) {
             console.error("Cancel order error:", err);
-            showToast('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', "error");
+            showToast(err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', "error");
         }
     }
 
-    function getStatusBadge(status) {
-        const s = String(status || '').toLowerCase().trim();
-        if (s.includes('pending') || s.includes('ที่ต้องชำระ') || s.includes('unpaid') || s.includes('รอดำเนินการ')) {
+    async function confirmOrderReceivedAction(orderId) {
+        const order = orders.find(o => String(o.id) === String(orderId));
+        const ordNum = order ? `#${order.id}` : `#${orderId}`;
+
+        let isConfirmed = false;
+        if (typeof Swal !== 'undefined') {
+            const result = await Swal.fire({
+                title: '<span style="color: #1b4332; font-weight: 800; font-size: 20px;">ยืนยันการรับสินค้า</span>',
+                html: `
+                    <div style="font-size: 14px; color: #475569; line-height: 1.6; margin-top: 8px;">
+                        คุณได้รับสินค้าสำหรับคำสั่งซื้อ <b>${ordNum}</b> ครบถ้วนและอยู่ในสภาพสมบูรณ์เรียบร้อยแล้วใช่หรือไม่?
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check-circle mr-1.5"></i> ยืนยัน ได้รับแล้ว',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#1b4332',
+                cancelButtonColor: '#94a3b8',
+                reverseButtons: true
+            });
+            isConfirmed = result.isConfirmed;
+        } else {
+            isConfirmed = confirm(`คุณได้รับสินค้าสำหรับคำสั่งซื้อ ${ordNum} ครบถ้วนถูกต้องแล้วใช่หรือไม่?`);
+        }
+
+        if (!isConfirmed) return;
+
+        try {
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : null;
+            const token = user?.csrf_token || localStorage.getItem('csrf_token') || '';
+            const uid = user?.user_id || user?.customer_id || user?.id || '';
+
+            const res = await fetch('/api/orders/update-status', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'X-CSRF-Token': token } : {}),
+                    ...(uid ? { 'X-User-Id': String(uid) } : {}),
+                    ...(user?.role_name ? { 'X-User-Role': String(user.role_name) } : {})
+                },
+                body: JSON.stringify({
+                    order_id: parseInt(orderId),
+                    status: 'Completed',
+                    csrf_token: token
+                })
+            });
+
+            let resData = {};
+            try {
+                resData = await res.json();
+            } catch(e) {}
+
+            const isSuccess = res.ok || res.status === 200 || resData.status === 200 || (resData.message && resData.message.includes('already completed'));
+
+            if (isSuccess) {
+                // Update local orders list & persistent storage
+                const targetOrder = orders.find(o => String(o.id) === String(orderId));
+                if (targetOrder) {
+                    targetOrder.status = 'Completed';
+                    if (typeof saveUserOrdersData === 'function') {
+                        saveUserOrdersData(orders);
+                    }
+                }
+                updatePendingBadge();
+                renderOrders();
+
+                // If detail modal is open, re-render modal with new status
+                if (orderDetailModal && !orderDetailModal.classList.contains('hidden') && orderDetailModal.style.display !== 'none') {
+                    openDetailModal(orderId);
+                }
+
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: '<span style="color: #1b4332; font-weight: 800;">จัดส่งสำเร็จ!</span>',
+                        html: `
+                            <div style="font-size: 14px; color: #475569; line-height: 1.6;">
+                                บันทึกสถานะคำสั่งซื้อ <b>${ordNum}</b> เป็น <span style="color: #0d9488; font-weight: bold;">"จัดส่งสำเร็จ"</span> เรียบร้อยแล้ว<br>
+                                <span style="font-size: 12px; color: #64748b; margin-top: 6px; display: block;">ขอบคุณที่เลือกซื้อสินค้ากับ Hello Pet Shop 🐶🐱</span>
+                            </div>
+                        `,
+                        icon: 'success',
+                        confirmButtonColor: '#1b4332',
+                        confirmButtonText: 'ตกลง'
+                    });
+                } else {
+                    showToast(`บันทึกคำสั่งซื้อ ${ordNum} จัดส่งสำเร็จเรียบร้อยแล้ว`, "success");
+                }
+            } else {
+                showToast(resData.message || 'เกิดข้อผิดพลาดในการยืนยันรับสินค้า', "error");
+            }
+        } catch (err) {
+            console.error("Confirm received error:", err);
+            // Re-sync with API to check if status was updated on database
+            try {
+                const checkRes = await fetch('/api/orders', { credentials: 'include' });
+                if (checkRes.ok) {
+                    const checkData = await checkRes.json();
+                    const found = (checkData.data || []).find(o => String(o.id || o.order_id) === String(orderId));
+                    if (found && (found.status === 'Completed' || found.status === 4)) {
+                        const targetOrder = orders.find(o => String(o.id) === String(orderId));
+                        if (targetOrder) {
+                            targetOrder.status = 'Completed';
+                            if (typeof saveUserOrdersData === 'function') {
+                                saveUserOrdersData(orders);
+                            }
+                        }
+                        updatePendingBadge();
+                        renderOrders();
+                        showToast(`บันทึกคำสั่งซื้อ ${ordNum} จัดส่งสำเร็จเรียบร้อยแล้ว`, "success");
+                        return;
+                    }
+                }
+            } catch (reCheckErr) {}
+
+            showToast(err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์', "error");
+        }
+    }
+
+    function getStatusBadge(orderOrStatus) {
+        let s = '';
+        let hasSlip = false;
+        let paymentStatus = null;
+
+        if (typeof orderOrStatus === 'object' && orderOrStatus !== null) {
+            s = String(orderOrStatus.status || '').toLowerCase().trim();
+            hasSlip = !!(orderOrStatus.has_slip || orderOrStatus.hasSlip || orderOrStatus.slip_image || orderOrStatus.slipImage);
+            paymentStatus = orderOrStatus.payment_status !== undefined && orderOrStatus.payment_status !== null ? Number(orderOrStatus.payment_status) : null;
+        } else {
+            s = String(orderOrStatus || '').toLowerCase().trim();
+        }
+
+        // 1. Pending payment (Status 1)
+        if (s === '1' || s.includes('pending') || s.includes('ที่ต้องชำระ') || s.includes('unpaid') || s.includes('รอดำเนินการ')) {
+            if (paymentStatus === 2 || s.includes('reject') || s.includes('ปฏิเสธ')) {
+                return { 
+                    label: 'ชำระเงินไม่สำเร็จ (กรุณาแนบสลิปใหม่)', 
+                    class: 'bg-rose-50 text-rose-700 border border-rose-200/80', 
+                    icon: '<i class="fas fa-exclamation-circle text-[10px]"></i>' 
+                };
+            }
+            if (hasSlip) {
+                return { 
+                    label: 'รอตรวจสอบการชำระเงิน', 
+                    class: 'bg-blue-50 text-blue-700 border border-blue-200/80', 
+                    icon: '<i class="fas fa-hourglass-half text-[10px]"></i>' 
+                };
+            }
             return { 
                 label: 'ที่ต้องชำระ', 
-                class: 'bg-amber-50 text-amber-700 border border-amber-200/60', 
+                class: 'bg-amber-50 text-amber-700 border border-amber-200/80', 
                 icon: '<i class="fas fa-clock text-[10px]"></i>' 
             };
         }
-        if (s.includes('preparing') || s.includes('processing') || s.includes('กำลังแพ็คสินค้า') || s.includes('ที่ต้องจัดส่ง') || s.includes('จัดเตรียม')) {
+
+        // 2. Preparing / Processing (Status 2 - Paid & verified)
+        if (s === '2' || s.includes('preparing') || s.includes('processing') || s.includes('กำลังแพ็คสินค้า') || s.includes('ที่ต้องจัดส่ง') || s.includes('จัดเตรียม')) {
             return { 
                 label: 'กำลังแพ็คสินค้า', 
-                class: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60', 
+                class: 'bg-emerald-50 text-emerald-700 border border-emerald-200/80', 
                 icon: '<i class="fas fa-box-open text-[10px]"></i>' 
             };
         }
-        if (s.includes('shipping') || s.includes('transit') || s.includes('กำลังจัดส่ง') || s.includes('ที่ต้องได้รับ') || s.includes('ส่งแล้ว')) {
+
+        // 3. Shipping / In Transit (Status 3)
+        if (s === '3' || s.includes('shipping') || s.includes('transit') || s.includes('กำลังจัดส่ง') || s.includes('ที่ต้องได้รับ') || s.includes('ส่งแล้ว')) {
             return { 
                 label: 'กำลังจัดส่ง', 
-                class: 'bg-sky-50 text-sky-700 border border-sky-200/60', 
+                class: 'bg-sky-50 text-sky-700 border border-sky-200/80', 
                 icon: '<i class="fas fa-truck text-[10px]"></i>' 
             };
         }
-        if (s.includes('completed') || s.includes('success') || s.includes('จัดส่งสำเร็จ') || s.includes('สำเร็จแล้ว') || s.includes('สำเร็จ')) {
+
+        // 4. Completed (Status 4)
+        if (s === '4' || s.includes('completed') || s.includes('success') || s.includes('จัดส่งสำเร็จ') || s.includes('สำเร็จแล้ว') || s.includes('สำเร็จ')) {
             return { 
                 label: 'จัดส่งสำเร็จ', 
-                class: 'bg-teal-50 text-teal-700 border border-teal-200/60', 
+                class: 'bg-teal-50 text-teal-700 border border-teal-200/80', 
                 icon: '<i class="fas fa-check-circle text-[10px]"></i>' 
             };
         }
-        if (s.includes('cancel') || s.includes('ยกเลิก')) {
+
+        // 5. Cancelled (Status 5)
+        if (s === '5' || s.includes('cancel') || s.includes('ยกเลิก')) {
             return { 
                 label: 'ยกเลิกแล้ว', 
                 class: 'bg-gray-100 text-gray-600 border border-gray-200', 
                 icon: '<i class="fas fa-times-circle text-[10px]"></i>' 
             };
         }
-        return { label: status, class: 'bg-gray-100 text-gray-600', icon: '' };
+
+        return { label: s, class: 'bg-gray-100 text-gray-600 border border-gray-200', icon: '' };
     }
 
     function openDetailModal(orderId) {
@@ -569,8 +852,8 @@ export function initOrderHistoryPage() {
         if (modalOrderId) modalOrderId.textContent = `#${order.id}`;
         if (modalDate) modalDate.textContent = new Date(order.date).toLocaleString('th-TH');
         if (modalStatus) {
-            const statusConfig = getStatusBadge(order.status);
-            modalStatus.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${statusConfig.class}">${statusConfig.label}</span>`;
+            const statusConfig = getStatusBadge(order);
+            modalStatus.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${statusConfig.class}">${statusConfig.icon}<span class="ml-1">${statusConfig.label}</span></span>`;
         }
         if (modalPayment) modalPayment.textContent = order.paymentMethod === 'promptpay' ? 'PromptPay QR' : 'โอนผ่านธนาคาร';
         if (modalShipping) modalShipping.textContent = order.deliveryMethod || 'Standard Express';
@@ -594,6 +877,78 @@ export function initOrderHistoryPage() {
         if (modalShippingFee) modalShippingFee.textContent = `฿${(parseFloat(order.shipping) || 0).toFixed(2)}`;
         if (modalTotal) modalTotal.textContent = `฿${(parseFloat(order.total) || 0).toFixed(2)}`;
 
+        // Dynamic modal actions
+        const modalDynamicActions = document.getElementById('modalDynamicActions');
+        if (modalDynamicActions) {
+            let actionsHtml = '';
+            const hasSlip = !!(order.has_slip || order.hasSlip || order.slipImage || order.slip_image);
+            const isSlipRejected = Number(order.payment_status) === 2;
+
+            if (order.status === 'Shipping' || order.status === 'In Transit' || order.status === 'กำลังจัดส่ง' || order.status === 'ที่ต้องได้รับ') {
+                actionsHtml += `
+                    <button type="button" class="modal-confirm-received-btn px-4 py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
+                        <i class="fas fa-check-circle"></i>
+                        <span>ยืนยันได้รับสินค้าแล้ว</span>
+                    </button>
+                `;
+            } else if (order.status === 'Pending Payment') {
+                if (isSlipRejected) {
+                    actionsHtml += `
+                        <button type="button" class="modal-pay-now-btn px-4 py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
+                            <i class="fas fa-file-upload"></i>
+                            <span>แนบสลิปใหม่</span>
+                        </button>
+                    `;
+                } else if (!hasSlip) {
+                    actionsHtml += `
+                        <button type="button" class="modal-pay-now-btn px-4 py-2 rounded-xl text-xs font-bold bg-[#1b4332] hover:bg-[#15803d] text-white shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer" data-id="${order.id}">
+                            <i class="fas fa-qrcode"></i>
+                            <span>ชำระเงิน</span>
+                        </button>
+                    `;
+                } else {
+                    actionsHtml += `
+                        <span class="text-xs text-blue-700 bg-blue-50 px-3 py-1.5 rounded-xl font-semibold border border-blue-200 flex items-center">
+                            <i class="fas fa-hourglass-half mr-1.5 text-blue-500"></i>ร้านค้ากำลังตรวจสอบสลิป
+                        </span>
+                    `;
+                }
+            }
+            modalDynamicActions.innerHTML = actionsHtml;
+
+            const modalConfirmBtn = modalDynamicActions.querySelector('.modal-confirm-received-btn');
+            if (modalConfirmBtn) {
+                modalConfirmBtn.onclick = async () => {
+                    await confirmOrderReceivedAction(order.id);
+                };
+            }
+            const modalPayBtn = modalDynamicActions.querySelector('.modal-pay-now-btn');
+            if (modalPayBtn) {
+                modalPayBtn.onclick = () => {
+                    if (orderDetailModal) {
+                        orderDetailModal.classList.add('opacity-0', 'pointer-events-none');
+                        orderDetailModal.classList.add('hidden');
+                        orderDetailModal.style.display = 'none';
+                    }
+                    openPayNowModal(order.id);
+                };
+            }
+        }
+
+        const modalCloseActionBtn = document.getElementById('modalCloseActionBtn');
+        if (modalCloseActionBtn) {
+            modalCloseActionBtn.onclick = () => {
+                if (!orderDetailModal) return;
+                orderDetailModal.classList.add('opacity-0', 'pointer-events-none');
+                orderDetailModal.querySelector('div')?.classList.remove('scale-100');
+                orderDetailModal.querySelector('div')?.classList.add('scale-95');
+                setTimeout(() => {
+                    orderDetailModal.classList.add('hidden');
+                    orderDetailModal.style.display = 'none';
+                }, 300);
+            };
+        }
+
         if (orderDetailModal) {
             orderDetailModal.classList.remove('hidden');
             orderDetailModal.style.display = 'flex';
@@ -602,6 +957,17 @@ export function initOrderHistoryPage() {
                 orderDetailModal.querySelector('div')?.classList.remove('scale-95');
                 orderDetailModal.querySelector('div')?.classList.add('scale-100');
             });
+        }
+    }
+
+    function updateHistoryPayBtnState() {
+        const btn = document.getElementById('confirmPayNowBtn') || confirmPayNowBtn;
+        if (!btn) return;
+        btn.disabled = false;
+        if (attachedSlipData) {
+            btn.className = "w-full bg-[#1b4332] hover:bg-[#15803d] text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg ring-2 ring-emerald-400/60 transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]";
+        } else {
+            btn.className = "w-full bg-[#1b4332] hover:bg-[#15803d] text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]";
         }
     }
 
@@ -658,20 +1024,67 @@ export function initOrderHistoryPage() {
         currentPayingOrder = null;
     }
 
+    function compressSlipImage(file) {
+        return new Promise((resolve) => {
+            if (!file || !file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(file);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const maxWidth = 1200;
+                    const maxHeight = 1200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth || height > maxHeight) {
+                        if (width > height) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        } else {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.82);
+                    resolve(compressedBase64);
+                };
+                img.onerror = () => resolve(event.target.result);
+                img.src = event.target.result;
+            };
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+        });
+    }
+
     // Slip file input inside pay now modal
     if (payModalSlipInput) {
-        payModalSlipInput.onchange = (e) => {
+        payModalSlipInput.onchange = async (e) => {
             const file = e.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    attachedSlipData = event.target.result;
-                    if (payModalFileName) payModalFileName.textContent = file.name;
-                    if (payModalPlaceholder) payModalPlaceholder.classList.add('hidden');
-                    if (payModalPreview) payModalPreview.classList.remove('hidden');
-                    updateHistoryPayBtnState();
-                };
-                reader.readAsDataURL(file);
+                if (payModalPlaceholder) payModalPlaceholder.innerHTML = '<i class="fas fa-circle-notch fa-spin text-2xl text-[#1b4332]"></i><span class="text-xs text-gray-500 mt-2">กำลังประมวลผลรูปภาพ...</span>';
+                const compressed = await compressSlipImage(file);
+                attachedSlipData = compressed;
+                if (payModalFileName) payModalFileName.textContent = file.name;
+                if (payModalPlaceholder) {
+                    payModalPlaceholder.classList.add('hidden');
+                    payModalPlaceholder.innerHTML = '<i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i><span class="text-xs font-semibold text-gray-700">คลิกเพื่ออัปโหลดสลิป</span><span class="text-[11px] text-gray-400 mt-0.5">รองรับไฟล์ JPG, PNG</span>';
+                }
+                if (payModalPreview) payModalPreview.classList.remove('hidden');
+                updateHistoryPayBtnState();
             }
         };
     }
@@ -683,6 +1096,7 @@ export function initOrderHistoryPage() {
             attachedSlipData = null;
             if (payModalPreview) payModalPreview.classList.add('hidden');
             if (payModalPlaceholder) payModalPlaceholder.classList.remove('hidden');
+            updateHistoryPayBtnState();
         };
     }
 
@@ -706,7 +1120,7 @@ export function initOrderHistoryPage() {
 
             try {
                 if (attachedSlipData) {
-                    await fetch('/api/orders/upload-slip', {
+                    const res = await fetch('/api/orders/upload-slip', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -714,13 +1128,25 @@ export function initOrderHistoryPage() {
                             slip_image: attachedSlipData
                         })
                     });
+                    if (res.ok) {
+                        const resData = await res.json().catch(() => ({}));
+                        currentPayingOrder.payment_status = 0;
+                        currentPayingOrder.has_slip = true;
+                        currentPayingOrder.hasSlip = true;
+                        if (resData.slip_image) {
+                            currentPayingOrder.slip_image = resData.slip_image;
+                        }
+                    }
                 }
             } catch (err) {
                 console.warn("Backend slip sync note:", err);
             }
 
-            currentPayingOrder.status = 'Preparing';
-            currentPayingOrder.slipImage = attachedSlipData;
+            currentPayingOrder.status = 'Pending Payment';
+            currentPayingOrder.slipImage = null; // NEVER save Base64 into frontend order objects
+            currentPayingOrder.has_slip = true;
+            currentPayingOrder.hasSlip = true;
+            currentPayingOrder.payment_status = 0;
             currentPayingOrder.paidAt = new Date().toISOString();
 
             saveUserOrdersData(orders);
@@ -728,11 +1154,12 @@ export function initOrderHistoryPage() {
             closePayNowModal();
             confirmPayNowBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>ยืนยันการชำระเงิน</span>';
             confirmPayNowBtn.disabled = false;
+            updateHistoryPayBtnState();
 
             updatePendingBadge();
             renderOrders();
 
-            showToast(`ชำระเงินคำสั่งซื้อ #${currentPayingOrder.id} สำเร็จ! ย้ายไปที่สถานะ 'ที่ต้องจัดส่ง'`, "success");
+            showToast(`แจ้งชำระเงินคำสั่งซื้อ #${currentPayingOrder.id} สำเร็จ! รอร้านค้าตรวจสอบสลิป`, "success");
         };
     }
 

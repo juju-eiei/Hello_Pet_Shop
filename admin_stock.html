@@ -30,21 +30,6 @@
         
         .page-header h1 { font-size: 28px; font-weight: 800; color: #1e293b; letter-spacing: -0.5px; background: linear-gradient(90deg, #1e293b, #334155); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
-        /* Search Bar Setup */
-        .search-container {
-            background: #ffffff !important;
-            border-radius: 100px !important;
-            padding: 12px 24px !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03) !important;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 24px !important;
-            display: flex;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-        .search-container:focus-within { box-shadow: 0 8px 30px rgba(22, 163, 74, 0.1) !important; border-color: #16a34a; }
-        .search-container input { background: transparent !important; font-size: 15px !important; font-weight: 500; border: none; outline: none; width: 100%; color: #1e293b; }
-        .search-container i { color: #94a3b8 !important; font-size: 18px; margin-right: 14px; }
 
         /* Filter Tabs Premium */
         .filter-tabs {
@@ -741,31 +726,67 @@
 
     <!-- Stock History Modal -->
     <div class="po-modal-overlay" id="stockHistoryModal">
-        <div class="po-modal" style="max-width: 950px;">
-            <div class="po-modal-header">
-                <h2>ประวัติการจัดการสต๊อก (Stock History)</h2>
+        <div class="po-modal" style="max-width: 950px; width: 95%;">
+            <div class="po-modal-header" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px;">
+                <h2>ประวัติสต็อกสินค้าและสินค้าใหม่ (History)</h2>
                 <button class="po-modal-close" onclick="closeModal('stockHistoryModal')">&times;</button>
             </div>
             
-            <div class="po-form-group">
-                <input type="text" id="stockSearchInput" class="po-form-control" placeholder="ค้นหาตามชื่อสินค้า หรือผู้ดำเนินการ..." oninput="fetchStockHistory()">
+            <!-- Navigation Tabs -->
+            <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                <button type="button" class="stock-history-tab active" id="tabStockAdjustmentsBtn" onclick="switchStockHistoryTab('adjustments')" style="padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; background: #4D7C68; color: white; transition: all 0.2s;">
+                    <i class="fas fa-boxes"></i> ประวัติการปรับปรุงสต็อก
+                </button>
+                <button type="button" class="stock-history-tab" id="tabProductAddBtn" onclick="switchStockHistoryTab('product_add')" style="padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; background: #f8fafc; color: #475569; transition: all 0.2s;">
+                    <i class="fas fa-plus-circle"></i> ประวัติการเพิ่มสินค้าใหม่
+                </button>
             </div>
 
-            <div style="overflow-y: auto; max-height: 50vh; margin-top: 10px;">
-                <table class="po-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 20%;">วันที่-เวลา</th>
-                            <th style="width: 30%;">ชื่อสินค้า</th>
-                            <th style="width: 20%;">ประเภทการปรับปรุง</th>
-                            <th style="width: 15%; text-align: right;">จำนวนที่ปรับปรุง</th>
-                            <th style="width: 15%;">ผู้ดำเนินการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stockHistoryBody">
-                        <!-- Stock history rows will go here -->
-                    </tbody>
-                </table>
+            <!-- Tab 1: Stock Adjustments -->
+            <div id="stockAdjustmentsTabContent">
+                <div class="po-form-group">
+                    <input type="text" id="stockSearchInput" class="po-form-control" placeholder="ค้นหาตามชื่อสินค้า หรือผู้ดำเนินการ..." oninput="fetchStockHistory()">
+                </div>
+
+                <div style="overflow-y: auto; max-height: 50vh; margin-top: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <table class="po-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">วันที่-เวลา</th>
+                                <th style="width: 30%;">ชื่อสินค้า</th>
+                                <th style="width: 20%;">ประเภทการปรับปรุง</th>
+                                <th style="width: 15%; text-align: right;">จำนวนที่ปรับปรุง</th>
+                                <th style="width: 15%;">ผู้ดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockHistoryBody">
+                            <!-- Stock history rows will go here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 2: Product Add History -->
+            <div id="productAddTabContent" style="display: none;">
+                <div class="po-form-group">
+                    <input type="text" id="productAddSearchInput" class="po-form-control" placeholder="ค้นหาตามชื่อสินค้า หมวดหมู่ หรือผู้เพิ่มสินค้า..." oninput="filterProductAddHistory()">
+                </div>
+
+                <div style="overflow-y: auto; max-height: 50vh; margin-top: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <table class="po-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">วันที่เพิ่ม</th>
+                                <th style="width: 35%;">ชื่อสินค้า</th>
+                                <th style="width: 25%;">หมวดหมู่</th>
+                                <th style="width: 20%;">ผู้เพิ่มสินค้า</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productAddHistoryBody">
+                            <!-- Product Add history rows will go here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
             
             <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
@@ -1063,7 +1084,7 @@
                     fetchPoHistory();
                 }
                 if (id === 'stockHistoryModal') {
-                    fetchStockHistory();
+                    switchStockHistoryTab('adjustments');
                 }
                 if (id === 'createPoModal') {
                     // Reset supplier and clear items
@@ -2015,11 +2036,51 @@
         }
 
         // ==========================================
-        // Stock History Logic
+        // Stock History & Product Add History Logic
         // ==========================================
 
+        let allProductAddHistoryList = [];
+
+        function switchStockHistoryTab(tab) {
+            const adjBtn = document.getElementById('tabStockAdjustmentsBtn');
+            const addBtn = document.getElementById('tabProductAddBtn');
+            const adjContent = document.getElementById('stockAdjustmentsTabContent');
+            const addContent = document.getElementById('productAddTabContent');
+
+            if (tab === 'adjustments') {
+                if (adjBtn) {
+                    adjBtn.style.background = '#4D7C68';
+                    adjBtn.style.color = 'white';
+                    adjBtn.style.border = 'none';
+                }
+                if (addBtn) {
+                    addBtn.style.background = '#f8fafc';
+                    addBtn.style.color = '#475569';
+                    addBtn.style.border = '1px solid #cbd5e1';
+                }
+                if (adjContent) adjContent.style.display = 'block';
+                if (addContent) addContent.style.display = 'none';
+                fetchStockHistory();
+            } else {
+                if (adjBtn) {
+                    adjBtn.style.background = '#f8fafc';
+                    adjBtn.style.color = '#475569';
+                    adjBtn.style.border = '1px solid #cbd5e1';
+                }
+                if (addBtn) {
+                    addBtn.style.background = '#4D7C68';
+                    addBtn.style.color = 'white';
+                    addBtn.style.border = 'none';
+                }
+                if (adjContent) adjContent.style.display = 'none';
+                if (addContent) addContent.style.display = 'block';
+                fetchProductAddHistory();
+            }
+        }
+
         async function fetchStockHistory() {
-            const keyword = document.getElementById('stockSearchInput').value.trim();
+            const searchEl = document.getElementById('stockSearchInput');
+            const keyword = searchEl ? searchEl.value.trim() : '';
             try {
                 const response = await fetch(`/api/stock/history?keyword=${encodeURIComponent(keyword)}`);
                 const json = await response.json();
@@ -2035,6 +2096,7 @@
 
         function renderStockHistory(logs) {
             const tbody = document.getElementById('stockHistoryBody');
+            if (!tbody) return;
             if (!logs || logs.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">ไม่พบประวัติการปรับปรุงสต๊อก</td></tr>`;
                 return;
@@ -2067,6 +2129,80 @@
             }).join('');
         }
 
+        async function fetchProductAddHistory() {
+            const tbody = document.getElementById('productAddHistoryBody');
+            if (tbody && (!allProductAddHistoryList || allProductAddHistoryList.length === 0)) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 25px;">กำลังโหลดข้อมูล...</td></tr>';
+            }
+            try {
+                const response = await fetch('/api/products?filter=all');
+                const json = await response.json();
+                if (response.ok && json.data) {
+                    allProductAddHistoryList = json.data;
+                    filterProductAddHistory();
+                } else {
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 25px;">ไม่พบข้อมูลสินค้า</td></tr>';
+                }
+            } catch (error) {
+                console.error("Failed to fetch product add history:", error);
+                if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ef4444; padding: 25px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+            }
+        }
+
+        function filterProductAddHistory() {
+            const searchEl = document.getElementById('productAddSearchInput');
+            const keyword = searchEl ? searchEl.value.trim().toLowerCase() : '';
+            const tbody = document.getElementById('productAddHistoryBody');
+            if (!tbody) return;
+
+            let filtered = allProductAddHistoryList || [];
+            if (keyword) {
+                filtered = filtered.filter(p => {
+                    const name = (p.product_name || p.name || '').toLowerCase();
+                    const cat = (p.category_name || '').toLowerCase();
+                    const creator = (p.creator_name || 'Super Admin').toLowerCase();
+                    return name.includes(keyword) || cat.includes(keyword) || creator.includes(keyword);
+                });
+            }
+
+            const sorted = [...filtered].sort((a, b) => {
+                const idA = a.product_id || a.id || 0;
+                const idB = b.product_id || b.id || 0;
+                return idB - idA;
+            });
+
+            if (sorted.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 25px;">ไม่พบประวัติการเพิ่มสินค้า</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sorted.map(p => {
+                const dateObj = p.created_at ? new Date(p.created_at) : null;
+                const formattedDate = dateObj 
+                    ? dateObj.toLocaleDateString('th-TH', {
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                      })
+                    : 'ไม่ระบุ';
+                
+                const creator = p.creator_name || 'Super Admin';
+                const catName = p.category_name || '-';
+                
+                return `
+                    <tr>
+                        <td style="color: #475569;">${formattedDate}</td>
+                        <td style="font-weight: 600; color: #1e293b;">${p.product_name || p.name || ''}</td>
+                        <td style="color: #64748b;">${catName}</td>
+                        <td style="color: #475569; font-weight: 500;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px; background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-size: 12px;">
+                                <i class="fas fa-user-edit" style="color: #94a3b8;"></i> ${creator}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         function getMovementTypeName(type, qty) {
             type = parseInt(type);
             if (type === 1) return '<span style="color: #10b981; font-weight: 600;">รับเข้าสต็อก (PO)</span>';
@@ -2081,6 +2217,10 @@
             if (type === 4) return '<span style="color: #8b5cf6; font-weight: 600;">เพิ่มสินค้าใหม่</span>';
             return '<span style="color: #6b7280; font-weight: 600;">อื่นๆ</span>';
         }
+
+        window.switchStockHistoryTab = switchStockHistoryTab;
+        window.fetchProductAddHistory = fetchProductAddHistory;
+        window.filterProductAddHistory = filterProductAddHistory;
 
         // Restore submenu state
         document.addEventListener('DOMContentLoaded', () => {

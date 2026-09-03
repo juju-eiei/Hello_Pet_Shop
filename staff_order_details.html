@@ -747,7 +747,7 @@
             if (s === 'Pending' || s === 'รอดำเนินการ' || s === 'Pending Payment' || s === 'ที่ต้องชำระ') return 'pending';
             if (s === 'Processing' || s === 'กำลังแพ็คสินค้า' || s === 'กำลังดำเนินการ' || s === 'Preparing' || s === 'ที่ต้องจัดส่ง') return 'processing';
             if (s === 'In Transit' || s === 'กำลังจัดส่ง' || s === 'กำลังนำส่ง' || s === 'Shipping' || s === 'ที่ต้องได้รับ' || s === 'มอบให้ขนส่งแล้ว') return 'intransit';
-            if (s === 'Completed' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'completed';
+            if (s === 'Completed' || s === 'จัดส่งสำเร็จ' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'completed';
             if (s === 'Cancelled' || s === 'ยกเลิกแล้ว' || s === 'ยกเลิก') return 'cancelled';
             return s.toLowerCase().replace(/\s+/g, '');
         }
@@ -823,72 +823,6 @@
                 }
             } catch (err) {
                 console.warn("API order details warning:", err);
-            }
-
-            if (!data) {
-                let localOrders = [];
-                try {
-                    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
-                    const uid = userObj.user_id ? String(userObj.user_id) : String(userObj.username || '');
-                    if (uid) {
-                        const uOrders = JSON.parse(localStorage.getItem(`myOrders_${uid}`) || '[]');
-                        if (Array.isArray(uOrders)) localOrders = localOrders.concat(uOrders);
-                    }
-                } catch(e) {}
-                try {
-                    const savedOrders = JSON.parse(localStorage.getItem('savedUserOrders') || '{}');
-                    Object.values(savedOrders).forEach(arr => {
-                        if (Array.isArray(arr)) localOrders = localOrders.concat(arr);
-                    });
-                } catch(e) {}
-                try {
-                    const mo = JSON.parse(localStorage.getItem('myOrders') || '[]');
-                    if (Array.isArray(mo)) localOrders = localOrders.concat(mo);
-                } catch(e) {}
-
-                const found = localOrders.find(o => String(o.id || o.order_id) === String(orderId));
-                if (found) {
-                    let adminStatus = 'Pending';
-                    const st = found.status;
-                    if (st === 'Preparing' || st === 'ที่ต้องจัดส่ง' || st === 'กำลังเตรียมสินค้า') adminStatus = 'Processing';
-                    else if (st === 'Shipping' || st === 'ที่ต้องได้รับ' || st === 'กำลังจัดส่ง') adminStatus = 'In Transit';
-                    else if (st === 'Completed' || st === 'สำเร็จแล้ว' || st === 'สำเร็จ') adminStatus = 'Completed';
-                    else if (st === 'Cancelled' || st === 'ยกเลิกแล้ว') adminStatus = 'Cancelled';
-
-                    const subtotalVal = parseFloat(found.subtotal || 0) || (parseFloat(found.total || found.amount || 0) - parseFloat(found.shipping || found.shipping_fee || 0));
-                    const shippingVal = parseFloat(found.shipping || found.shipping_fee || 0);
-                    const totalVal = parseFloat(found.total || found.amount || (subtotalVal + shippingVal));
-
-                    data = {
-                        id: found.id || found.order_id,
-                        number: found.number || `ORD-2026-${String(found.id || found.order_id).padStart(3, '0')}`,
-                        date: found.date ? new Date(typeof found.date === 'string' && found.date.includes(' ') && !found.date.includes('T') ? found.date.replace(' ', 'T') : found.date).toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString('th-TH'),
-                        status: adminStatus,
-                        order_type: found.order_type || 1,
-                        order_type_label: found.order_type === 2 ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์',
-                        tracking_number: found.trackingNumber || found.tracking_number || null,
-                        company_id: found.company_id || null,
-                        company_name: found.company_name || found.deliveryCompany || found.shipping_provider || null,
-                        shipping_provider: found.company_name || found.deliveryCompany || found.shipping_provider || null,
-                        slip_image: found.slip_image || found.slipImage || null,
-                        has_slip: !!(found.slip_image || found.slipImage),
-                        payment_method: found.paymentMethod || found.payment_method || 'transfer',
-                        payment_date: found.paidAt || found.payment_date || found.date || null,
-                        customer: found.customer || { name: 'Customer', email: '-', phone: '-', address: found.shippingAddress || '-' },
-                        items: (found.items || []).map(i => ({
-                            name: i.name || i.product_name || 'สินค้าในรายการ',
-                            price: parseFloat(i.price || i.unit_price || 0),
-                            qty: parseInt(i.qty || i.quantity || 1),
-                            image: i.image || i.image_url || '/image/non-image.png'
-                        })),
-                        summary: {
-                            subtotal: subtotalVal,
-                            shipping: shippingVal,
-                            discount: parseFloat(found.discount || found.discount_amount || 0),
-                            total: totalVal
-                        }
-                    };
-                }
             }
 
             if (!data) {
@@ -1157,16 +1091,6 @@
                             slipStatusBadge.className = 'status-pill completed';
                         }
 
-                        // Also update in localStorage if present
-                        try {
-                            const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-                            const oIdx = myOrders.findIndex(o => String(o.id) === String(currentOrderData.id));
-                            if (oIdx !== -1) {
-                                myOrders[oIdx].slipImage = base64Data;
-                                localStorage.setItem('myOrders', JSON.stringify(myOrders));
-                            }
-                        } catch(eLoc) {}
-
                         showToast("อัปโหลดสลิปชำระเงินเรียบร้อยแล้ว", "success");
                         initData();
                     } else {
@@ -1239,16 +1163,6 @@
 
                 if (res.ok) {
                     currentOrderData.status = (action === 'approve' ? 'Processing' : 'Cancelled');
-
-                    // Also update in localStorage 'myOrders' if present
-                    try {
-                        const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-                        const oIdx = myOrders.findIndex(o => String(o.id) === String(currentOrderData.id));
-                        if (oIdx !== -1) {
-                            myOrders[oIdx].status = (action === 'approve' ? 'Preparing' : 'Cancelled');
-                            localStorage.setItem('myOrders', JSON.stringify(myOrders));
-                        }
-                    } catch(eLoc) {}
 
                     Swal.fire({
                         icon: 'success',
@@ -1523,33 +1437,7 @@
                 if (currentOrderData) currentOrderData.amount = finalNetTotal;
             }
 
-            // 2. Synchronize status and delivery info with customer frontend localStorage ('myOrders')
-            const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-            const targetOrder = myOrders.find(o => String(o.id) === String(orderId));
-            if (targetOrder) {
-                if (newStatus === 'Pending') targetOrder.status = 'Pending Payment';
-                else if (newStatus === 'Processing') targetOrder.status = 'Preparing';
-                else if (newStatus === 'In Transit') targetOrder.status = 'Shipping';
-                else if (newStatus === 'Completed') targetOrder.status = 'Completed';
-                else if (newStatus === 'Cancelled') targetOrder.status = 'Cancelled';
-                
-                if (trackingNo) targetOrder.trackingNumber = trackingNo;
-                if (companyId) targetOrder.company_id = Number(companyId);
-                if (finalCompanyName) {
-                    targetOrder.company_name = finalCompanyName;
-                    targetOrder.deliveryCompany = finalCompanyName;
-                    targetOrder.shipping_provider = finalCompanyName;
-                }
-                if (finalShippingFee > 0) {
-                    targetOrder.shipping = finalShippingFee;
-                    targetOrder.shipping_fee = finalShippingFee;
-                }
-                if (finalNetTotal > 0) {
-                    targetOrder.total = finalNetTotal;
-                    targetOrder.amount = finalNetTotal;
-                }
-                localStorage.setItem('myOrders', JSON.stringify(myOrders));
-            }
+            // Synchronize UI state (Database is source of truth via API)
 
             function showCancelRefundNotice(orderNumber, customerName, amount) {
                 const formattedAmount = parseFloat(amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});

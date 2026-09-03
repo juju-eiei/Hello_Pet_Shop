@@ -1,5 +1,6 @@
 import { updateGlobalCartCount } from './main.js';
 import { showToast, getUserProfileData, saveUserProfileData, getCartData, saveCartData, getUserOrdersData, saveUserOrdersData } from './utils.js';
+import Swal from 'sweetalert2';
 
 export function initCheckoutPage() {
     const cleanPath = (window.location.pathname || '').toLowerCase();
@@ -7,6 +8,20 @@ export function initCheckoutPage() {
     // Elements
     const summaryItemsContainer = document.getElementById('summaryItemsContainer');
     if (!summaryItemsContainer) return;
+
+    // Strict guard: if an order was recently completed, prevent navigating back to checkout
+    if (sessionStorage.getItem('checkout_completed') === 'true') {
+        sessionStorage.removeItem('checkout_completed');
+        window.location.replace('/products.html');
+        return;
+    }
+
+    // Force reload if page is restored from bfcache
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
 
     const summarySubtotal = document.getElementById('summarySubtotal');
     const summaryShipping = document.getElementById('summaryShipping');
@@ -55,15 +70,22 @@ export function initCheckoutPage() {
 
     // Initialization
     async function init() {
-        cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        if (sessionStorage.getItem('checkout_completed') === 'true') {
+            sessionStorage.removeItem('checkout_completed');
+            window.location.replace('/products.html');
+            return;
+        }
+
+        cart = getCartData();
+        if (!cart || cart.length === 0) {
+            try {
+                cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            } catch(e) { cart = []; }
+        }
         checkoutItems = cart.filter(item => item.selected !== false);
         
         if (checkoutItems.length === 0) {
-            if (window.navigateTo) {
-                window.navigateTo('/cart');
-            } else {
-                window.location.href = '/cart';
-            }
+            window.location.replace('/products.html');
             return;
         }
 
@@ -276,15 +298,14 @@ export function initCheckoutPage() {
         if (!container) return;
 
         const totalWeight = calculateTotalWeight();
-        const extraKg = totalWeight > 1.0 ? Math.ceil(totalWeight - 1.0) : 0;
 
         container.innerHTML = deliveryCompanies.map((c, idx) => {
             const fee = calculateShippingForCompany(c);
             const isChecked = idx === 0 ? 'checked' : '';
             const activeClass = idx === 0 ? 'active-card' : '';
-            const weightDesc = totalWeight > 1.0
-                ? `น้ำหนัก ${totalWeight.toFixed(2)} กก. (เกิน 1 กก. บวกเพิ่ม ${extraKg} กก.)`
-                : `อัตราปกติเริ่มต้น (น้ำหนัก ${totalWeight > 0 ? totalWeight.toFixed(2) + ' กก.' : 'ไม่เกิน 1 กก.'})`;
+            const weightDesc = totalWeight > 0
+                ? `น้ำหนัก ${totalWeight.toFixed(2)} กก.`
+                : `จัดส่งแบบมาตรฐาน`;
 
             return `
                 <label class="option-card block cursor-pointer ${activeClass}" data-company-id="${c.company_id}">
@@ -423,13 +444,13 @@ export function initCheckoutPage() {
     }
 
     function updateSubmitButtonState() {
-        if (!submitPaymentBtn) return;
+        const btn = document.getElementById('submitPaymentBtn') || submitPaymentBtn;
+        if (!btn) return;
+        btn.disabled = false;
         if (attachedSlipData) {
-            submitPaymentBtn.disabled = false;
-            submitPaymentBtn.className = "w-full bg-[#4D7C68] hover:bg-[#3D6353] text-white py-3.5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer opacity-100";
+            btn.className = "w-full bg-[#1b4332] hover:bg-[#15803d] text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg ring-2 ring-emerald-400/60 transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]";
         } else {
-            submitPaymentBtn.disabled = true;
-            submitPaymentBtn.className = "w-full bg-gray-300 text-gray-500 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 cursor-not-allowed opacity-60";
+            btn.className = "w-full bg-[#1b4332] hover:bg-[#15803d] text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]";
         }
     }
 
@@ -445,10 +466,315 @@ export function initCheckoutPage() {
         });
         updateCardUI();
 
-        // Confirm Order Click -> Open PromptPay QR Modal
+        // Helper: Remove ONLY ordered items from user cart, preserving other items (Req 4 & 5)
+        function clearOrderedItemsFromCart(orderedItems, user) {
+            try {
+                const currentCart = getCartData();
+                const cartSource = (Array.isArray(currentCart) && currentCart.length > 0) ? currentCart : (cart || []);
+                const orderedProductIds = new Set((orderedItems || []).map(i => String(i.id || i.product_id || '')));
+
+                // Keep only items that were NOT ordered
+                const remainingCart = cartSource.filter(item => {
+                    const itemId = String(item.id || item.product_id || '');
+                    return !orderedProductIds.has(itemId);
+                });
+
+                saveCartData(remainingCart);
+                localStorage.setItem('cart', JSON.stringify(remainingCart));
+
+                const allUserKeys = [
+                    user?.user_id,
+                    user?.customer_id,
+                    user?.id,
+                    user?.username
+                ].filter(Boolean).map(String);
+
+                allUserKeys.forEach(k => {
+                    localStorage.setItem(`cart_${k}`, JSON.stringify(remainingCart));
+                });
+
+                try {
+                    const savedUserCarts = JSON.parse(localStorage.getItem('savedUserCarts') || '{}');
+                    allUserKeys.forEach(k => {
+                        savedUserCarts[k] = remainingCart;
+                    });
+                    localStorage.setItem('savedUserCarts', JSON.stringify(savedUserCarts));
+                } catch (e) {}
+
+                // Update cart count immediately (Req 6)
+                updateGlobalCartCount();
+                return remainingCart;
+            } catch (e) {
+                console.error("Error clearing ordered items from cart:", e);
+            }
+        }
+
+        // Helper: Show Success Modal with 2 choices: "กลับหน้าแรก" & "ดูประวัติคำสั่งซื้อ"
+        function showOrderSuccessModal(orderId, title, message, targetTab = 'pending_payment') {
+            closeQrModal();
+
+            const modal = document.getElementById('successModal') || successModal;
+            const modalOrderId = document.getElementById('mockOrderId') || mockOrderId;
+            const modalTitle = document.getElementById('successModalTitle') || successModalTitle;
+            const modalMsg = document.getElementById('successModalMessage') || successModalMessage;
+
+            if (modalOrderId) modalOrderId.textContent = orderId;
+            if (modalTitle) modalTitle.textContent = title || 'สั่งซื้อสำเร็จ';
+            if (modalMsg) {
+                modalMsg.innerHTML = message || `เราได้รับคำสั่งซื้อของคุณเรียบร้อยแล้ว<br><span class="inline-block mt-2 font-mono text-xs font-semibold bg-gray-100 px-3 py-1 rounded-lg text-gray-700">รหัสคำสั่งซื้อ: #${orderId}</span>`;
+            }
+
+            // Navigation functions using location.replace to prevent back-button resubmission
+            const goToHome = () => {
+                sessionStorage.removeItem('checkout_completed');
+                window.location.replace('/products.html');
+            };
+
+            const goToOrderHistory = () => {
+                sessionStorage.removeItem('checkout_completed');
+                window.location.replace(`/order-history.html?tab=${targetTab}`);
+            };
+
+            const goHomeBtn = document.getElementById('goHomeBtn');
+            if (goHomeBtn) {
+                goHomeBtn.onclick = (e) => {
+                    e.preventDefault();
+                    goToHome();
+                };
+            }
+
+            const viewOrderBtn = document.getElementById('viewOrderBtn');
+            if (viewOrderBtn) {
+                viewOrderBtn.onclick = (e) => {
+                    e.preventDefault();
+                    goToOrderHistory();
+                };
+            }
+
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+                const innerBox = modal.querySelector('div');
+                if (innerBox) {
+                    innerBox.classList.remove('scale-95');
+                    innerBox.classList.add('scale-100');
+                }
+            }
+        }
+
+        // Execute Order Creation in Database
+        async function executeOrderCreation({ withSlip, slipData }) {
+            if (!pendingOrderData) return;
+
+            // Resolve customer session
+            const userStr = localStorage.getItem('user');
+            let user = userStr ? JSON.parse(userStr) : null;
+            let customerId = user?.customer_id;
+            let csrfToken = user?.csrf_token;
+
+            if (!customerId) {
+                try {
+                    const res = await fetch('/api/auth/me');
+                    if (res.ok) {
+                        const result = await res.json();
+                        if (result.data) {
+                            user = result.data;
+                            customerId = result.data.customer_id;
+                            csrfToken = result.data.csrf_token;
+                            localStorage.setItem('user', JSON.stringify(result.data));
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error resolving session:", err);
+                }
+            }
+
+            const orderPayload = {
+                customer_id: customerId || 1,
+                company_id: pendingOrderData.company_id,
+                shipping_address: pendingOrderData.shippingAddress,
+                items: pendingOrderData.items.map(item => ({
+                    product_id: item.id,
+                    quantity: item.quantity
+                })),
+                shipping_fee: pendingOrderData.shipping,
+                discount_amount: 0,
+                points_used: pendingOrderData.points_used || 0,
+                payment_method: 'transfer',
+                slip_image: withSlip ? slipData : null,
+                csrf_token: csrfToken
+            };
+
+            let dbOrderId = null;
+            let finalTotal = pendingOrderData.total;
+            let finalShipping = pendingOrderData.shipping;
+
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify(orderPayload)
+                });
+
+                if (!res.ok) {
+                    let errMsg = "เกิดข้อผิดพลาดในการบันทึกคำสั่งซื้อลงฐานข้อมูล";
+                    try {
+                        const errRes = await res.json();
+                        if (errRes.message) errMsg = errRes.message;
+                    } catch (e) {}
+                    showToast(errMsg, "error");
+                    if (submitPaymentBtn) {
+                        submitPaymentBtn.disabled = false;
+                        submitPaymentBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>ยืนยันการชำระเงิน</span>';
+                    }
+                    if (payLaterBtn) {
+                        payLaterBtn.disabled = false;
+                        payLaterBtn.innerHTML = '<i class="fas fa-clock text-amber-600"></i><span>ชำระเงินภายหลัง</span>';
+                    }
+                    return;
+                }
+
+                const resJson = await res.json();
+                if (resJson.data && resJson.data.order_id) {
+                    dbOrderId = resJson.data.order_id;
+                    if (resJson.data.net_total !== undefined) {
+                        finalTotal = parseFloat(resJson.data.net_total);
+                    }
+                    if (resJson.data.shipping_fee !== undefined) {
+                        finalShipping = parseFloat(resJson.data.shipping_fee);
+                    }
+                } else {
+                    dbOrderId = Math.floor(100000 + Math.random() * 900000);
+                }
+            } catch (err) {
+                console.error("Error creating order:", err);
+                showToast("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อบันทึกคำสั่งซื้อได้", "error");
+                if (submitPaymentBtn) {
+                    submitPaymentBtn.disabled = false;
+                    submitPaymentBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>ยืนยันการชำระเงิน</span>';
+                }
+                if (payLaterBtn) {
+                    payLaterBtn.disabled = false;
+                    payLaterBtn.innerHTML = '<i class="fas fa-clock text-amber-600"></i><span>ชำระเงินภายหลัง</span>';
+                }
+                return;
+            }
+
+            // 1. Order successfully saved in DB!
+            // Save order to per-user isolated local store (without storing heavy base64 image in localStorage)
+            const orderRecord = {
+                id: dbOrderId,
+                company_id: pendingOrderData.company_id,
+                company_name: pendingOrderData.company_name,
+                date: new Date().toISOString(),
+                items: pendingOrderData.items,
+                subtotal: pendingOrderData.subtotal,
+                shipping: finalShipping,
+                points_used: pendingOrderData.points_used,
+                points_discount: pendingOrderData.points_discount,
+                points_earned: pendingOrderData.points_earned,
+                total: finalTotal,
+                deliveryMethod: pendingOrderData.deliveryMethod,
+                paymentMethod: 'transfer',
+                shippingAddress: pendingOrderData.shippingAddress,
+                status: withSlip ? 'Waiting Verification' : 'Pending Payment',
+                slipImage: null, // Stored safely in database payments table; keeping localStorage fast and light
+                has_slip: withSlip,
+                hasSlip: withSlip,
+                payment_status: 0,
+                paidAt: withSlip ? new Date().toISOString() : null
+            };
+
+            try {
+                const orders = getUserOrdersData();
+                orders.unshift(orderRecord);
+                saveUserOrdersData(orders);
+            } catch (storageErr) {
+                console.warn("Storage warning:", storageErr);
+            }
+
+            // 2. Remove ONLY ordered items from cart (keeping all non-ordered items)
+            try {
+                clearOrderedItemsFromCart(pendingOrderData.items, user);
+            } catch (cartErr) {
+                console.warn("Cart clearing warning:", cartErr);
+            }
+
+            // 3. Flag checkout completed to prevent re-submitting via Back button
+            sessionStorage.setItem('checkout_completed', 'true');
+
+            // 4. Close QR Payment Modal
+            closeQrModal();
+
+            // 5. Show Respective Success Modal:
+            if (withSlip) {
+                // กรณีที่ 1: แนบสลิปยืนยันการชำระเงิน
+                showOrderSuccessModal(
+                    dbOrderId,
+                    "สั่งซื้อสำเร็จ",
+                    `เราได้รับคำสั่งซื้อและหลักฐานการชำระเงินของคุณเรียบร้อยแล้ว ทางร้านจะตรวจสอบยอดเงินและเริ่มแพ็คสินค้าเพื่อจัดส่งให้โดยเร็วที่สุด<br><span class="inline-block mt-2 font-mono text-xs font-semibold bg-gray-100 px-3 py-1 rounded-lg text-gray-700">รหัสคำสั่งซื้อ: #${dbOrderId}</span>`,
+                    'pending_payment'
+                );
+            } else {
+                // กรณีที่ 2: ชำระเงินภายหลัง
+                showOrderSuccessModal(
+                    dbOrderId,
+                    "สร้างคำสั่งซื้อสำเร็จ",
+                    `คำสั่งซื้อของคุณถูกบันทึกไว้ในสถานะ <span class="font-bold text-amber-600 font-sans">'ที่ต้องชำระ'</span> คุณสามารถสแกนจ่ายเงินได้ทุกเมื่อในหน้าประวัติคำสั่งซื้อ<br><span class="inline-block mt-2 font-mono text-xs font-semibold bg-gray-100 px-3 py-1 rounded-lg text-gray-700">รหัสคำสั่งซื้อ: #${dbOrderId}</span>`,
+                    'pending_payment'
+                );
+            }
+        }
+
+        // Helper: Compress image file before uploading to avoid huge payloads and browser lag
+        function compressSlipImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.75) {
+            return new Promise((resolve) => {
+                if (!file || !file.type || !file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = () => resolve(null);
+                    reader.readAsDataURL(file);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxWidth || height > maxHeight) {
+                            if (width > height) {
+                                height = Math.round((height * maxWidth) / width);
+                                width = maxWidth;
+                            } else {
+                                width = Math.round((width * maxHeight) / height);
+                                height = maxHeight;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = () => resolve(event.target.result);
+                    img.src = event.target.result;
+                };
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Confirm Order Click -> Open Payment Modal with QR, Bank Info, Slip Upload, and Action Buttons
         if (confirmOrderBtn) {
             confirmOrderBtn.onclick = () => {
-                // Validate address
+                // Validate shipping address
                 const requiredFields = [inputFullName, inputPhone, inputAddress, inputProvince, inputZipcode];
                 const isValid = requiredFields.every(field => field && field.value.trim() !== '');
                 
@@ -456,6 +782,12 @@ export function initCheckoutPage() {
                     showToast("กรุณากรอกข้อมูลจัดส่งให้ครบถ้วน", "error");
                     const emptyField = requiredFields.find(field => field && field.value.trim() === '');
                     if (emptyField) emptyField.focus();
+                    return;
+                }
+
+                if (!checkoutItems || checkoutItems.length === 0) {
+                    showToast("ไม่มีสินค้าที่เลือกสำหรับสั่งซื้อ", "error");
+                    window.location.replace('/cart.html');
                     return;
                 }
 
@@ -471,7 +803,6 @@ export function initCheckoutPage() {
                 const checkedDeliveryInput = document.querySelector('input[name="deliveryMethod"]:checked');
                 const deliveryMethod = checkedDeliveryInput ? checkedDeliveryInput.value : 'standard';
                 const companyName = checkedDeliveryInput?.dataset?.companyName || 'ขนส่งเอกชน';
-                const fakeId = Math.floor(100000 + Math.random() * 900000);
                 const pointsDiscount = (pointsUsed / 10) * 10.0;
                 const totalAmount = Math.max(0, (subtotal - pointsDiscount) + shippingFee);
 
@@ -483,12 +814,10 @@ export function initCheckoutPage() {
                     pointsEarned = Math.floor(totalAmount / peBaht) * peQty;
                 }
 
-                // Create Order Draft
+                // Create Order Draft in memory
                 pendingOrderData = {
-                    id: fakeId,
                     company_id: selectedCompanyId,
                     company_name: companyName,
-                    date: new Date().toISOString(),
                     items: checkoutItems,
                     subtotal: subtotal,
                     shipping: shippingFee,
@@ -504,37 +833,36 @@ export function initCheckoutPage() {
                         address: inputAddress.value.trim(),
                         province: inputProvince.value.trim(),
                         zipcode: inputZipcode.value.trim()
-                    },
-                    status: 'Pending Payment',
-                    slipImage: null
+                    }
                 };
 
-                // Display in QR Payment Modal for Bank Transfer / PromptPay
-                if (qrModalOrderId) qrModalOrderId.textContent = fakeId;
-                if (qrModalAmount) qrModalAmount.textContent = `฿${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                // Display amount & points in Payment Modal
+                if (qrModalAmount) {
+                    qrModalAmount.textContent = `฿${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                }
                 const qrModalPointsEarned = document.getElementById('qrModalPointsEarned');
-                if (qrModalPointsEarned) qrModalPointsEarned.textContent = `+${pointsEarned.toLocaleString()} แต้ม`;
+                if (qrModalPointsEarned) {
+                    qrModalPointsEarned.textContent = `+${pointsEarned.toLocaleString()} แต้ม`;
+                }
+
+                // Open Payment Popup/Modal
                 openQrModal();
             };
         }
 
         // Slip File Upload Preview
         if (slipFileInput) {
-            slipFileInput.onchange = (e) => {
+            slipFileInput.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        attachedSlipData = event.target.result;
-                        if (slipFileName) slipFileName.textContent = file.name;
-                        if (slipUploadPlaceholder) slipUploadPlaceholder.classList.add('hidden');
-                        if (slipPreviewContainer) slipPreviewContainer.classList.remove('hidden');
-                        updateSubmitButtonState();
-                    };
-                    reader.readAsDataURL(file);
+                    if (slipFileName) slipFileName.textContent = file.name;
+                    if (slipUploadPlaceholder) slipUploadPlaceholder.classList.add('hidden');
+                    if (slipPreviewContainer) slipPreviewContainer.classList.remove('hidden');
+
+                    // Fast client-side image compression
+                    attachedSlipData = await compressSlipImage(file);
                 } else {
                     attachedSlipData = null;
-                    updateSubmitButtonState();
                 }
             };
         }
@@ -546,18 +874,17 @@ export function initCheckoutPage() {
                 attachedSlipData = null;
                 if (slipPreviewContainer) slipPreviewContainer.classList.add('hidden');
                 if (slipUploadPlaceholder) slipUploadPlaceholder.classList.remove('hidden');
-                updateSubmitButtonState();
             };
         }
 
-        // Submit Payment Button in QR Modal
+        // กรณีที่ 1: กด "ยืนยันการชำระเงิน"
         if (submitPaymentBtn) {
-            submitPaymentBtn.onclick = () => {
+            submitPaymentBtn.onclick = async () => {
                 if (!pendingOrderData) return;
 
-                // Validate that slip image is attached
+                // ตรวจสอบว่าผู้ใช้แนบสลิปแล้วหรือไม่
                 if (!attachedSlipData) {
-                    showToast("กรุณาแนบรูปภาพสลิปการโอนเงินก่อนแจ้งชำระ", "error");
+                    showToast("กรุณาแนบหลักฐานการชำระเงิน", "error");
                     const dropzone = document.getElementById('slipUploadPlaceholder')?.parentElement;
                     if (dropzone) {
                         dropzone.classList.add('border-red-500', 'bg-red-50/50');
@@ -566,39 +893,40 @@ export function initCheckoutPage() {
                     return;
                 }
 
-                submitPaymentBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>กำลังตรวจสอบ...</span>';
+                // ป้องกันการกดปุ่มซ้ำ
+                if (submitPaymentBtn.disabled || payLaterBtn?.disabled) return;
                 submitPaymentBtn.disabled = true;
+                if (payLaterBtn) payLaterBtn.disabled = true;
+                submitPaymentBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i><span>กำลังบันทึกคำสั่งซื้อ...</span>';
 
-                setTimeout(() => {
-                    pendingOrderData.status = 'Pending Payment';
-                    pendingOrderData.slipImage = attachedSlipData;
-                    pendingOrderData.paidAt = new Date().toISOString();
-                    
-                    finalizeOrder(
-                        "แนบหลักฐานชำระเงินเรียบร้อยแล้ว!",
-                        `เราได้รับหลักฐานการโอนเงินสำหรับคำสั่งซื้อ #${pendingOrderData.id} แล้ว ทางร้านจะดำเนินการตรวจสอบยอดเงินและเริ่มแพ็คสินค้าให้โดยเร็วที่สุด`
-                    );
-                }, 1000);
+                await executeOrderCreation({
+                    withSlip: true,
+                    slipData: attachedSlipData
+                });
             };
         }
 
-        // Pay Later Button
+        // กรณีที่ 2: กด "ชำระเงินภายหลัง"
         if (payLaterBtn) {
-            payLaterBtn.onclick = () => {
+            payLaterBtn.onclick = async () => {
                 if (!pendingOrderData) return;
-                
-                pendingOrderData.status = 'Pending Payment';
-                finalizeOrder(
-                    "บันทึกคำสั่งซื้อเรียบร้อยแล้ว!",
-                    `คำสั่งซื้อ #${pendingOrderData.id} ถูกบันทึกไว้ในสถานะ <span class="font-bold text-amber-600 font-sans">'ที่ต้องชำระ'</span> คุณสามารถสแกนจ่ายเงินได้ทุกเมื่อในหน้าประวัติคำสั่งซื้อ`
-                );
+
+                // ป้องกันการกดปุ่มซ้ำ
+                if (payLaterBtn.disabled || submitPaymentBtn?.disabled) return;
+                payLaterBtn.disabled = true;
+                if (submitPaymentBtn) submitPaymentBtn.disabled = true;
+                payLaterBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i><span>กำลังบันทึกคำสั่งซื้อ...</span>';
+
+                await executeOrderCreation({
+                    withSlip: false,
+                    slipData: null
+                });
             };
         }
 
         if (closeQrModalBtn) {
             closeQrModalBtn.onclick = () => {
                 closeQrModal();
-                pendingOrderData = null;
             };
         }
 
@@ -606,7 +934,6 @@ export function initCheckoutPage() {
             paymentQrModal.onclick = (e) => {
                 if (e.target === paymentQrModal) {
                     closeQrModal();
-                    pendingOrderData = null;
                 }
             };
         }
@@ -619,7 +946,15 @@ export function initCheckoutPage() {
         if (slipFileInput) slipFileInput.value = '';
         if (slipPreviewContainer) slipPreviewContainer.classList.add('hidden');
         if (slipUploadPlaceholder) slipUploadPlaceholder.classList.remove('hidden');
-        updateSubmitButtonState();
+
+        if (submitPaymentBtn) {
+            submitPaymentBtn.disabled = false;
+            submitPaymentBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>ยืนยันการชำระเงิน</span>';
+        }
+        if (payLaterBtn) {
+            payLaterBtn.disabled = false;
+            payLaterBtn.innerHTML = '<i class="fas fa-clock text-amber-600"></i><span>ชำระเงินภายหลัง</span>';
+        }
 
         if (paymentSettings) {
             const qrImg = document.getElementById('qrCodeDisplayImg');
@@ -651,121 +986,6 @@ export function initCheckoutPage() {
             paymentQrModal.classList.add('hidden');
             paymentQrModal.style.display = 'none';
         }, 300);
-    }
-
-    async function finalizeOrder(title, message) {
-        closeQrModal();
-
-        const userStr = localStorage.getItem('user');
-        const user = userStr ? JSON.parse(userStr) : null;
-        let customerId = user?.customer_id;
-        let csrfToken = user?.csrf_token;
-
-        if (!customerId) {
-            try {
-                const res = await fetch('/api/auth/me');
-                if (res.ok) {
-                    const result = await res.json();
-                    if (result.data) {
-                        customerId = result.data.customer_id;
-                        csrfToken = result.data.csrf_token;
-                        localStorage.setItem('user', JSON.stringify(result.data));
-                    }
-                }
-            } catch (err) {
-                console.error("Error resolving session:", err);
-            }
-        }
-
-        let dbOrderId = pendingOrderData.id;
-
-        try {
-            const orderPayload = {
-                customer_id: customerId || 1,
-                company_id: pendingOrderData.company_id,
-                shipping_address: pendingOrderData.shippingAddress,
-                items: pendingOrderData.items.map(item => ({
-                    product_id: item.id,
-                    quantity: item.quantity
-                })),
-                shipping_fee: pendingOrderData.shipping,
-                discount_amount: 0,
-                points_used: pendingOrderData.points_used || 0,
-                payment_method: pendingOrderData.paymentMethod || 'transfer',
-                slip_image: pendingOrderData.slipImage,
-                csrf_token: csrfToken
-            };
-
-            const res = await fetch('/api/orders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken || ''
-                },
-                body: JSON.stringify(orderPayload)
-            });
-
-            if (res.ok) {
-                const resJson = await res.json();
-                if (resJson.data && resJson.data.order_id) {
-                    dbOrderId = resJson.data.order_id;
-                    pendingOrderData.id = dbOrderId;
-                    if (resJson.data.net_total !== undefined) {
-                        pendingOrderData.total = parseFloat(resJson.data.net_total);
-                    }
-                    if (resJson.data.shipping_fee !== undefined) {
-                        pendingOrderData.shipping = parseFloat(resJson.data.shipping_fee);
-                    }
-                }
-            } else {
-                const errRes = await res.json();
-                console.error("Order creation failed details:", errRes);
-                showToast(errRes.message || "เกิดข้อผิดพลาดในการบันทึกคำสั่งซื้อลงฐานข้อมูล", "error");
-                return;
-            }
-        } catch (err) {
-            console.error("Error creating order:", err);
-            showToast("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อบันทึกคำสั่งซื้อได้", "error");
-            return;
-        }
-
-        // Save order to per-user isolated store
-        const orders = getUserOrdersData();
-        orders.unshift(pendingOrderData);
-        saveUserOrdersData(orders);
-
-        // Remove checked items from main cart
-        const newCart = cart.filter(item => item.selected === false);
-        saveCartData(newCart);
-        updateGlobalCartCount();
-
-        // Update Success Modal Content
-        if (mockOrderId) mockOrderId.textContent = dbOrderId;
-        if (successModalTitle) successModalTitle.textContent = title;
-        if (successModalMessage) successModalMessage.innerHTML = message;
-
-        // Show Success Modal
-        if (successModal) {
-            successModal.classList.remove('hidden');
-            successModal.style.display = 'flex';
-            requestAnimationFrame(() => {
-                successModal.classList.remove('opacity-0', 'pointer-events-none');
-                successModal.querySelector('div')?.classList.remove('scale-95');
-                successModal.querySelector('div')?.classList.add('scale-100');
-            });
-        }
-
-        const viewOrderBtn = document.getElementById('viewOrderBtn');
-        if (viewOrderBtn) {
-            viewOrderBtn.onclick = () => {
-                const targetTab = pendingOrderData.status === 'Pending Payment' ? 'pending_payment' : 'preparing';
-                if (window.navigateTo) {
-                    window.navigateTo(`/orders?tab=${targetTab}`);
-                } else {
-                    window.location.href = `/orders?tab=${targetTab}`;
-                }
-            };
-        }
     }
 
     init();

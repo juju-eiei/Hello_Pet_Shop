@@ -3,6 +3,8 @@
  * Personalizes products based on Search History, Cart Additions, Purchase History & Pet Profiles.
  */
 
+import { getCartData, getUserOrdersData } from './utils.js';
+
 const STORAGE_KEY_BEHAVIOR = 'userBehaviorLogs';
 
 // Helper to get or initialize behavior logs
@@ -84,8 +86,8 @@ export function getPersonalizedProducts(allProducts) {
     if (!allProducts || allProducts.length === 0) return [];
 
     const behavior = getUserBehavior();
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    const cart = getCartData();
+    const myOrders = getUserOrdersData();
     
     // Retrieve user's pets from local storage (myPetsData or myPets)
     let myPets = [];

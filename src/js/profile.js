@@ -235,32 +235,97 @@ export function initProfilePage() {
         pointsDisplay.textContent = Number(totalPoints).toLocaleString();
     }
 
-    function updateOrderBadges() {
-        const storedOrders = localStorage.getItem('myOrders');
-        let orders = [];
-        if (storedOrders) {
-            try {
-                orders = JSON.parse(storedOrders);
-            } catch (e) {
-                console.error("Error parsing myOrders in profile", e);
+    async function updateOrderBadges() {
+        let orders = getUserOrdersData();
+        if (!orders || orders.length === 0) {
+            const storedOrders = localStorage.getItem('myOrders');
+            if (storedOrders) {
+                try {
+                    orders = JSON.parse(storedOrders);
+                } catch (e) {}
             }
         }
 
+        // Render immediately from cache
+        calculateAndSetBadges(orders);
+
+        // Fetch authoritative orders from backend API
+        try {
+            const res = await fetch('/api/orders');
+            if (res.ok) {
+                const apiRes = await res.json();
+                if (apiRes.data && Array.isArray(apiRes.data)) {
+                    const mappedApiOrders = apiRes.data.map(o => {
+                        const rawTotal = parseFloat(o.total_amount ?? o.amount ?? o.total ?? 0);
+                        const rawShipping = parseFloat(o.shipping_fee || 0);
+                        const rawSubtotal = parseFloat(o.subtotal ?? (rawTotal - rawShipping));
+                        
+                        return {
+                            id: o.order_id || o.id,
+                            date: o.date || o.order_date || o.created_at || new Date().toISOString(),
+                            status: mapStatusToUi(o.status),
+                            subtotal: isNaN(rawSubtotal) ? 0 : rawSubtotal,
+                            shipping: isNaN(rawShipping) ? 0 : rawShipping,
+                            total: isNaN(rawTotal) ? 0 : rawTotal,
+                            deliveryMethod: o.company_name || 'Standard Express',
+                            paymentMethod: o.payment_method || 'transfer',
+                            slipImage: null,
+                            slip_image: o.slip_image || null,
+                            has_slip: Boolean(o.has_slip || o.slip_image)
+                        };
+                    });
+
+                    orders = mappedApiOrders;
+                    saveUserOrdersData(orders);
+                    calculateAndSetBadges(orders);
+                }
+            }
+        } catch (e) {
+            console.warn("Profile order badges sync note:", e);
+        }
+    }
+
+    function isStatusPending(status) {
+        const s = String(status || '').toLowerCase().trim();
+        return s === '1' || s.includes('pending') || s.includes('unpaid') || s.includes('ที่ต้องชำระ') || s.includes('รอดำเนินการ');
+    }
+
+    function isStatusPreparing(status) {
+        const s = String(status || '').toLowerCase().trim();
+        return s === '2' || s.includes('preparing') || s.includes('processing') || s.includes('paid') || s.includes('กำลังแพ็คสินค้า') || s.includes('ที่ต้องจัดส่ง') || s.includes('จัดเตรียม') || s.includes('กำลังดำเนินการ') || s.includes('แพ็คสินค้า') || s.includes('กำลังเตรียมสินค้า');
+    }
+
+    function isStatusShipping(status) {
+        const s = String(status || '').toLowerCase().trim();
+        return s === '3' || s.includes('shipping') || s.includes('shipped') || s.includes('in transit') || s.includes('transit') || s.includes('กำลังจัดส่ง') || s.includes('ส่งแล้ว') || s.includes('ที่ต้องได้รับ') || s.includes('มอบให้ขนส่งแล้ว');
+    }
+
+    function isStatusCompleted(status) {
+        const s = String(status || '').toLowerCase().trim();
+        return s === '4' || s.includes('completed') || s.includes('success') || s.includes('สำเร็จ') || s.includes('จัดส่งสำเร็จ') || s.includes('ลูกค้าได้รับสินค้า');
+    }
+
+    function mapStatusToUi(status) {
+        if (status === null || status === undefined) return 'Pending Payment';
+        if (isStatusPending(status)) return 'Pending Payment';
+        if (isStatusPreparing(status)) return 'Preparing';
+        if (isStatusShipping(status)) return 'Shipping';
+        if (isStatusCompleted(status)) return 'Completed';
+        return 'Pending Payment';
+    }
+
+    function calculateAndSetBadges(orderList) {
         let pendingCount = 0;
         let preparingCount = 0;
         let shippingCount = 0;
-        let completedCount = 0;
 
-        orders.forEach(o => {
-            const st = String(o.status || '').trim();
-            if (st === 'Pending Payment' || st === 'ที่ต้องชำระ' || st === 'Pending' || st === 'รอดำเนินการ') {
+        (orderList || []).forEach(o => {
+            if (isStatusPending(o.status)) {
                 pendingCount++;
-            } else if (st === 'Preparing' || st === 'กำลังเตรียมสินค้า' || st === 'ที่ต้องจัดส่ง' || st === 'Processing' || st === 'กำลังแพ็คสินค้า') {
+            } else if (isStatusPreparing(o.status)) {
                 preparingCount++;
-            } else if (st === 'Shipping' || st === 'กำลังจัดส่ง' || st === 'ที่ต้องได้รับ' || st === 'In Transit') {
+            } else if (isStatusShipping(o.status)) {
                 shippingCount++;
-            } else if (st === 'Completed' || st === 'สำเร็จ' || st === 'สำเร็จแล้ว' || st === 'จัดส่งสำเร็จ') {
-                completedCount++;
             }
         });
 

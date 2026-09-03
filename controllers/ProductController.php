@@ -288,6 +288,7 @@ class ProductController {
         $data['barcode'] = $data['barcode'] ?? null;
         $data['description'] = $data['description'] ?? null;
         $data['cost_price'] = $data['cost_price'] ?? 0;
+        $data['expiry_date'] = !empty($data['expiry_date']) ? trim($data['expiry_date']) : null;
 
         try {
             if($this->product->update($id, $data)) {
@@ -471,18 +472,27 @@ class ProductController {
         $data['description'] = $data['description'] ?? null;
         $data['cost_price'] = $data['cost_price'] ?? 0;
         $data['stock_quantity'] = $data['stock_quantity'] ?? 0;
+        $data['expiry_date'] = !empty($data['expiry_date']) ? trim($data['expiry_date']) : null;
         $data['created_by'] = $this->getEmployeeId();
 
         try {
             $id = $this->product->create($data);
             if($id) {
                 $employee_id = $this->getEmployeeId();
+                $initial_qty = (int)($data['stock_quantity'] ?? 0);
+                $cost_price = (float)($data['cost_price'] ?? 0);
+
                 if ($employee_id) {
-                    $initial_qty = (int)($data['stock_quantity'] ?? 0);
-                    $cost_price = (float)($data['cost_price'] ?? 0);
                     $stmtLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, employee_id, quantity, movement_type, unit_cost) VALUES (?, ?, ?, 4, ?)");
                     $stmtLog->execute([$id, $employee_id, $initial_qty, $cost_price]);
                 }
+
+                // If initial stock and expiry date are provided, insert into product_lots
+                if ($initial_qty > 0 && !empty($data['expiry_date'])) {
+                    $stmtLot = $this->db->prepare("INSERT INTO product_lots (product_id, lot_number, quantity, expiry_date, cost_price) VALUES (?, ?, ?, ?, ?)");
+                    $stmtLot->execute([$id, 'LOT-INIT-' . date('Ymd'), $initial_qty, $data['expiry_date'], $cost_price]);
+                }
+
                 Response::json(201, "Product created successfully", ["product_id" => $id]);
             } else {
                 Response::json(500, "Failed to create product");

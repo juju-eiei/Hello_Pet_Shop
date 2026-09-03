@@ -216,19 +216,25 @@
                 </h2>
 
                 <!-- Category Filter -->
-                <div class="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
+                <div class="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none" id="categoryFilterContainer">
                     <button
                         class="category-btn active px-4 py-2 bg-secondary-200 text-gray-800 text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all shrink-0"
                         data-category="all">ทั้งหมด</button>
                     <button
                         class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
-                        data-category="Dog">สุนัข</button>
+                        data-category="dog">สุนัข</button>
                     <button
                         class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
-                        data-category="Cat">แมว</button>
+                        data-category="cat">แมว</button>
                     <button
                         class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
-                        data-category="Bird">นก</button>
+                        data-category="bird">นก</button>
+                    <button
+                        class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
+                        data-category="hamster">แฮมสเตอร์</button>
+                    <button
+                        class="category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0"
+                        data-category="rabbit">กระต่าย</button>
                 </div>
             </div>
 
@@ -240,6 +246,9 @@
                     <div class="h-4 bg-gray-200 rounded w-1/4 mx-auto"></div>
                 </div>
             </div>
+
+            <!-- Pagination Container -->
+            <div id="productPagination" class="flex justify-center items-center gap-2 mt-10 mb-2"></div>
         </section>
 
     <!-- Features Section (Hidden on mobile to eliminate white space, visible on desktop) -->

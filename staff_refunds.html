@@ -238,31 +238,7 @@
                         console.warn("API refund fetch error:", e);
                     }
 
-                    const refundMap = new Map();
-                    apiData.forEach(item => {
-                        refundMap.set(String(item.order_id), item);
-                    });
-
-                    // Merge local customer orders if cancelled
-                    const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-                    myOrders.forEach(mo => {
-                        const isCancelled = (mo.status === 'Cancelled' || mo.status === 'ยกเลิกแล้ว');
-                        if (isCancelled && !refundMap.has(String(mo.id))) {
-                            refundMap.set(String(mo.id), {
-                                order_id: mo.id,
-                                number: mo.number || (`ORD-2026-` + String(mo.id).padStart(3, '0')),
-                                customer_name: mo.customer?.name || mo.shippingAddress?.fullName || 'ลูกค้าออนไลน์',
-                                phone: mo.customer?.phone || mo.shippingAddress?.phone || '-',
-                                order_date: mo.date || new Date().toISOString(),
-                                amount: parseFloat(mo.total || mo.amount || 0),
-                                slip_image: mo.slipImage || mo.slip_image || null,
-                                refund_status: mo.refund_status || 0,
-                                refund_date: mo.refund_date || null
-                            });
-                        }
-                    });
-
-                    refundsData = Array.from(refundMap.values());
+                    refundsData = apiData;
                     updateStats();
                     renderTable();
                 } catch (err) {
@@ -439,13 +415,7 @@
                         target.refund_status = newStatus;
                         target.refund_date = newStatus === 1 ? new Date().toISOString() : null;
                     }
-                    const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-                    const moIdx = myOrders.findIndex(o => String(o.id) === String(orderId));
-                    if (moIdx !== -1) {
-                        myOrders[moIdx].refund_status = newStatus;
-                        myOrders[moIdx].refund_date = newStatus === 1 ? new Date().toISOString() : null;
-                        localStorage.setItem('myOrders', JSON.stringify(myOrders));
-                    }
+
 
                     Swal.fire({
                         icon: 'success',

@@ -90,6 +90,7 @@ class Product {
                   weight_value = :weight_value,
                   weight_unit = :weight_unit,
                   image_url = :image_url,
+                  expiry_date = :expiry_date,
                   is_active = :status
                   WHERE product_id = :id";
         
@@ -97,6 +98,7 @@ class Product {
         
         $status = ($data['status'] === 'active' || $data['status'] == 1) ? 1 : 0;
         $target_pet_type_id = isset($data['target_pet_type_id']) && $data['target_pet_type_id'] !== '' ? (int)$data['target_pet_type_id'] : 1;
+        $expiry_date = !empty($data['expiry_date']) ? $data['expiry_date'] : null;
 
         $stmt->bindParam(':category_id', $data['category_id']);
         $stmt->bindParam(':target_pet_type_id', $target_pet_type_id);
@@ -110,6 +112,7 @@ class Product {
         $stmt->bindParam(':weight_value', $data['weight_value']);
         $stmt->bindParam(':weight_unit', $data['weight_unit']);
         $stmt->bindParam(':image_url', $data['image_url']);
+        $stmt->bindParam(':expiry_date', $expiry_date);
         $stmt->bindParam(':status', $status);
         $stmt->bindParam(':id', $id);
         
@@ -180,13 +183,14 @@ class Product {
 
     public function create($data) {
         $query = "INSERT INTO " . $this->table . " 
-                 (category_id, target_pet_type_id, product_name, description, cost_price, selling_price, stock_qty, barcode, weight, weight_value, weight_unit, image_url, is_active, created_by) 
-                 VALUES (:category_id, :target_pet_type_id, :name, :description, :cost_price, :price, :stock_quantity, :barcode, :weight, :weight_value, :weight_unit, :image_url, :status, :created_by)";
+                 (category_id, target_pet_type_id, product_name, description, cost_price, selling_price, stock_qty, barcode, weight, weight_value, weight_unit, image_url, expiry_date, is_active, created_by) 
+                 VALUES (:category_id, :target_pet_type_id, :name, :description, :cost_price, :price, :stock_quantity, :barcode, :weight, :weight_value, :weight_unit, :image_url, :expiry_date, :status, :created_by)";
         
         $stmt = $this->conn->prepare($query);
         
         $status = ($data['status'] === 'active' || $data['status'] == 1) ? 1 : 0;
         $target_pet_type_id = isset($data['target_pet_type_id']) && $data['target_pet_type_id'] !== '' ? (int)$data['target_pet_type_id'] : 1;
+        $expiry_date = !empty($data['expiry_date']) ? $data['expiry_date'] : null;
 
         $stmt->bindParam(':category_id', $data['category_id']);
         $stmt->bindParam(':target_pet_type_id', $target_pet_type_id);
@@ -200,6 +204,7 @@ class Product {
         $stmt->bindParam(':weight_value', $data['weight_value']);
         $stmt->bindParam(':weight_unit', $data['weight_unit']);
         $stmt->bindParam(':image_url', $data['image_url']);
+        $stmt->bindParam(':expiry_date', $expiry_date);
         $stmt->bindParam(':status', $status);
         $stmt->bindParam(':created_by', $data['created_by']);
         

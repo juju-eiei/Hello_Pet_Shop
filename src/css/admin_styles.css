@@ -361,9 +361,10 @@ body.preload .menu-arrow,
 }
 
 .save-btn:hover {
-    background: #433d30;
+    background: #ec4899 !important;
+    color: white !important;
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(194, 86, 37, 0.3);
+    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.35);
 }
 
 .back-btn {

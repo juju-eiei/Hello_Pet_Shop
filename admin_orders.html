@@ -411,7 +411,17 @@
                 try {
                     let apiOrders = [];
                     try {
-                        const res = await fetch('/api/orders');
+                        const user = JSON.parse(localStorage.getItem('user') || '{}');
+                        const token = localStorage.getItem('token') || (user && user.token);
+                        const headers = { 'Accept': 'application/json' };
+                        if (user && user.user_id) headers['X-User-Id'] = user.user_id;
+                        if (user && user.role_name) headers['X-User-Role'] = user.role_name;
+                        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                        const res = await fetch('/api/orders', {
+                            credentials: 'include',
+                            headers: headers
+                        });
                         if (res.ok) {
                             const json = await res.json();
                             apiOrders = json.data || [];
@@ -420,40 +430,14 @@
                         console.warn("API order fetch warning:", e);
                     }
 
-                    // Load customer frontend orders from localStorage
-                    const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-                    const localMapped = myOrders.map(o => {
-                        let pDate = o.date;
-                        if (typeof pDate === 'string' && pDate.includes(' ') && !pDate.includes('T')) {
-                            pDate = pDate.replace(' ', 'T');
-                        }
-                        const dateObj = pDate ? new Date(pDate) : new Date();
-                        return {
-                            id: o.id,
-                            date: formatOrderDate(pDate || dateObj),
-                            timestamp: dateObj.getTime(),
-                            rawDate: dateObj,
-                            number: o.number || `ORD-2026-${String(o.id).padStart(3, '0')}`,
-                            status: mapCustomerStatusToAdmin(o.status),
-                            order_type: o.order_type || 1,
-                            order_type_label: o.order_type_label || 'ออนไลน์',
-                            amount: parseFloat(o.total || o.amount || 0),
-                            items: o.items || [],
-                            slip_image: o.slipImage || o.slip_image || null,
-                            has_slip: !!(o.slipImage || o.slip_image),
-                            customer: o.customer || { name: o.shippingAddress?.fullName || 'ลูกค้าออนไลน์', email: 'customer@example.com', phone: o.shippingAddress?.phone || '-', address: o.shippingAddress ? `${o.shippingAddress.address} ${o.shippingAddress.province}` : '-' }
-                        };
-                    });
-
-                    const orderMap = new Map();
-                    // 1. Primary source of truth: API Orders from Database
-                    apiOrders.forEach(ao => {
+                    // Primary source of truth: API Orders from Database
+                    allOrders = apiOrders.map(ao => {
                         let pDate = ao.date;
                         if (typeof pDate === 'string' && pDate.includes(' ') && !pDate.includes('T')) {
                             pDate = pDate.replace(' ', 'T');
                         }
                         const dateObj = pDate ? new Date(pDate) : new Date();
-                        orderMap.set(String(ao.id), {
+                        return {
                             id: ao.id,
                             date: formatOrderDate(pDate || dateObj),
                             timestamp: dateObj.getTime(),
@@ -465,20 +449,20 @@
                             amount: parseFloat(ao.amount || 0),
                             slip_image: ao.slip_image || null,
                             has_slip: !!ao.has_slip,
+                            payment_status: ao.payment_status !== undefined && ao.payment_status !== null ? Number(ao.payment_status) : null,
                             payment_method: ao.payment_method || null,
+                            company_name: ao.company_name || 'ขนส่งเอกชน',
+                            shipping_provider: ao.shipping_provider || ao.company_name || 'ขนส่งเอกชน',
+                            tracking_number: ao.tracking_number || null,
                             items: ao.items || [],
-                            customer: ao.customer || { name: ao.customer_name || 'ลูกค้าออนไลน์', email: '-', phone: '-', address: '-' }
-                        });
+                            customer: ao.customer || { 
+                                name: ao.customer_name || 'ลูกค้าออนไลน์', 
+                                email: ao.customer?.email || '-', 
+                                phone: ao.customer_phone || ao.shippingAddress?.phone || '-', 
+                                address: (ao.shippingAddress ? `${ao.shippingAddress.address} ${ao.shippingAddress.province}` : '-')
+                            }
+                        };
                     });
-
-                    // 2. Fallback: local orders if not in API yet
-                    localMapped.forEach(lo => {
-                        if (!orderMap.has(String(lo.id))) {
-                            orderMap.set(String(lo.id), lo);
-                        }
-                    });
-
-                    allOrders = Array.from(orderMap.values());
                     allOrders.sort((a, b) => b.timestamp - a.timestamp);
                     currentPage = 1;
                     updateBadges();
@@ -515,7 +499,7 @@
                 if (s === 'Pending' || s === 'รอดำเนินการ' || s === 'Pending Payment' || s === 'ที่ต้องชำระ') return 'pending';
                 if (s === 'Processing' || s === 'กำลังแพ็คสินค้า' || s === 'กำลังดำเนินการ' || s === 'Preparing' || s === 'ที่ต้องจัดส่ง') return 'processing';
                 if (s === 'In Transit' || s === 'กำลังจัดส่ง' || s === 'กำลังนำส่ง' || s === 'Shipping' || s === 'ที่ต้องได้รับ' || s === 'มอบให้ขนส่งแล้ว') return 'intransit';
-                if (s === 'Completed' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'completed';
+                if (s === 'Completed' || s === 'จัดส่งสำเร็จ' || s === 'สำเร็จแล้ว' || s === 'สำเร็จ' || s === 'ลูกค้าได้รับสินค้า') return 'completed';
                 if (s === 'Cancelled' || s === 'ยกเลิกแล้ว' || s === 'ยกเลิก') return 'cancelled';
                 return s.toLowerCase().replace(/\s+/g, '');
             }
@@ -810,23 +794,18 @@
                     }
 
                     if (res.ok) {
-                        const newStatus = action === 'approve' ? 'Processing' : 'Cancelled';
-                        order.status = newStatus;
-
-                        // Also update localStorage 'myOrders' if present
-                        try {
-                            const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-                            const idx = myOrders.findIndex(o => String(o.id) === String(order.id));
-                            if (idx !== -1) {
-                                myOrders[idx].status = (action === 'approve' ? 'Preparing' : 'Cancelled');
-                                localStorage.setItem('myOrders', JSON.stringify(myOrders));
-                            }
-                        } catch (eLoc) {}
+                        if (action === 'approve') {
+                            order.status = 'Processing';
+                            order.payment_status = 1;
+                        } else {
+                            order.status = 'Pending';
+                            order.payment_status = 2;
+                        }
 
                         Swal.fire({
                             icon: 'success',
-                            title: action === 'approve' ? 'อนุมัติสลิปสำเร็จ!' : 'ยกเลิกคำสั่งซื้อสำเร็จ',
-                            text: action === 'approve' ? 'เปลี่ยนสถานะเป็น "กำลังแพ็คสินค้า" เรียบร้อยแล้ว' : 'ยกเลิกคำสั่งซื้อเนื่องจากสลิปไม่ถูกต้องเรียบร้อยแล้ว',
+                            title: action === 'approve' ? 'อนุมัติสลิปสำเร็จ!' : 'ปฏิเสธสลิปเรียบร้อย',
+                            text: action === 'approve' ? 'เปลี่ยนสถานะเป็น "กำลังแพ็คสินค้า" เรียบร้อยแล้ว' : 'แจ้งสถานะสลิปไม่ถูกต้องเรียบร้อยแล้ว (รอลูกค้าแนบสลิปใหม่)',
                             timer: 2000,
                             showConfirmButton: false,
                             borderRadius: '16px'

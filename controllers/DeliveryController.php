@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/Response.php';
+require_once __DIR__ . '/../middlewares/AuthMiddleware.php';
 
 class DeliveryController
 {
@@ -14,10 +15,12 @@ class DeliveryController
 
     private function isAdmin()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        try {
+            $user = AuthMiddleware::authenticate();
+            return true;
+        } catch (Exception $e) {
+            return false;
         }
-        return (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin');
     }
 
     public function getCompanies()

@@ -15,6 +15,13 @@ export function initProductsPage() {
     let allProducts = [];
     let currentCategory = 'all';
     let currentModalProduct = null;
+    let currentPage = 1;
+
+    function getItemsPerPage() {
+        if (window.innerWidth >= 1024) return 15; // 5 columns * 3 rows
+        if (window.innerWidth >= 768) return 9;   // 3 columns * 3 rows
+        return 6;                                 // 2 columns * 3 rows
+    }
 
     // 1. Fetch Products
     async function fetchProducts() {
@@ -233,7 +240,34 @@ export function initProductsPage() {
         }
     }
 
-    // 3. Render All Products (Filtered by Category & Search)
+    function matchesPetOrCategory(p, filterVal) {
+        if (!filterVal || filterVal.toLowerCase() === 'all') return true;
+        const val = filterVal.toLowerCase().trim();
+
+        const petCode = (p.target_pet_type_code || '').toLowerCase().trim();
+        const petName = (p.target_pet_type_name || '').toLowerCase().trim();
+        const catName = (p.category_name || '').toLowerCase().trim();
+
+        const petMap = {
+            'dog': ['dog', 'สุนัข', 'หมา'],
+            'cat': ['cat', 'แมว'],
+            'bird': ['bird', 'นก'],
+            'hamster': ['hamster', 'แฮมสเตอร์', 'หนู'],
+            'rabbit': ['rabbit', 'กระต่าย'],
+            'squirrel': ['squirrel', 'กระรอก']
+        };
+
+        const targetKeywords = petMap[val] || [val];
+
+        for (const kw of targetKeywords) {
+            if (petCode === kw || petName.includes(kw) || catName.includes(kw)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // 3. Render All Products (Filtered by Category & Search + 3 Rows Pagination)
     function renderProducts() {
         const rawValue = productSearch ? productSearch.value : '';
         const query = rawValue.trim().toLowerCase();
@@ -245,11 +279,15 @@ export function initProductsPage() {
         }
 
         const displayList = allProducts.filter(p => {
-            const matchesSearch = !query || (p.product_name || '').toLowerCase().includes(query);
-            const matchesCategory = currentCategory === 'all' || 
-                                   (p.category_name && p.category_name.toLowerCase().includes(currentCategory.toLowerCase()));
+            const matchesSearch = !query || 
+                (p.product_name || '').toLowerCase().includes(query) ||
+                (p.category_name || '').toLowerCase().includes(query) ||
+                (p.target_pet_type_name || '').toLowerCase().includes(query);
+            const matchesCategory = matchesPetOrCategory(p, currentCategory);
             return matchesSearch && matchesCategory;
         });
+
+        const paginationContainer = document.getElementById('productPagination');
 
         if (displayList.length === 0) {
             productGrid.innerHTML = `
@@ -258,10 +296,19 @@ export function initProductsPage() {
                     ไม่พบสินค้าที่ตรงกับการค้นหา
                 </div>
             `;
+            if (paginationContainer) paginationContainer.innerHTML = '';
             return;
         }
 
-        productGrid.innerHTML = displayList.map(p => {
+        const itemsPerPage = getItemsPerPage();
+        const totalPages = Math.ceil(displayList.length / itemsPerPage);
+        if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+        if (currentPage < 1) currentPage = 1;
+
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const paginatedList = displayList.slice(startIndex, startIndex + itemsPerPage);
+
+        productGrid.innerHTML = paginatedList.map(p => {
             const stockQty = p.stock_qty !== null && p.stock_qty !== undefined ? parseInt(p.stock_qty) : null;
             const isOutOfStock = stockQty !== null && stockQty <= 0;
 
@@ -307,7 +354,80 @@ export function initProductsPage() {
         }).join('');
 
         attachCardEvents(productGrid);
+        renderPagination(displayList.length);
     }
+
+    function renderPagination(totalItems) {
+        const paginationContainer = document.getElementById('productPagination');
+        if (!paginationContainer) return;
+
+        const itemsPerPage = getItemsPerPage();
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+        if (totalPages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+
+        // Prev Button
+        if (currentPage > 1) {
+            html += `<button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm transition-all duration-200 shadow-sm bg-white text-gray-700 border border-gray-200 hover:bg-secondary-50 hover:border-secondary-300 hover:text-secondary-700 active:scale-95 cursor-pointer" onclick="window.changeProductsPage(${currentPage - 1})" aria-label="Previous page"><i class="fas fa-chevron-left text-xs"></i></button>`;
+        } else {
+            html += `<button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm border border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed" disabled><i class="fas fa-chevron-left text-xs"></i></button>`;
+        }
+
+        // Page Numbers
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = startPage + maxVisiblePages - 1;
+
+        if (endPage > totalPages) {
+            endPage = totalPages;
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        if (startPage > 1) {
+            html += `<button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200 shadow-sm bg-white text-gray-700 border border-gray-200 hover:bg-secondary-50 hover:border-secondary-300 hover:text-secondary-700 active:scale-95 cursor-pointer" onclick="window.changeProductsPage(1)">1</button>`;
+            if (startPage > 2) {
+                html += `<span class="w-6 text-center text-gray-400 font-bold">...</span>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === currentPage) {
+                html += `<button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold bg-secondary-600 text-white shadow-md scale-105 pointer-events-none">${i}</button>`;
+            } else {
+                html += `<button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200 shadow-sm bg-white text-gray-700 border border-gray-200 hover:bg-secondary-50 hover:border-secondary-300 hover:text-secondary-700 active:scale-95 cursor-pointer" onclick="window.changeProductsPage(${i})">${i}</button>`;
+            }
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                html += `<span class="w-6 text-center text-gray-400 font-bold">...</span>`;
+            }
+            html += `<button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-all duration-200 shadow-sm bg-white text-gray-700 border border-gray-200 hover:bg-secondary-50 hover:border-secondary-300 hover:text-secondary-700 active:scale-95 cursor-pointer" onclick="window.changeProductsPage(${totalPages})">${totalPages}</button>`;
+        }
+
+        // Next Button
+        if (currentPage < totalPages) {
+            html += `<button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm transition-all duration-200 shadow-sm bg-white text-gray-700 border border-gray-200 hover:bg-secondary-50 hover:border-secondary-300 hover:text-secondary-700 active:scale-95 cursor-pointer" onclick="window.changeProductsPage(${currentPage + 1})" aria-label="Next page"><i class="fas fa-chevron-right text-xs"></i></button>`;
+        } else {
+            html += `<button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm border border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed" disabled><i class="fas fa-chevron-right text-xs"></i></button>`;
+        }
+
+        paginationContainer.innerHTML = html;
+    }
+
+    window.changeProductsPage = function(page) {
+        currentPage = page;
+        renderProducts();
+        const section = document.getElementById('allProductsSection');
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
 
     // 3. Add to Cart with Behavior Tracking
     function addToCart(product, quantityToAdd = 1) {
@@ -713,6 +833,7 @@ export function initProductsPage() {
     let searchDebounce = null;
     if (productSearch) {
         productSearch.addEventListener('input', (e) => {
+            currentPage = 1;
             renderProducts();
             
             clearTimeout(searchDebounce);
@@ -725,29 +846,92 @@ export function initProductsPage() {
         });
 
         productSearch.addEventListener('change', () => {
+            currentPage = 1;
             renderProducts();
         });
 
         productSearch.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
+                currentPage = 1;
                 renderProducts();
             }
         });
     }
 
-    // 6. Category Button Tabs Handler
-    categoryBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            categoryBtns.forEach(b => {
-                b.className = 'category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0';
-            });
+    // 6. Dynamic Pet Type / Category Filter Tabs Loader
+    async function loadPetTypeFilterTabs() {
+        const filterContainer = document.getElementById('categoryFilterContainer');
+        if (!filterContainer) return;
 
-            currentCategory = btn.dataset.category || 'all';
-            btn.className = 'category-btn active px-4 py-2 bg-secondary-200 text-gray-800 text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all shrink-0';
+        try {
+            const res = await fetch('/api/pet-types');
+            if (res.ok) {
+                const result = await res.json();
+                let petTypes = result.data || [];
+                
+                // Exclude 'all' / 'สัตว์ทุกประเภท' since "ทั้งหมด" is the base default button
+                petTypes = petTypes.filter(pt => {
+                    const code = (pt.code || '').toLowerCase().trim();
+                    const name = (pt.name || '').toLowerCase().trim();
+                    return code !== 'all' && !name.includes('สัตว์ทุกประเภท');
+                });
 
-            renderProducts();
+                if (petTypes.length > 0) {
+                    let html = `
+                        <button
+                            class="category-btn ${currentCategory === 'all' ? 'active bg-secondary-200 font-bold' : 'search-blue font-medium hover:bg-secondary-100'} px-4 py-2 text-gray-800 text-xs sm:text-sm rounded-xl shadow-sm transition-all shrink-0"
+                            data-category="all">ทั้งหมด</button>
+                    `;
+
+                    petTypes.forEach(pt => {
+                        const catKey = (pt.code || pt.name || '').toLowerCase().trim();
+                        const isActive = currentCategory.toLowerCase() === catKey;
+                        html += `
+                            <button
+                                class="category-btn ${isActive ? 'active bg-secondary-200 font-bold' : 'search-blue font-medium hover:bg-secondary-100'} px-4 py-2 text-gray-800 text-xs sm:text-sm rounded-xl shadow-sm transition-all shrink-0"
+                                data-category="${escapeHTML(catKey)}"
+                                data-pet-id="${escapeHTML(String(pt.id || ''))}"
+                                data-pet-name="${escapeHTML(pt.name || '')}">
+                                ${escapeHTML(pt.name || '')}
+                            </button>
+                        `;
+                    });
+
+                    filterContainer.innerHTML = html;
+                }
+            }
+        } catch (e) {
+            console.error("Error fetching pet types for filter:", e);
+        }
+
+        bindCategoryTabEvents();
+    }
+
+    function bindCategoryTabEvents() {
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.category-btn').forEach(b => {
+                    b.className = 'category-btn px-4 py-2 search-blue text-gray-800 text-xs sm:text-sm font-medium rounded-xl hover:bg-secondary-100 transition-all shrink-0';
+                });
+
+                currentCategory = btn.dataset.category || 'all';
+                btn.className = 'category-btn active px-4 py-2 bg-secondary-200 text-gray-800 text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all shrink-0';
+
+                currentPage = 1;
+                renderProducts();
+            };
         });
+    }
+
+    // 7. Responsive Breakpoint Resize Listener
+    let lastItemsPerPage = getItemsPerPage();
+    window.addEventListener('resize', () => {
+        const currentIPP = getItemsPerPage();
+        if (currentIPP !== lastItemsPerPage) {
+            lastItemsPerPage = currentIPP;
+            renderProducts();
+        }
     });
 
     function setupNavbarForGuestOrUser() {
@@ -807,6 +991,7 @@ export function initProductsPage() {
     // Initialize
     setupNavbarForGuestOrUser();
     setupProductModalEvents();
+    loadPetTypeFilterTabs();
     fetchProducts();
     initPromoCarousel();
 }

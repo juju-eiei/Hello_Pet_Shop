@@ -190,6 +190,16 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Modal Action Footer -->
+            <div id="modalActionFooter" class="px-6 py-3.5 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <button type="button" id="modalCloseActionBtn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors">
+                    ปิด
+                </button>
+                <div id="modalDynamicActions" class="inline-flex items-center gap-2">
+                    <!-- Dynamic buttons injected via JS (e.g. Confirm Received, Pay Now, Cancel) -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -249,7 +259,7 @@
             </div>
 
             <div class="mt-6">
-                <button id="confirmPayNowBtn" disabled class="w-full bg-gray-300 text-gray-500 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2 cursor-not-allowed opacity-60">
+                <button id="confirmPayNowBtn" class="w-full bg-[#1b4332] hover:bg-[#15803d] text-white py-3.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]">
                     <i class="fas fa-check-circle"></i>
                     <span>ยืนยันการชำระเงิน</span>
                 </button>

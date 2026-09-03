@@ -17,7 +17,16 @@
         }
     </script>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 8mm;
+        }
         @media print {
+            html, body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
             body * {
                 visibility: hidden;
             }
@@ -31,8 +40,10 @@
                 width: 100%;
                 display: block !important;
                 background: white;
+                margin: 0;
+                padding: 0;
             }
-            /* Existing single label styling */
+            /* Single label print styling */
             .barcode-label {
                 width: 50mm;
                 height: 30mm;
@@ -71,24 +82,38 @@
             }
 
             /* Multiple label A4 Grid styling */
-            .barcode-print-grid {
+            .barcode-print-page {
+                width: 194mm;
+                min-height: 281mm;
+                max-height: 281mm;
                 display: grid;
-                gap: 4mm;
-                width: 100%;
                 box-sizing: border-box;
+                page-break-after: always;
+                break-after: page;
+                margin-bottom: 0;
             }
-            .barcode-print-grid.cols-4 {
+            .barcode-print-page:last-child {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+            .barcode-print-page.cols-4 {
                 grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: repeat(10, 25.5mm);
+                gap: 2.8mm;
             }
-            .barcode-print-grid.cols-3 {
+            .barcode-print-page.cols-3 {
                 grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(8, 32.5mm);
+                gap: 3.5mm;
             }
-            .barcode-print-grid.cols-2 {
+            .barcode-print-page.cols-2 {
                 grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(6, 44mm);
+                gap: 3.8mm;
             }
             .barcode-print-card {
                 border: 1px dashed #bbb;
-                padding: 2.5mm;
+                padding: 2mm;
                 text-align: center;
                 display: flex;
                 flex-direction: column;
@@ -96,22 +121,23 @@
                 justify-content: space-between;
                 box-sizing: border-box;
                 page-break-inside: avoid;
-                height: 32mm; /* Fits nicely in A4 rows */
+                background: white;
+                height: 100%;
             }
             .barcode-print-shop {
                 font-family: 'Outfit', 'Kanit', sans-serif;
                 font-size: 7px;
                 font-weight: bold;
                 color: #000;
-                margin-bottom: 1px;
+                line-height: 1;
             }
             .barcode-print-name {
                 font-family: 'Outfit', 'Kanit', sans-serif;
                 font-size: 8px;
                 font-weight: 500;
                 color: #000;
-                max-height: 8mm;
-                line-height: 1.2;
+                max-height: 7.5mm;
+                line-height: 1.15;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 display: -webkit-box;
@@ -120,14 +146,14 @@
             }
             .barcode-print-card svg {
                 width: 100%;
-                height: 11mm !important;
+                max-height: 12mm !important;
             }
             .barcode-print-price {
                 font-family: 'Outfit', 'Kanit', sans-serif;
-                font-size: 9px;
+                font-size: 8.5px;
                 font-weight: bold;
                 color: #000;
-                margin-top: 1px;
+                line-height: 1;
             }
         }
 
@@ -212,44 +238,103 @@
             color: #b91c1c;
         }
 
-        /* Live A4 Preview Grid Container */
-        .a4-preview-grid {
+        /* Live A4 Preview Viewport & Scaler */
+        .a4-preview-viewport {
+            flex: 1;
+            background: #475569;
+            border-radius: 14px;
+            border: 1px solid #cbd5e1;
+            padding: 24px 16px;
+            overflow-y: auto;
+            overflow-x: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.15);
+            min-height: 0;
+            position: relative;
+        }
+        .a4-sheet-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: auto;
+        }
+        .a4-sheet-header-badge {
+            font-size: 12px;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 10px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            padding: 4px 14px;
+            border-radius: 20px;
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .a4-scaler {
+            position: relative;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        .a4-page {
+            width: 210mm;
+            height: 297mm;
+            min-height: 297mm;
+            max-height: 297mm;
+            padding: 8mm;
+            box-sizing: border-box;
+            background: white;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
             display: grid;
-            gap: 4mm;
-            width: 100%;
         }
-        .a4-preview-grid.cols-4 {
+        .a4-page.cols-4 {
             grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(10, 25.5mm);
+            gap: 2.8mm;
         }
-        .a4-preview-grid.cols-3 {
+        .a4-page.cols-3 {
             grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(8, 32.5mm);
+            gap: 3.5mm;
         }
-        .a4-preview-grid.cols-2 {
+        .a4-page.cols-2 {
             grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(6, 44mm);
+            gap: 3.8mm;
         }
         .preview-barcode-card {
             border: 1px dashed #cbd5e1;
-            padding: 6px;
+            padding: 2mm;
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
             background: white;
-            height: 105px;
             box-sizing: border-box;
+            height: 100%;
         }
         .preview-barcode-shop {
-            font-size: 8px;
+            font-size: 7.5px;
             font-weight: bold;
             color: #64748b;
+            line-height: 1;
         }
         .preview-barcode-name {
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: 500;
             color: #334155;
-            max-height: 24px;
-            line-height: 1.2;
+            max-height: 7.5mm;
+            line-height: 1.15;
             overflow: hidden;
             text-overflow: ellipsis;
             display: -webkit-box;
@@ -258,12 +343,45 @@
         }
         .preview-barcode-card svg {
             width: 100%;
-            height: 38px !important;
+            max-height: 12mm !important;
         }
         .preview-barcode-price {
             font-size: 9px;
             font-weight: bold;
             color: #0f172a;
+            line-height: 1;
+        }
+
+        .zoom-btn-group {
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            gap: 2px;
+        }
+        .zoom-btn {
+            border: none;
+            background: transparent;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            outline: none;
+            user-select: none;
+        }
+        .zoom-btn:hover {
+            color: #1e293b;
+            background: #e2e8f0;
+        }
+        .zoom-btn.active {
+            background: white;
+            color: #4D7C68;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         #historyBtn:hover {
@@ -326,10 +444,6 @@
                         <i class="fas fa-print"></i>
                         <span>พิมพ์บาร์โค้ดที่เลือก</span>
                     </button>
-                    <button type="button" id="historyBtn" style="padding: 10px 20px; font-size: 14px; background-color: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 12px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; outline: none; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); height: 42px; white-space: nowrap; width: auto;">
-                        <i class="fas fa-history" style="color: #475569;"></i>
-                        <span>ประวัติการเพิ่มสินค้า</span>
-                    </button>
                     <a href="admin_product_edit.html" class="save-btn" style="padding: 10px 24px; font-size: 14px; display: inline-flex; align-items: center; height: 42px; text-decoration: none;">
                         <i class="fas fa-plus" style="margin-right: 8px;"></i>
                         <span>เพิ่มสินค้าใหม่</span>
@@ -349,10 +463,10 @@
                     <div style="width: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                         <input type="checkbox" id="selectAllCheckbox" style="transform: scale(1.2); cursor: pointer;">
                     </div>
-                    <span style="flex: 2;">ชื่อสินค้า</span>
-                    <span style="flex: 1; text-align: center;">ราคา</span>
-                    <span style="flex: 1; text-align: center;">จำนวนในสต็อก</span>
-                    <span style="flex: 1.5; text-align: right;">การดำเนินการ</span>
+                    <span style="flex: 3;">ชื่อสินค้า</span>
+                    <span style="flex: 1.2; text-align: center;">ราคา</span>
+                    <span style="flex: 1.2; text-align: center;">จำนวนในสต็อก</span>
+                    <span style="flex: 1.2; text-align: right;">การดำเนินการ</span>
                 </div>
                 <div id="productContainer">
                     <div class="loading-container">
@@ -363,10 +477,6 @@
             </div>
         </main>
 
-        <!-- Floating Add Button for Mobile -->
-        <a href="admin_product_edit.html" class="fab-add">
-            <i class="fas fa-plus"></i>
-        </a>
 
         <!-- Bottom Navigation -->
         <nav class="bottom-nav"></nav>
@@ -394,68 +504,88 @@
             <div class="modal-btns">
                 <button class="modal-btn modal-btn-cancel" onclick="closeBarcodeModal()">ปิด</button>
                 <button class="modal-btn modal-btn-confirm" id="saveBarcodeBtn" style="background: #4D7C68;">บันทึกรหัส</button>
-                <button class="modal-btn modal-btn-confirm" id="printBarcodeBtn" style="background: #059669;">พิมพ์ป้าย</button>
+                <button class="modal-btn modal-btn-confirm" id="printBarcodeBtn" onclick="printSingleBarcode()" style="background: #059669;">พิมพ์ป้าย</button>
             </div>
         </div>
     </div>
 
     <!-- Multi-Barcode Management Modal -->
     <div id="multiBarcodeModal" class="modal-overlay" style="display: none; z-index: 1100;">
-        <div class="modal-card" style="max-width: 95%; width: 1100px; height: 85vh; display: flex; flex-direction: column; padding: 24px;">
+        <div class="modal-card" style="max-width: 96vw; width: 1260px; height: 92vh; display: flex; flex-direction: column; padding: 20px 24px; border-radius: 20px;">
             <div class="modal-title" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
-                <span>พิมพ์บาร์โค้ดสินค้าหลายรายการ (A4 Print Layout)</span>
-                <button type="button" id="closeMultiBarcodeBtn" style="border: none; background: transparent; font-size: 24px; cursor: pointer; color: #94a3b8; outline: none;">&times;</button>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-weight: 700; color: #1e293b;">พิมพ์บาร์โค้ดสินค้าหลายรายการ</span>
+                    <span style="background: #e2e8f0; color: #334155; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-file-alt" style="color: #4D7C68;"></i> A4 Layout (210 × 297 มม.)
+                    </span>
+                </div>
+                <button type="button" id="closeMultiBarcodeBtn" onclick="closeMultiBarcodeModal()" style="border: none; background: transparent; font-size: 26px; cursor: pointer; color: #94a3b8; outline: none; line-height: 1;">&times;</button>
             </div>
             
-            <div style="display: flex; flex: 1; gap: 20px; overflow: hidden; min-height: 0; text-align: left;">
+            <div style="display: flex; flex: 1; gap: 18px; overflow: hidden; min-height: 0; text-align: left;">
                 <!-- Left panel: Selection List and Quantities -->
-                <div style="flex: 1.2; display: flex; flex-direction: column; border-right: 1px solid #e2e8f0; padding-right: 20px; overflow-y: auto;">
-                    <h3 style="font-size: 15px; font-weight: 600; color: #475569; margin-bottom: 12px;">รายการสินค้าและจำนวนดวงที่ต้องการพิมพ์</h3>
-                    <div id="multiBarcodeList" style="display: flex; flex-direction: column; gap: 10px; padding-right: 5px;">
+                <div style="width: 360px; flex-shrink: 0; display: flex; flex-direction: column; background: #f8fafc; border-radius: 14px; border: 1px solid #e2e8f0; padding: 14px; overflow: hidden;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="font-size: 14px; font-weight: 700; color: #334155; margin: 0;">รายการสินค้าที่เลือก</h3>
+                        <span id="multiBarcodeCountBadge" style="font-size: 11px; font-weight: 600; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 12px;">0 รายการ</span>
+                    </div>
+
+                    <!-- Quick batch buttons -->
+                    <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                        <button type="button" onclick="batchSetAllQty(1)" style="flex: 1; padding: 5px 8px; font-size: 11px; font-weight: 600; background: white; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; color: #475569; transition: all 0.15s;" title="ตั้งค่าสินค้าทุกตัวให้เป็น 1 ดวง">ตั้งเป็น 1 ดวง</button>
+                        <button type="button" onclick="batchAdjustAllQty(1)" style="flex: 1; padding: 5px 8px; font-size: 11px; font-weight: 600; background: white; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; color: #475569; transition: all 0.15s;" title="เพิ่มสินค้าทุกตัวอีก 1 ดวง">+1 ทั้งหมด</button>
+                        <button type="button" onclick="batchAdjustAllQty(-1)" style="flex: 1; padding: 5px 8px; font-size: 11px; font-weight: 600; background: white; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; color: #475569; transition: all 0.15s;" title="ลดสินค้าทุกตัวลง 1 ดวง">-1 ทั้งหมด</button>
+                    </div>
+
+                    <div id="multiBarcodeList" style="flex: 1; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding-right: 4px;">
                         <!-- Dynamic items list -->
                     </div>
                 </div>
                 
                 <!-- Right panel: Controls and Live Preview -->
-                <div style="flex: 1.8; display: flex; flex-direction: column; overflow: hidden;">
-                    <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #e2e8f0;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
-                            <div>
-                                <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">จำนวนคอลัมน์ใน 1 แถว</label>
-                                <select id="barcodeColsSelect" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; font-size: 13px; font-family: inherit; cursor: pointer; background: white;">
-                                    <option value="4">4 คอลัมน์ (ดวงเล็ก)</option>
-                                    <option value="3" selected>3 คอลัมน์ (ขนาดมาตรฐาน)</option>
-                                    <option value="2">2 คอลัมน์ (ดวงใหญ่พิเศษ)</option>
+                <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;">
+                    <!-- Compact Top Toolbar -->
+                    <div style="background: white; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <!-- Left controls: Col & Checkboxes -->
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <label style="font-size: 12px; font-weight: 600; color: #475569; white-space: nowrap;">รูปแบบตาราง:</label>
+                                <select id="barcodeColsSelect" onchange="renderMultiBarcodePreview()" style="padding: 6px 10px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; background: white;">
+                                    <option value="4">4 คอลัมน์ (40 ดวง/หน้า - ป้ายเล็ก)</option>
+                                    <option value="3" selected>3 คอลัมน์ (24 ดวง/หน้า - ขนาดมาตรฐาน)</option>
+                                    <option value="2">2 คอลัมน์ (12 ดวง/หน้า - ป้ายใหญ่)</option>
                                 </select>
                             </div>
-                            <div>
-                                <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">ตัวเลือกการแสดงผลบนป้าย</label>
-                                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
-                                        <input type="checkbox" id="showShopNameChk" checked style="cursor: pointer;"> แสดงชื่อร้าน (Hello Pet Shop)
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
-                                        <input type="checkbox" id="showPriceChk" checked style="cursor: pointer;"> แสดงราคาจำหน่าย
-                                    </label>
-                                </div>
+                            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; border-left: 1px solid #e2e8f0; padding-left: 12px;">
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; color: #334155; font-weight: 500;">
+                                    <input type="checkbox" id="showShopNameChk" onchange="renderMultiBarcodePreview()" checked style="cursor: pointer;"> แสดงชื่อร้าน
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; color: #334155; font-weight: 500;">
+                                    <input type="checkbox" id="showPriceChk" onchange="renderMultiBarcodePreview()" checked style="cursor: pointer;"> แสดงราคา
+                                </label>
                             </div>
                         </div>
-                        
-                        <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
-                            <button type="button" class="modal-btn modal-btn-cancel" id="cancelMultiBarcodeBtn" style="padding: 8px 16px; font-size: 13px; margin: 0;">ยกเลิก</button>
-                            <button type="button" class="modal-btn modal-btn-confirm" id="confirmPrintMultiBarcodeBtn" style="padding: 8px 20px; font-size: 13px; background: #4D7C68; color: white; margin: 0; display: inline-flex; align-items: center; gap: 6px;">
-                                <i class="fas fa-print"></i> พิมพ์/บันทึกบาร์โค้ด
+
+                        <!-- Right controls: Zoom and Actions -->
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <!-- Zoom group -->
+                            <div class="zoom-btn-group">
+                                <button type="button" class="zoom-btn active" id="zoomFitBtn" onclick="setPreviewZoom('fit')" title="ย่อให้พอดีความสูงเต็มหน้า A4"><i class="fas fa-expand-arrows-alt" style="margin-right: 3px;"></i> พอดีหน้า</button>
+                                <button type="button" class="zoom-btn" id="zoom60Btn" onclick="setPreviewZoom(0.60)">60%</button>
+                                <button type="button" class="zoom-btn" id="zoom75Btn" onclick="setPreviewZoom(0.75)">75%</button>
+                                <button type="button" class="zoom-btn" id="zoom100Btn" onclick="setPreviewZoom(1.0)">100%</button>
+                            </div>
+
+                            <button type="button" class="modal-btn modal-btn-cancel" id="cancelMultiBarcodeBtn" onclick="closeMultiBarcodeModal()" style="padding: 7px 14px; font-size: 12px; margin: 0; cursor: pointer;">ยกเลิก</button>
+                            <button type="button" class="modal-btn modal-btn-confirm" id="confirmPrintMultiBarcodeBtn" onclick="confirmPrintMultiBarcode()" style="padding: 7px 18px; font-size: 12px; background: #4D7C68; color: white; margin: 0; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(77, 124, 104, 0.3); cursor: pointer;">
+                                <i class="fas fa-print"></i> พิมพ์ / บันทึก PDF (A4)
                             </button>
                         </div>
                     </div>
                     
-                    <h3 style="font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;">ตัวอย่างหน้ากระดาษ (A4 Live Preview)</h3>
-                    <div style="flex: 1; border: 1px solid #cbd5e1; border-radius: 12px; background: #cbd5e1; padding: 12px; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start;">
-                        <div id="a4PreviewContainer" style="background: white; width: 210mm; min-height: 297mm; padding: 12mm; box-shadow: 0 4px 10px rgba(0,0,0,0.15); box-sizing: border-box; transform: scale(0.6); transform-origin: top center; margin-bottom: -120mm;">
-                            <div id="barcodePreviewGrid" class="a4-preview-grid cols-3">
-                                <!-- Dynamic labels grid -->
-                            </div>
-                        </div>
+                    <!-- A4 Live Preview Viewport -->
+                    <div id="a4PreviewViewport" class="a4-preview-viewport">
+                        <!-- Dynamic A4 Pages -->
                     </div>
                 </div>
             </div>
@@ -475,38 +605,6 @@
             <div class="modal-btns">
                 <button class="modal-btn modal-btn-cancel" id="cancelModalBtn">ยกเลิก</button>
                 <button class="modal-btn modal-btn-confirm" id="confirmModalBtn">ลบสินค้า</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Product Creation History Modal -->
-    <div id="historyModal" class="modal-overlay" style="display: none;">
-        <div class="modal-card" style="max-width: 700px; width: 90%;">
-            <div class="modal-title" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-                <span>ประวัติการเพิ่มสินค้า (Product Add History)</span>
-                <button id="closeHistoryBtn" style="border: none; background: transparent; font-size: 24px; cursor: pointer; color: #94a3b8; outline: none;">&times;</button>
-            </div>
-            
-            <div style="overflow-y: auto; max-height: 50vh; margin-top: 15px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
-                    <thead>
-                        <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                            <th style="padding: 12px; font-weight: 600; color: #475569;">วันที่เพิ่ม</th>
-                            <th style="padding: 12px; font-weight: 600; color: #475569;">ชื่อสินค้า</th>
-                            <th style="padding: 12px; font-weight: 600; color: #475569;">หมวดหมู่</th>
-                            <th style="padding: 12px; font-weight: 600; color: #475569;">ผู้เพิ่มสินค้า</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody">
-                        <tr>
-                            <td colspan="4" style="padding: 30px; text-align: center; color: #94a3b8;">กำลังโหลดประวัติ...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="modal-btns" style="margin-top: 20px; justify-content: flex-end;">
-                <button class="modal-btn modal-btn-cancel" id="closeHistoryBtn2" style="padding: 10px 24px;">ปิด</button>
             </div>
         </div>
     </div>
@@ -593,27 +691,40 @@
 
             container.innerHTML = products.map(p => {
                 const pId = p.product_id || p.id;
+                const qty = parseInt(p.stock_qty || 0);
+                const stockBadgeStyle = qty <= 0 
+                    ? 'background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;' 
+                    : (qty <= 5 
+                        ? 'background: #fffbeb; color: #d97706; border: 1px solid #fde68a;' 
+                        : 'background: #f8fafc; color: #334155; border: 1px solid #e2e8f0;');
+
                 return `
-                <div class="product-row" style="display: flex; align-items: center; width: 100%;">
+                <div class="product-row" style="display: flex; align-items: center; width: 100%; padding: 14px 12px; border-bottom: 1px solid #f1f5f9;">
                     <div style="width: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                         <input type="checkbox" class="product-select-checkbox" data-product-id="${pId}" style="transform: scale(1.2); cursor: pointer;" onclick="event.stopPropagation();">
                     </div>
-                    <div class="product-details" style="flex: 2; margin-right: 20px;">
-                        <div class="product-name">${p.product_name || p.name || ''}</div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                            <span>📁 ${p.category_name || '-'}</span>
-                            <span style="background: #e0f2fe; color: #0369a1; padding: 1px 7px; border-radius: 4px; font-weight: 600; font-size: 10px;">
-                                🐾 ${p.target_pet_type_name || 'สัตว์ทุกประเภท'}
+                    <div class="product-details" style="flex: 3; margin-right: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                        <div class="product-name" style="font-weight: 600; color: #1e293b; font-size: 14px; line-height: 1.35;">${p.product_name || p.name || ''}</div>
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px;">
+                            <span style="display: inline-flex; align-items: center; gap: 4px; background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500;">
+                                <i class="fa-regular fa-folder" style="color: #f59e0b; font-size: 11px;"></i>
+                                <span>${p.category_name || '-'}</span>
+                            </span>
+                            <span style="display: inline-flex; align-items: center; gap: 4px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 1px 8px; border-radius: 9999px; font-weight: 600; font-size: 10.5px;">
+                                <i class="fas fa-paw" style="color: #10b981; font-size: 9px;"></i>
+                                <span>${p.target_pet_type_name || 'สัตว์ทุกประเภท'}</span>
                             </span>
                         </div>
                     </div>
-                    <div class="stock-status" style="flex: 1; text-align: center; color: #475569; font-weight: 500;">
-                        ฿${parseFloat(p.selling_price || p.price || 0).toFixed(2)}
+                    <div class="stock-status" style="flex: 1.2; text-align: center; color: #0f172a; font-weight: 600; font-size: 14px;">
+                        ฿${parseFloat(p.selling_price || p.price || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                     </div>
-                    <div class="stock-status" style="flex: 1; text-align: center; color: #475569; font-weight: 500;">
-                        ${p.stock_qty || 0}
+                    <div class="stock-status" style="flex: 1.2; text-align: center;">
+                        <span style="display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; ${stockBadgeStyle}">
+                            ${qty}
+                        </span>
                     </div>
-                    <div class="stock-actions" style="flex: 1.5; text-align: right; justify-content: flex-end; display: flex; gap: 8px; align-items: center;">
+                    <div class="stock-actions" style="flex: 1.2; text-align: right; justify-content: flex-end; display: flex; gap: 8px; align-items: center;">
                         <button type="button" onclick="event.preventDefault(); window.openBarcodeModalById(${pId})" class="action-link barcode-link" title="Barcode" style="cursor:pointer; font-family:inherit;">
                             <i class="fas fa-barcode"></i>
                             <span>บาร์โค้ด</span>
@@ -819,85 +930,202 @@
             }
         });
 
-        document.getElementById('printBarcodeBtn').addEventListener('click', () => {
+        function printSingleBarcode() {
             if (!activeProductForBarcode) return;
             const barcode = document.getElementById('barcodeValueLabel').textContent;
             
-            const printArea = document.getElementById('barcodePrintArea');
-            printArea.innerHTML = `
-                <div class="barcode-label">
-                    <div class="barcode-label-title">Hello Pet Shop</div>
-                    <div class="barcode-label-title" style="font-size: 7px;">${activeProductForBarcode.name}</div>
-                    <svg id="barcodePrintSvg"></svg>
-                    <div class="barcode-label-price">฿${parseFloat(activeProductForBarcode.price).toFixed(2)}</div>
-                </div>
-            `;
-            
-            JsBarcode("#barcodePrintSvg", barcode, {
-                format: "CODE128",
-                width: 1.8,
-                height: 40,
-                displayValue: true,
-                fontSize: 10
-            });
-            
-            window.print();
-        });
-
-        function openHistoryModal() {
-            const modal = document.getElementById('historyModal');
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('show'), 10);
-            loadHistoryData();
-        }
-
-        function closeHistoryModal() {
-            const modal = document.getElementById('historyModal');
-            modal.classList.remove('show');
-            setTimeout(() => modal.style.display = 'none', 300);
-        }
-
-        function loadHistoryData() {
-            const tbody = document.getElementById('historyTableBody');
-            if (!currentProductsList || currentProductsList.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="padding: 30px; text-align: center; color: #94a3b8;">ไม่พบข้อมูลสินค้า</td></tr>';
-                return;
+            let printIframe = document.getElementById('barcodePrintIframe');
+            if (printIframe) {
+                printIframe.remove();
             }
-            
-            const sortedProducts = [...currentProductsList].sort((a, b) => {
-                const idA = a.product_id || a.id || 0;
-                const idB = b.product_id || b.id || 0;
-                return idB - idA;
-            });
 
-            tbody.innerHTML = sortedProducts.map(p => {
-                const dateObj = p.created_at ? new Date(p.created_at) : null;
-                const formattedDate = dateObj 
-                    ? dateObj.toLocaleDateString('th-TH', {
-                        year: 'numeric', month: 'short', day: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                      })
-                    : 'ไม่ระบุ';
-                
-                const creator = p.creator_name || 'Super Admin';
-                const catName = p.category_name || '-';
-                
-                return `
-                    <tr style="border-bottom: 1px solid #f1f5f9;">
-                        <td style="padding: 12px; color: #475569;">${formattedDate}</td>
-                        <td style="padding: 12px; font-weight: 600; color: #1e293b;">${p.product_name || p.name || ''}</td>
-                        <td style="padding: 12px; color: #64748b;">${catName}</td>
-                        <td style="padding: 12px; color: #475569; font-weight: 500;">
-                            <span style="display: inline-flex; align-items: center; gap: 6px; background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-size: 12px;">
-                                <i class="fas fa-user-edit" style="color: #94a3b8;"></i> ${creator}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            printIframe = document.createElement('iframe');
+            printIframe.id = 'barcodePrintIframe';
+            printIframe.style.position = 'fixed';
+            printIframe.style.top = '-9999px';
+            printIframe.style.left = '-9999px';
+            printIframe.style.width = '100mm';
+            printIframe.style.height = '100mm';
+            printIframe.style.border = '0';
+            document.body.appendChild(printIframe);
+
+            const iframeDoc = printIframe.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(`
+                <!DOCTYPE html>
+                <html lang="th">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>พิมพ์ป้ายบาร์โค้ด - Hello Pet Shop</title>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+                    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+                    <style>
+                        @page {
+                            size: auto;
+                            margin: 2mm;
+                        }
+                        * {
+                            box-sizing: border-box;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        body {
+                            background: white;
+                            color: #000;
+                            font-family: 'Outfit', 'Kanit', sans-serif;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            padding: 2mm;
+                        }
+                        .barcode-label {
+                            width: 50mm;
+                            height: 30mm;
+                            padding: 1.5mm;
+                            border: 1px solid #000;
+                            margin: 0 auto;
+                            text-align: center;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: space-between;
+                            box-sizing: border-box;
+                            page-break-inside: avoid;
+                        }
+                        .barcode-label-title {
+                            font-size: 8px;
+                            font-weight: bold;
+                            margin-bottom: 1px;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            width: 100%;
+                            color: #000;
+                        }
+                        .barcode-label-price {
+                            font-size: 9px;
+                            font-weight: bold;
+                            margin-top: 1px;
+                            color: #000;
+                        }
+                        .barcode-label svg {
+                            max-width: 100%;
+                            height: 12mm;
+                            display: block;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="barcode-label">
+                        <div class="barcode-label-title">Hello Pet Shop</div>
+                        <div class="barcode-label-title" style="font-size: 7px;">${activeProductForBarcode.name || ''}</div>
+                        <svg id="singleBarcodePrintSvg"></svg>
+                        <div class="barcode-label-price">฿${parseFloat(activeProductForBarcode.price || 0).toFixed(2)}</div>
+                    </div>
+                </body>
+                </html>
+            `);
+            iframeDoc.close();
+
+            setTimeout(() => {
+                const iframeWindow = printIframe.contentWindow;
+                const iframeJsBarcode = iframeWindow.JsBarcode || window.JsBarcode;
+                const svgEl = iframeDoc.getElementById('singleBarcodePrintSvg');
+                if (svgEl && iframeJsBarcode) {
+                    try {
+                        iframeJsBarcode(svgEl, barcode, {
+                            format: "CODE128",
+                            width: 1.8,
+                            height: 40,
+                            displayValue: true,
+                            fontSize: 10
+                        });
+                    } catch (e) {
+                        console.error("JsBarcode single print error:", e);
+                    }
+                }
+                setTimeout(() => {
+                    iframeWindow.focus();
+                    iframeWindow.print();
+                }, 120);
+            }, 80);
+        }
+
+        window.printSingleBarcode = printSingleBarcode;
+
+        const printSingleBtn = document.getElementById('printBarcodeBtn');
+        if (printSingleBtn) {
+            printSingleBtn.addEventListener('click', printSingleBarcode);
         }
 
         let selectedProductsForPrint = [];
+
+        let currentZoomMode = 'fit';
+        let currentZoomValue = 0.52;
+
+        function setPreviewZoom(mode) {
+            currentZoomMode = mode;
+            document.querySelectorAll('.zoom-btn').forEach(btn => btn.classList.remove('active'));
+            if (mode === 'fit') {
+                const fitBtn = document.getElementById('zoomFitBtn');
+                if (fitBtn) fitBtn.classList.add('active');
+            } else if (mode === 0.60) {
+                const btn = document.getElementById('zoom60Btn');
+                if (btn) btn.classList.add('active');
+                currentZoomValue = 0.60;
+            } else if (mode === 0.75) {
+                const btn = document.getElementById('zoom75Btn');
+                if (btn) btn.classList.add('active');
+                currentZoomValue = 0.75;
+            } else if (mode === 1.0) {
+                const btn = document.getElementById('zoom100Btn');
+                if (btn) btn.classList.add('active');
+                currentZoomValue = 1.0;
+            }
+            applyPreviewZoom();
+        }
+
+        function calculateFitZoom() {
+            const viewport = document.getElementById('a4PreviewViewport');
+            if (!viewport || viewport.clientHeight === 0) return 0.50;
+            const availableHeight = viewport.clientHeight - 80;
+            const availableWidth = viewport.clientWidth - 40;
+            const a4HeightPx = 297 * 3.7795; // ~1122.5px
+            const a4WidthPx = 210 * 3.7795;  // ~793.7px
+            
+            const zoomH = Math.max(0.25, availableHeight / a4HeightPx);
+            const zoomW = Math.max(0.25, availableWidth / a4WidthPx);
+            return Math.min(zoomH, zoomW, 0.85);
+        }
+
+        function applyPreviewZoom() {
+            if (currentZoomMode === 'fit') {
+                currentZoomValue = calculateFitZoom();
+            }
+            const scalers = document.querySelectorAll('.a4-scaler');
+            scalers.forEach(s => {
+                s.style.width = `calc(210mm * ${currentZoomValue})`;
+                s.style.height = `calc(297mm * ${currentZoomValue})`;
+            });
+            const pages = document.querySelectorAll('.a4-page');
+            pages.forEach(p => {
+                p.style.transform = `scale(${currentZoomValue})`;
+            });
+        }
+
+        function batchSetAllQty(qty) {
+            selectedProductsForPrint.forEach(item => item.qty = Math.max(1, qty));
+            renderMultiBarcodeList();
+            renderMultiBarcodePreview();
+        }
+
+        function batchAdjustAllQty(change) {
+            selectedProductsForPrint.forEach(item => item.qty = Math.max(1, item.qty + change));
+            renderMultiBarcodeList();
+            renderMultiBarcodePreview();
+        }
 
         function openMultiBarcodeModal() {
             const checkedBoxes = document.querySelectorAll('.product-select-checkbox:checked');
@@ -931,7 +1159,9 @@
             setTimeout(() => modal.classList.add('show'), 10);
             
             renderMultiBarcodeList();
-            renderMultiBarcodePreview();
+            setTimeout(() => {
+                renderMultiBarcodePreview();
+            }, 50);
         }
 
         function closeMultiBarcodeModal() {
@@ -948,12 +1178,15 @@
             }
 
             listContainer.innerHTML = selectedProductsForPrint.map((item, idx) => `
-                <div class="preview-item-row">
-                    <div class="preview-item-info">
+                <div class="preview-item-row" style="margin-bottom: 0;">
+                    <div class="preview-item-info" style="max-width: 170px;">
                         <span class="preview-item-name" title="${item.name}">${item.name}</span>
-                        <span class="preview-item-barcode">บาร์โค้ด: ${item.barcode}</span>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                            <span class="preview-item-barcode" style="background: #e2e8f0; padding: 1px 5px; border-radius: 4px; font-size: 10px;">${item.barcode}</span>
+                            <span style="font-size: 11px; font-weight: 600; color: #059669;">฿${item.price.toFixed(2)}</span>
+                        </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
                         <div class="preview-qty-control">
                             <button type="button" class="preview-qty-btn" onclick="updatePrintQty(${idx}, -1)">-</button>
                             <input type="text" class="preview-qty-input" value="${item.qty}" onchange="setPrintQty(${idx}, this.value)">
@@ -997,13 +1230,18 @@
         }
 
         function renderMultiBarcodePreview() {
-            const cols = document.getElementById('barcodeColsSelect').value;
-            const showShop = document.getElementById('showShopNameChk').checked;
-            const showPrice = document.getElementById('showPriceChk').checked;
+            const colsSelect = document.getElementById('barcodeColsSelect');
+            const showShopChk = document.getElementById('showShopNameChk');
+            const showPriceChk = document.getElementById('showPriceChk');
+            if (!colsSelect || !showShopChk || !showPriceChk) return;
+
+            const cols = parseInt(colsSelect.value, 10);
+            const showShop = showShopChk.checked;
+            const showPrice = showPriceChk.checked;
             
-            const gridContainer = document.getElementById('barcodePreviewGrid');
-            gridContainer.className = `a4-preview-grid cols-${cols}`;
-            gridContainer.innerHTML = '';
+            const viewport = document.getElementById('a4PreviewViewport');
+            if (!viewport) return;
+            viewport.innerHTML = '';
 
             const itemsToRender = [];
             selectedProductsForPrint.forEach(item => {
@@ -1012,111 +1250,306 @@
                 }
             });
 
+            // Update badge in sidebar
+            const badge = document.getElementById('multiBarcodeCountBadge');
+            if (badge) {
+                badge.textContent = `${selectedProductsForPrint.length} รายการ (รวม ${itemsToRender.length} ดวง)`;
+            }
+
             if (itemsToRender.length === 0) {
-                gridContainer.innerHTML = '<div style="grid-column: 1/-1; padding: 50px; text-align: center; color: #94a3b8;">ไม่มีรายการแสดงตัวอย่าง</div>';
+                viewport.innerHTML = '<div style="padding: 60px 20px; text-align: center; color: #cbd5e1;"><i class="fas fa-barcode" style="font-size: 36px; margin-bottom: 12px; display: block; opacity: 0.5;"></i>ไม่มีรายการแสดงตัวอย่าง</div>';
                 return;
             }
 
-            gridContainer.innerHTML = itemsToRender.map(({ item, index }) => `
-                <div class="preview-barcode-card">
-                    ${showShop ? `<div class="preview-barcode-shop">Hello Pet Shop</div>` : '<div></div>'}
-                    <div class="preview-barcode-name">${item.name}</div>
-                    <svg id="previewSvg_${item.id}_${index}"></svg>
-                    ${showPrice ? `<div class="preview-barcode-price">฿${item.price.toFixed(2)}</div>` : '<div></div>'}
-                </div>
-            `).join('');
+            const itemsPerPage = cols === 4 ? 40 : cols === 3 ? 24 : 12;
+            const totalPages = Math.ceil(itemsToRender.length / itemsPerPage);
+
+            if (currentZoomMode === 'fit') {
+                currentZoomValue = calculateFitZoom();
+            }
+
+            for (let p = 0; p < totalPages; p++) {
+                const pageItems = itemsToRender.slice(p * itemsPerPage, (p + 1) * itemsPerPage);
+                
+                const sheetWrapper = document.createElement('div');
+                sheetWrapper.className = 'a4-sheet-wrapper';
+                sheetWrapper.innerHTML = `
+                    <div class="a4-sheet-header-badge">
+                        <i class="fas fa-file-alt"></i> หน้า ${p + 1} / ${totalPages} (ขนาดมาตรฐาน A4: 210 × 297 มม. - แสดง ${pageItems.length} ดวง)
+                    </div>
+                    <div class="a4-scaler" style="width: calc(210mm * ${currentZoomValue}); height: calc(297mm * ${currentZoomValue});">
+                        <div class="a4-page cols-${cols}" style="transform: scale(${currentZoomValue});">
+                            ${pageItems.map(({ item, index }) => `
+                                <div class="preview-barcode-card">
+                                    ${showShop ? `<div class="preview-barcode-shop">Hello Pet Shop</div>` : '<div></div>'}
+                                    <div class="preview-barcode-name">${item.name}</div>
+                                    <svg id="previewSvg_${item.id}_${index}_p${p}"></svg>
+                                    ${showPrice ? `<div class="preview-barcode-price">฿${item.price.toFixed(2)}</div>` : '<div></div>'}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                viewport.appendChild(sheetWrapper);
+            }
 
             // Render SVGs asynchronously
             setTimeout(() => {
-                itemsToRender.forEach(({ item, index }) => {
-                    const selector = `#previewSvg_${item.id}_${index}`;
-                    try {
-                        JsBarcode(selector, item.barcode, {
-                            format: "CODE128",
-                            width: 1.4,
-                            height: 38,
-                            displayValue: true,
-                            fontSize: 10
-                        });
-                    } catch (e) {
-                        console.error("JsBarcode preview render error:", e);
-                    }
-                });
-            }, 50);
+                for (let p = 0; p < totalPages; p++) {
+                    const pageItems = itemsToRender.slice(p * itemsPerPage, (p + 1) * itemsPerPage);
+                    pageItems.forEach(({ item, index }) => {
+                        const selector = `#previewSvg_${item.id}_${index}_p${p}`;
+                        try {
+                            JsBarcode(selector, item.barcode, {
+                                format: "CODE128",
+                                width: cols === 4 ? 1.1 : cols === 3 ? 1.4 : 2.0,
+                                height: cols === 4 ? 26 : cols === 3 ? 34 : 44,
+                                displayValue: true,
+                                fontSize: cols === 4 ? 8 : cols === 3 ? 9 : 11
+                            });
+                        } catch (e) {
+                            console.error("JsBarcode preview render error:", e);
+                        }
+                    });
+                }
+            }, 60);
         }
 
         function confirmPrintMultiBarcode() {
-            if (selectedProductsForPrint.length === 0) return;
+            if (!selectedProductsForPrint || selectedProductsForPrint.length === 0) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'แจ้งเตือน',
+                        text: 'กรุณาเลือกสินค้าอย่างน้อย 1 รายการเพื่อพิมพ์',
+                        confirmButtonColor: '#4D7C68'
+                    });
+                } else {
+                    alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการเพื่อพิมพ์');
+                }
+                return;
+            }
 
-            const cols = document.getElementById('barcodeColsSelect').value;
-            const showShop = document.getElementById('showShopNameChk').checked;
-            const showPrice = document.getElementById('showPriceChk').checked;
+            const colsSelect = document.getElementById('barcodeColsSelect');
+            const showShopChk = document.getElementById('showShopNameChk');
+            const showPriceChk = document.getElementById('showPriceChk');
 
-            const printArea = document.getElementById('barcodePrintArea');
-            printArea.innerHTML = '';
-
-            const printGrid = document.createElement('div');
-            printGrid.className = `barcode-print-grid cols-${cols}`;
+            const cols = colsSelect ? parseInt(colsSelect.value, 10) : 3;
+            const showShop = showShopChk ? showShopChk.checked : true;
+            const showPrice = showPriceChk ? showPriceChk.checked : true;
 
             const itemsToPrint = [];
             selectedProductsForPrint.forEach(item => {
-                for (let i = 0; i < item.qty; i++) {
+                const q = parseInt(item.qty, 10) || 1;
+                for (let i = 0; i < q; i++) {
                     itemsToPrint.push({ item, index: i });
                 }
             });
 
-            printGrid.innerHTML = itemsToPrint.map(({ item, index }) => `
-                <div class="barcode-print-card">
-                    ${showShop ? `<div class="barcode-print-shop">Hello Pet Shop</div>` : '<div></div>'}
-                    <div class="barcode-print-name">${item.name}</div>
-                    <svg id="printSvg_${item.id}_${index}"></svg>
-                    ${showPrice ? `<div class="barcode-print-price">฿${item.price.toFixed(2)}</div>` : '<div></div>'}
-                </div>
-            `).join('');
+            if (itemsToPrint.length === 0) return;
 
-            printArea.appendChild(printGrid);
+            const itemsPerPage = cols === 4 ? 40 : cols === 3 ? 24 : 12;
+            const totalPages = Math.ceil(itemsToPrint.length / itemsPerPage) || 1;
 
-            // Render SVGs
-            itemsToPrint.forEach(({ item, index }) => {
-                const selector = `#printSvg_${item.id}_${index}`;
-                try {
-                    JsBarcode(selector, item.barcode, {
-                        format: "CODE128",
-                        width: cols === '4' ? 1.2 : cols === '3' ? 1.6 : 2.2,
-                        height: 35,
-                        displayValue: true,
-                        fontSize: 9
-                    });
-                } catch (e) {
-                    console.error("JsBarcode print render error:", e);
-                }
-            });
+            // Remove previous print iframe if existing
+            let printIframe = document.getElementById('barcodePrintIframe');
+            if (printIframe) {
+                printIframe.remove();
+            }
 
-            // Trigger window.print
+            // Create off-screen rendering iframe
+            printIframe = document.createElement('iframe');
+            printIframe.id = 'barcodePrintIframe';
+            printIframe.style.position = 'fixed';
+            printIframe.style.top = '-9999px';
+            printIframe.style.left = '-9999px';
+            printIframe.style.width = '210mm';
+            printIframe.style.height = '297mm';
+            printIframe.style.border = '0';
+            document.body.appendChild(printIframe);
+
+            const iframeDoc = printIframe.contentWindow.document;
+            iframeDoc.open();
+
+            let pagesHtml = '';
+            for (let p = 0; p < totalPages; p++) {
+                const pageItems = itemsToPrint.slice(p * itemsPerPage, (p + 1) * itemsPerPage);
+                pagesHtml += `
+                    <div class="barcode-print-page cols-${cols}">
+                        ${pageItems.map(({ item }, itemIdx) => {
+                            const priceNum = typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0;
+                            return `
+                                <div class="barcode-print-card">
+                                    ${showShop ? `<div class="barcode-print-shop">Hello Pet Shop</div>` : '<div></div>'}
+                                    <div class="barcode-print-name">${item.name || ''}</div>
+                                    <svg id="iframeSvg_${p}_${itemIdx}"></svg>
+                                    ${showPrice ? `<div class="barcode-print-price">฿${priceNum.toFixed(2)}</div>` : '<div></div>'}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            iframeDoc.write(`
+                <!DOCTYPE html>
+                <html lang="th">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>พิมพ์บาร์โค้ด - Hello Pet Shop</title>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Kanit:wght@400;500;600&display=swap" rel="stylesheet">
+                    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+                    <style>
+                        @page {
+                            size: A4 portrait;
+                            margin: 8mm;
+                        }
+                        * {
+                            box-sizing: border-box;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        html, body {
+                            background: white !important;
+                            color: #000 !important;
+                            font-family: 'Outfit', 'Kanit', sans-serif;
+                            width: 100%;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        .barcode-print-page {
+                            width: 194mm;
+                            height: 281mm;
+                            min-height: 281mm;
+                            max-height: 281mm;
+                            display: grid;
+                            box-sizing: border-box;
+                            page-break-after: always;
+                            break-after: page;
+                            margin: 0 auto;
+                        }
+                        .barcode-print-page:last-child {
+                            page-break-after: avoid;
+                            break-after: avoid;
+                        }
+                        .barcode-print-page.cols-4 {
+                            grid-template-columns: repeat(4, 1fr);
+                            grid-template-rows: repeat(10, 25.5mm);
+                            gap: 2.8mm;
+                        }
+                        .barcode-print-page.cols-3 {
+                            grid-template-columns: repeat(3, 1fr);
+                            grid-template-rows: repeat(8, 32.5mm);
+                            gap: 3.5mm;
+                        }
+                        .barcode-print-page.cols-2 {
+                            grid-template-columns: repeat(2, 1fr);
+                            grid-template-rows: repeat(6, 44mm);
+                            gap: 3.8mm;
+                        }
+                        .barcode-print-card {
+                            border: 1px dashed #bbb;
+                            padding: 2mm;
+                            text-align: center;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: space-between;
+                            box-sizing: border-box;
+                            background: white;
+                            height: 100%;
+                        }
+                        .barcode-print-shop {
+                            font-size: 8px;
+                            font-weight: bold;
+                            color: #000;
+                            line-height: 1;
+                        }
+                        .barcode-print-name {
+                            font-size: 8.5px;
+                            font-weight: 500;
+                            color: #000;
+                            max-height: 7.5mm;
+                            line-height: 1.15;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            display: -webkit-box;
+                            -webkit-line-clamp: 2;
+                            -webkit-box-orient: vertical;
+                        }
+                        .barcode-print-card svg {
+                            width: 100%;
+                            max-height: 12mm !important;
+                            display: block;
+                        }
+                        .barcode-print-price {
+                            font-size: 9px;
+                            font-weight: bold;
+                            color: #000;
+                            line-height: 1;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${pagesHtml}
+                </body>
+                </html>
+            `);
+            iframeDoc.close();
+
             setTimeout(() => {
-                window.print();
+                const iframeWindow = printIframe.contentWindow;
+                const iframeJsBarcode = iframeWindow.JsBarcode || window.JsBarcode;
+
+                for (let p = 0; p < totalPages; p++) {
+                    const pageItems = itemsToPrint.slice(p * itemsPerPage, (p + 1) * itemsPerPage);
+                    pageItems.forEach(({ item }, itemIdx) => {
+                        const svgEl = iframeDoc.getElementById(`iframeSvg_${p}_${itemIdx}`);
+                        if (svgEl && iframeJsBarcode) {
+                            const barcodeVal = String(item.barcode || `HP-${item.id}`).trim();
+                            try {
+                                iframeJsBarcode(svgEl, barcodeVal, {
+                                    format: "CODE128",
+                                    width: cols === 4 ? 1.1 : cols === 3 ? 1.4 : 2.0,
+                                    height: cols === 4 ? 26 : cols === 3 ? 34 : 44,
+                                    displayValue: true,
+                                    fontSize: cols === 4 ? 8 : cols === 3 ? 9 : 11,
+                                    margin: 0
+                                });
+                            } catch (e) {
+                                console.error("JsBarcode iframe print error:", e, barcodeVal);
+                            }
+                        }
+                    });
+                }
+
+                setTimeout(() => {
+                    iframeWindow.focus();
+                    iframeWindow.print();
+                }, 150);
             }, 100);
         }
 
-        window.openHistoryModal = openHistoryModal;
-        window.closeHistoryModal = closeHistoryModal;
         window.openMultiBarcodeModal = openMultiBarcodeModal;
         window.closeMultiBarcodeModal = closeMultiBarcodeModal;
         window.updatePrintQty = updatePrintQty;
         window.setPrintQty = setPrintQty;
         window.removePrintItem = removePrintItem;
+        window.batchSetAllQty = batchSetAllQty;
+        window.batchAdjustAllQty = batchAdjustAllQty;
+        window.setPreviewZoom = setPreviewZoom;
         window.confirmPrintMultiBarcode = confirmPrintMultiBarcode;
+
+        window.addEventListener('resize', () => {
+            if (currentZoomMode === 'fit') {
+                applyPreviewZoom();
+            }
+        });
 
         // Register DOM event listeners to avoid bundler scope resolution issues for inline onclick attributes
         function initProductManagementEvents() {
-            const hBtn = document.getElementById('historyBtn');
-            const cBtn = document.getElementById('closeHistoryBtn');
-            const cBtn2 = document.getElementById('closeHistoryBtn2');
-            
-            if (hBtn) hBtn.addEventListener('click', openHistoryModal);
-            if (cBtn) cBtn.addEventListener('click', closeHistoryModal);
-            if (cBtn2) cBtn2.addEventListener('click', closeHistoryModal);
-
             // Multi Barcode triggers
             const printSelectedBtn = document.getElementById('printSelectedBarcodesBtn');
             const closeMultiBtn = document.getElementById('closeMultiBarcodeBtn');

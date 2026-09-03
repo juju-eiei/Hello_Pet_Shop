@@ -119,21 +119,32 @@ export function saveUserProfileData(data) {
  */
 export function getCartData() {
     const userObj = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!userObj.user_id && !userObj.username) return [];
+    const allKeys = [
+        userObj.user_id,
+        userObj.customer_id,
+        userObj.id,
+        userObj.username
+    ].filter(Boolean).map(String);
 
-    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
-    const userCartKey = `cart_${userId}`;
-
-    const savedCarts = JSON.parse(localStorage.getItem('savedUserCarts') || '{}');
-    const userSaved = savedCarts[userId] || (userObj.username ? savedCarts[userObj.username] : null);
-
-    if (userSaved && Array.isArray(userSaved)) {
-        return userSaved;
+    if (allKeys.length > 0) {
+        let savedCarts = {};
+        try { savedCarts = JSON.parse(localStorage.getItem('savedUserCarts') || '{}'); } catch(e) {}
+        for (const k of allKeys) {
+            if (savedCarts[k] && Array.isArray(savedCarts[k])) {
+                return savedCarts[k];
+            }
+        }
+        for (const k of allKeys) {
+            const localCartStr = localStorage.getItem(`cart_${k}`);
+            if (localCartStr) {
+                try { return JSON.parse(localCartStr); } catch(e) {}
+            }
+        }
     }
 
-    let localCartStr = localStorage.getItem(userCartKey);
-    if (localCartStr) {
-        try { return JSON.parse(localCartStr); } catch(e) {}
+    let rawCart = localStorage.getItem('cart');
+    if (rawCart) {
+        try { return JSON.parse(rawCart); } catch(e) {}
     }
 
     return [];
@@ -143,23 +154,115 @@ export function getCartData() {
  * Save user cart data with strict per-user account persistence
  */
 export function saveCartData(cart) {
-    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!userObj.user_id && !userObj.username) return;
-
-    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
-    const userCartKey = `cart_${userId}`;
-
     const cartArray = Array.isArray(cart) ? cart : [];
-
     localStorage.setItem('cart', JSON.stringify(cartArray));
-    localStorage.setItem(userCartKey, JSON.stringify(cartArray));
 
-    const savedCarts = JSON.parse(localStorage.getItem('savedUserCarts') || '{}');
-    savedCarts[userId] = cartArray;
-    if (userObj.username) {
-        savedCarts[userObj.username] = cartArray;
+    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+    const allKeys = [
+        userObj.user_id,
+        userObj.customer_id,
+        userObj.id,
+        userObj.username
+    ].filter(Boolean).map(String);
+
+    if (allKeys.length > 0) {
+        let savedCarts = {};
+        try { savedCarts = JSON.parse(localStorage.getItem('savedUserCarts') || '{}'); } catch(e) {}
+        allKeys.forEach(k => {
+            localStorage.setItem(`cart_${k}`, JSON.stringify(cartArray));
+            savedCarts[k] = cartArray;
+        });
+        localStorage.setItem('savedUserCarts', JSON.stringify(savedCarts));
     }
-    localStorage.setItem('savedUserCarts', JSON.stringify(savedCarts));
+}
+
+/**
+ * Sanitize an order object for safe, lightweight localStorage caching
+ * Removes Base64 blobs, strips slipImage, caps item list
+ */
+export function sanitizeOrderForCache(order) {
+    if (!order || typeof order !== 'object') return order;
+    const hasSlip = Boolean(order.has_slip || order.hasSlip || (order.slip_image && !String(order.slip_image).startsWith('data:')) || (order.slipImage && !String(order.slipImage).startsWith('data:')));
+    
+    // Preserve only safe image path if it's a URL/path, never base64
+    let safeSlipImage = null;
+    const rawSlip = order.slip_image || order.slipImage;
+    if (rawSlip && typeof rawSlip === 'string' && !rawSlip.startsWith('data:image/')) {
+        safeSlipImage = rawSlip;
+    }
+
+    return {
+        id: order.id || order.order_id,
+        date: order.date || order.order_date || new Date().toISOString(),
+        status: order.status,
+        total: parseFloat(order.total ?? order.total_amount ?? order.amount ?? 0),
+        subtotal: parseFloat(order.subtotal ?? 0),
+        shipping: parseFloat(order.shipping ?? order.shipping_fee ?? 0),
+        deliveryMethod: order.deliveryMethod || order.company_name || 'Standard Express',
+        paymentMethod: order.paymentMethod || order.payment_method || 'transfer',
+        payment_status: order.payment_status !== undefined ? order.payment_status : null,
+        has_slip: hasSlip,
+        hasSlip: hasSlip,
+        slipImage: null, // Always null in cache to prevent localStorage quota exhaustion
+        slip_image: safeSlipImage,
+        items: (order.items || []).slice(0, 10).map(i => ({
+            name: i.name || i.product_name || 'สินค้าในรายการ',
+            price: parseFloat(i.price || i.unit_price || 0),
+            quantity: parseInt(i.quantity || i.qty || 1),
+            image: (i.image || i.image_url || '').startsWith('data:') ? '/image/713815-00-allonline-hg.jpg' : (i.image || i.image_url || '/image/713815-00-allonline-hg.jpg')
+        })),
+        shippingAddress: order.shippingAddress || null,
+        customer: order.customer ? { name: order.customer.name, phone: order.customer.phone } : null
+    };
+}
+
+/**
+ * Safely clean up bloated legacy order cache containing Base64 slips or duplicate keys
+ * Does NOT delete any data from Database.
+ */
+export function cleanLegacyOrderStorage() {
+    try {
+        // 1. Remove the bloated savedUserOrders aggregator key
+        if (localStorage.getItem('savedUserOrders')) {
+            localStorage.removeItem('savedUserOrders');
+        }
+
+        // 2. Clean all order keys in localStorage
+        const keysToInspect = ['myOrders'];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('myOrders_')) {
+                keysToInspect.push(key);
+            }
+        }
+
+        keysToInspect.forEach(key => {
+            const raw = localStorage.getItem(key);
+            if (!raw) return;
+
+            // If it contains Base64 or is unusually large (> 80KB)
+            if (raw.includes('data:image/') || raw.length > 80000) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                        const cleaned = parsed.slice(0, 20).map(o => sanitizeOrderForCache(o));
+                        localStorage.setItem(key, JSON.stringify(cleaned));
+                    } else {
+                        localStorage.removeItem(key);
+                    }
+                } catch (e) {
+                    localStorage.removeItem(key);
+                }
+            }
+        });
+    } catch (err) {
+        console.warn("cleanLegacyOrderStorage warning:", err);
+    }
+}
+
+// Automatically sanitize and cleanup legacy storage on script load
+if (typeof window !== 'undefined' && window.localStorage) {
+    cleanLegacyOrderStorage();
 }
 
 /**
@@ -167,47 +270,65 @@ export function saveCartData(cart) {
  */
 export function getUserOrdersData() {
     const userObj = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!userObj.user_id && !userObj.username) return [];
+    const userId = userObj.user_id ? String(userObj.user_id) : (userObj.customer_id ? String(userObj.customer_id) : (userObj.id ? String(userObj.id) : (userObj.username ? String(userObj.username) : '')));
 
-    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
-    const userOrdersKey = `myOrders_${userId}`;
-
-    const savedOrders = JSON.parse(localStorage.getItem('savedUserOrders') || '{}');
-    const userSaved = savedOrders[userId] || (userObj.username ? savedOrders[userObj.username] : null);
-
-    if (userSaved && Array.isArray(userSaved)) {
-        return userSaved;
+    if (userId) {
+        const userOrdersKey = `myOrders_${userId}`;
+        let localStr = localStorage.getItem(userOrdersKey);
+        if (localStr) {
+            try { 
+                const parsed = JSON.parse(localStr); 
+                if (Array.isArray(parsed)) return parsed;
+            } catch(e) {}
+        }
     }
 
-    let localStr = localStorage.getItem(userOrdersKey);
-    if (localStr) {
-        try { return JSON.parse(localStr); } catch(e) {}
+    let rawOrders = localStorage.getItem('myOrders');
+    if (rawOrders) {
+        try { 
+            const parsed = JSON.parse(rawOrders); 
+            if (Array.isArray(parsed)) return parsed;
+        } catch(e) {}
     }
 
     return [];
 }
 
 /**
- * Save user orders with strict per-user account persistence
+ * Save user orders with strict per-user account persistence (lightweight cache only)
  */
 export function saveUserOrdersData(orders) {
-    const userObj = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!userObj.user_id && !userObj.username) return;
+    try {
+        const ordersArray = Array.isArray(orders) ? orders : [];
+        // Keep max 20 latest sanitized orders for lightweight cache
+        const sanitized = ordersArray.slice(0, 20).map(o => sanitizeOrderForCache(o));
+        const jsonStr = JSON.stringify(sanitized);
 
-    const userId = userObj.user_id ? String(userObj.user_id) : String(userObj.username);
-    const userOrdersKey = `myOrders_${userId}`;
+        const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = userObj.user_id ? String(userObj.user_id) : (userObj.customer_id ? String(userObj.customer_id) : (userObj.id ? String(userObj.id) : (userObj.username ? String(userObj.username) : '')));
 
-    const ordersArray = Array.isArray(orders) ? orders : [];
-
-    localStorage.setItem('myOrders', JSON.stringify(ordersArray));
-    localStorage.setItem(userOrdersKey, JSON.stringify(ordersArray));
-
-    const savedOrders = JSON.parse(localStorage.getItem('savedUserOrders') || '{}');
-    savedOrders[userId] = ordersArray;
-    if (userObj.username) {
-        savedOrders[userObj.username] = ordersArray;
+        try {
+            localStorage.setItem('myOrders', jsonStr);
+            if (userId) {
+                localStorage.setItem(`myOrders_${userId}`, jsonStr);
+            }
+        } catch (storageErr) {
+            console.warn("Storage quota hit, performing cleanup:", storageErr);
+            cleanLegacyOrderStorage();
+            try {
+                // Try saving only the top 5 sanitized orders
+                const minimal = sanitized.slice(0, 5);
+                localStorage.setItem('myOrders', JSON.stringify(minimal));
+                if (userId) {
+                    localStorage.setItem(`myOrders_${userId}`, JSON.stringify(minimal));
+                }
+            } catch (finalErr) {
+                console.warn("Could not write order cache; continuing without local cache (Database is source of truth)", finalErr);
+            }
+        }
+    } catch (e) {
+        console.warn("saveUserOrdersData error:", e);
     }
-    localStorage.setItem('savedUserOrders', JSON.stringify(savedOrders));
 }
 
 /**

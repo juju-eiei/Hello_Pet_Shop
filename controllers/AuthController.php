@@ -15,14 +15,6 @@ class AuthController {
     }
 
     public function login() {
-        $ip = RateLimiter::getClientIp();
-        $rateCheck = RateLimiter::check('login:' . $ip, 5, 900);
-        if (!$rateCheck['allowed']) {
-            $minutes = ceil($rateCheck['retry_after'] / 60);
-            Response::json(429, "คุณพยายามเข้าสู่ระบบผิดพลาดหลายครั้งเกินไป กรุณารออีก {$minutes} นาทีแล้วลองใหม่อีกครั้ง");
-            return;
-        }
-
         $data = json_decode(file_get_contents("php://input"), true);
 
         if (empty($data['username']) || empty($data['password'])) {
@@ -33,9 +25,6 @@ class AuthController {
         $user = $this->userModel->findByUsername($data['username']);
 
         if ($user && password_verify($data['password'], $user['password'])) {
-            // Clear rate limits on successful login
-            RateLimiter::clear('login:' . $ip);
-
             // Remove password from response
             unset($user['password']);
             
@@ -52,6 +41,33 @@ class AuthController {
             }
             $user['csrf_token'] = $_SESSION['csrf_token'];
 
+            $roleNameLower = strtolower($user['role_name'] ?? '');
+
+            // Calculate user and role permissions
+            $userPerms = json_decode($user['permissions'] ?? '[]', true) ?: [];
+            $stmtRole = $this->db->prepare("SELECT permissions FROM roles WHERE role_id = ?");
+            $stmtRole->execute([$user['role_id']]);
+            $roleData = $stmtRole->fetch(PDO::FETCH_ASSOC);
+            $rolePerms = json_decode($roleData['permissions'] ?? '[]', true) ?: [];
+
+            if ($roleNameLower === 'admin') {
+                $allPerms = [
+                    "dashboard_view", "products_manage", "stock_view", "stock_manage",
+                    "orders_manage", "orders_view", "customers_view", "customers_manage",
+                    "promotions_view", "promotions_manage", "delivery_view", "delivery_manage",
+                    "rewards_view", "rewards_manage", "staff_manage", "staff_profile_manage", "pos_access"
+                ];
+            } else {
+                if (empty($rolePerms) && ($roleNameLower === 'employee' || $roleNameLower === 'staff')) {
+                    $rolePerms = [
+                        'pos_access', 'orders_manage', 'orders_view', 'customers_view',
+                        'stock_view', 'stock_manage', 'promotions_view', 'staff_profile_manage', 'rewards_view'
+                    ];
+                }
+                $allPerms = array_values(array_unique(array_merge($userPerms, $rolePerms)));
+            }
+            $user['permissions'] = $allPerms;
+
             if (strtolower($user['role_name']) === 'customer') {
                 $stmtCust = $this->db->prepare("SELECT customer_id, first_name, last_name, 
                              COALESCE(NULLIF(phone, ''), (SELECT a.phone FROM addresses a WHERE a.customer_id = customers.customer_id AND a.phone IS NOT NULL AND a.phone != '' ORDER BY a.is_default DESC, a.address_id DESC LIMIT 1)) as phone
@@ -64,30 +80,28 @@ class AuthController {
                     $user['last_name'] = $cust['last_name'];
                     $user['phone'] = $cust['phone'] ?: '';
                 }
-            } elseif (in_array(strtolower($user['role_name']), ['admin', 'employee'])) {
-                $stmtEmp = $this->db->prepare("SELECT employee_id FROM employees WHERE user_id = ?");
+            } elseif (in_array(strtolower($user['role_name']), ['admin', 'employee', 'staff'])) {
+                $stmtEmp = $this->db->prepare("SELECT employee_id, first_name, last_name, phone FROM employees WHERE user_id = ?");
                 $stmtEmp->execute([$user['user_id']]);
                 $emp = $stmtEmp->fetch(PDO::FETCH_ASSOC);
                 if ($emp) {
                     $user['employee_id'] = $emp['employee_id'];
+                    if (empty($user['first_name']) && !empty($emp['first_name'])) {
+                        $user['first_name'] = $emp['first_name'];
+                        $user['last_name'] = $emp['last_name'];
+                        $user['phone'] = $emp['phone'];
+                    }
                 }
             }
 
             Response::json(200, "เข้าสู่ระบบสำเร็จ", $user);
         } else {
-            RateLimiter::hit('login:' . $ip, 900);
             Response::json(401, "Username หรือ Password ไม่ถูกต้อง");
         }
     }
 
     public function register() {
-        $ip = RateLimiter::getClientIp();
-        $rateCheck = RateLimiter::check('register:' . $ip, 5, 600);
-        if (!$rateCheck['allowed']) {
-            $minutes = ceil($rateCheck['retry_after'] / 60);
-            Response::json(429, "คุณทำรายการสมัครสมาชิกบ่อยเกินไป กรุณารออีก {$minutes} นาทีแล้วลองใหม่อีกครั้ง");
-            return;
-        }
+
 
         $data = json_decode(file_get_contents("php://input"), true);
 
@@ -119,11 +133,17 @@ class AuthController {
     }
 
     public function me() {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             session_start();
         }
         
-        if (!isset($_SESSION['user_id'])) {
+        $userId = $_SESSION['user_id'] ?? null;
+        if (!$userId) {
+            $headers = function_exists('apache_request_headers') ? apache_request_headers() : [];
+            $userId = $headers['X-User-Id'] ?? ($headers['x-user-id'] ?? ($_SERVER['HTTP_X_USER_ID'] ?? null));
+        }
+        
+        if (!$userId) {
             http_response_code(401);
             echo json_encode(["message" => "Unauthorized: Please log in first"]);
             return;
@@ -136,7 +156,7 @@ class AuthController {
                   LIMIT 0,1";
 
         $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':user_id', $_SESSION['user_id']);
+        $stmt->bindParam(':user_id', $userId);
         $stmt->execute();
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -145,6 +165,11 @@ class AuthController {
             echo json_encode(["message" => "User not found"]);
             return;
         }
+
+        // Restore session if needed
+        $_SESSION['user_id'] = $user['user_id'];
+        $_SESSION['role'] = $user['role_name'];
+
 
         // Generate CSRF Token if not exists
         if (empty($_SESSION['csrf_token'])) {
@@ -159,16 +184,37 @@ class AuthController {
             $allPerms = [
                 "dashboard_view",
                 "products_manage",
+                "stock_view",
                 "stock_manage",
                 "orders_manage",
+                "orders_view",
+                "customers_view",
                 "customers_manage",
+                "promotions_view",
                 "promotions_manage",
+                "delivery_view",
                 "delivery_manage",
+                "rewards_view",
                 "rewards_manage",
-                "staff_manage"
+                "staff_manage",
+                "staff_profile_manage",
+                "pos_access"
             ];
         } else {
-            $allPerms = array_unique(array_merge($userPerms, $rolePerms));
+            if (empty($rolePerms) && ($roleNameLower === 'employee' || $roleNameLower === 'staff')) {
+                $rolePerms = [
+                    'pos_access',
+                    'orders_manage',
+                    'orders_view',
+                    'customers_view',
+                    'stock_view',
+                    'stock_manage',
+                    'promotions_view',
+                    'staff_profile_manage',
+                    'rewards_view'
+                ];
+            }
+            $allPerms = array_values(array_unique(array_merge($userPerms, $rolePerms)));
         }
 
         $customerId = null;
@@ -189,11 +235,14 @@ class AuthController {
                 $phone = $cust['phone'] ?: '';
             }
         } else {
-            $stmtEmp = $this->db->prepare("SELECT employee_id FROM employees WHERE user_id = ?");
+            $stmtEmp = $this->db->prepare("SELECT employee_id, first_name, last_name, phone FROM employees WHERE user_id = ?");
             $stmtEmp->execute([$user['user_id']]);
             $emp = $stmtEmp->fetch(PDO::FETCH_ASSOC);
             if ($emp) {
                 $employeeId = $emp['employee_id'];
+                $firstName = $emp['first_name'];
+                $lastName = $emp['last_name'];
+                $phone = $emp['phone'] ?: '';
             }
         }
 

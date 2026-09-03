@@ -62,7 +62,7 @@
                             <div class="form-group">
                                 <label>Category</label>
                                 <div class="category-input-group">
-                                    <select name="category_id" id="pCategory" required>
+                                    <select name="category_id" id="pCategory" required onchange="onCategoryChange()">
                                         <option value="">Loading categories...</option>
                                     </select>
                                     <button type="button" class="add-category-btn" onclick="addNewCategory()">
@@ -103,6 +103,72 @@
                                         <option value="L">L (ลิตร)</option>
                                         <option value="ml">ml (มิลลิลิตร)</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <!-- Expiry Date Section -->
+                            <div class="form-group" id="expirySection" style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <label style="margin: 0; font-weight: 600; color: #1e293b; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fa-regular fa-calendar-days" style="color: #d97706;"></i>
+                                        <span>วันหมดอายุของสินค้า (Expiry Date)</span>
+                                    </label>
+                                    <label style="font-size: 13px; color: #334155; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; white-space: nowrap; flex-shrink: 0;">
+                                        <input type="checkbox" id="hasExpiryCheckbox" onchange="toggleExpiryInput()" style="cursor: pointer; transform: scale(1.15);">
+                                        <span style="font-weight: 600;">มีวันหมดอายุ</span>
+                                    </label>
+                                </div>
+
+                                <div id="expiryDateContainer" style="display: none; margin-top: 10px;">
+                                    <!-- 3 Dropdowns (วัน / เดือน / ปี) -->
+                                    <div style="display: grid; grid-template-columns: 1fr 1.6fr 1.4fr; gap: 8px; margin-bottom: 8px;">
+                                        <div>
+                                            <label style="font-size: 11.5px; color: #64748b; font-weight: 500; display: block; margin-bottom: 4px;">วัน (Day)</label>
+                                            <select id="expDay" onchange="syncExpiryFromDropdowns()" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; outline: none; background: white; font-family: inherit; cursor: pointer;">
+                                                <!-- 1 - 31 -->
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style="font-size: 11.5px; color: #64748b; font-weight: 500; display: block; margin-bottom: 4px;">เดือน (Month)</label>
+                                            <select id="expMonth" onchange="syncExpiryFromDropdowns()" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; outline: none; background: white; font-family: inherit; cursor: pointer;">
+                                                <option value="01">01 - มกราคม</option>
+                                                <option value="02">02 - กุมภาพันธ์</option>
+                                                <option value="03">03 - มีนาคม</option>
+                                                <option value="04">04 - เมษายน</option>
+                                                <option value="05">05 - พฤษภาคม</option>
+                                                <option value="06">06 - มิถุนายน</option>
+                                                <option value="07">07 - กรกฎาคม</option>
+                                                <option value="08">08 - สิงหาคม</option>
+                                                <option value="09">09 - กันยายน</option>
+                                                <option value="10">10 - ตุลาคม</option>
+                                                <option value="11">11 - พฤศจิกายน</option>
+                                                <option value="12">12 - ธันวาคม</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style="font-size: 11.5px; color: #64748b; font-weight: 500; display: block; margin-bottom: 4px;">ปี (Year)</label>
+                                            <select id="expYear" onchange="syncExpiryFromDropdowns()" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; outline: none; background: white; font-family: inherit; cursor: pointer;">
+                                                <!-- Dynamically generated years -->
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hidden Input for Form Submission -->
+                                    <input type="hidden" name="expiry_date" id="pExpiryDate">
+
+                                    <!-- Date summary pill -->
+                                    <div id="expirySummaryBadge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 7px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                                        <i class="fa-solid fa-calendar-check" style="color: #16a34a;"></i>
+                                        <span id="expirySummaryText">วันหมดอายุ: -</span>
+                                    </div>
+
+                                    <p style="font-size: 11.5px; color: #0284c7; margin-top: 6px; display: flex; align-items: center; gap: 5px;">
+                                        <i class="fas fa-bell"></i> ระบบจะแจ้งเตือนอัตโนมัติเมื่อสินค้าใกล้หมดอายุภายใน 1 เดือน (30 วัน)
+                                    </p>
+                                </div>
+
+                                <div id="noExpiryNotice" style="font-size: 12px; color: #94a3b8; font-style: italic; margin-top: 4px;">
+                                    * สินค้านี้ไม่มีวันหมดอายุ (เช่น ของใช้ ของเล่น อุปกรณ์)
                                 </div>
                             </div>
                         </div>
@@ -190,6 +256,7 @@
         let uploadMode = 'url';
 
         async function init() {
+            initExpiryDateOptions();
             await loadCategories();
             await loadPetTypes();
             const pTitle = document.getElementById('pageTitle');
@@ -204,12 +271,176 @@
             }
         }
 
+        const THAI_MONTHS = [
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+        ];
+
+        function initExpiryDateOptions() {
+            const daySelect = document.getElementById('expDay');
+            const yearSelect = document.getElementById('expYear');
+            if (!daySelect || !yearSelect) return;
+
+            // Generate Days 1-31
+            daySelect.innerHTML = '';
+            for (let d = 1; d <= 31; d++) {
+                const val = String(d).padStart(2, '0');
+                daySelect.innerHTML += `<option value="${val}">${d}</option>`;
+            }
+
+            // Generate Years (Current Year to +10 years)
+            const curYear = new Date().getFullYear();
+            yearSelect.innerHTML = '';
+            for (let y = curYear; y <= curYear + 10; y++) {
+                const thaiYear = y + 543;
+                yearSelect.innerHTML += `<option value="${y}">${y} (พ.ศ. ${thaiYear})</option>`;
+            }
+        }
+
+        function setExpiryDate(dateStr) {
+            if (!dateStr || dateStr === '0000-00-00') {
+                document.getElementById('hasExpiryCheckbox').checked = false;
+                toggleExpiryInput(false);
+                return;
+            }
+
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                const y = parts[0];
+                const m = parts[1].padStart(2, '0');
+                const d = parts[2].padStart(2, '0');
+
+                const yearSelect = document.getElementById('expYear');
+                const monthSelect = document.getElementById('expMonth');
+                const daySelect = document.getElementById('expDay');
+
+                if (yearSelect) yearSelect.value = y;
+                if (monthSelect) monthSelect.value = m;
+                if (daySelect) daySelect.value = d;
+                document.getElementById('pExpiryDate').value = `${y}-${m}-${d}`;
+
+                document.getElementById('hasExpiryCheckbox').checked = true;
+                toggleExpiryInput(true);
+                updateExpirySummary();
+            }
+        }
+
+        function syncExpiryFromDropdowns() {
+            const y = document.getElementById('expYear').value;
+            const m = document.getElementById('expMonth').value;
+            let d = parseInt(document.getElementById('expDay').value, 10);
+
+            const daysInMonth = new Date(parseInt(y, 10), parseInt(m, 10), 0).getDate();
+            if (d > daysInMonth) {
+                d = daysInMonth;
+                document.getElementById('expDay').value = String(d).padStart(2, '0');
+            }
+
+            const formattedDate = `${y}-${m}-${String(d).padStart(2, '0')}`;
+            document.getElementById('pExpiryDate').value = formattedDate;
+            updateExpirySummary();
+        }
+
+        function setDefaultExpiryDate() {
+            const target = new Date();
+            target.setFullYear(target.getFullYear() + 1);
+            const y = target.getFullYear();
+            const m = String(target.getMonth() + 1).padStart(2, '0');
+            const d = String(target.getDate()).padStart(2, '0');
+            setExpiryDate(`${y}-${m}-${d}`);
+        }
+
+        function updateExpirySummary() {
+            const dateVal = document.getElementById('pExpiryDate').value;
+            const textEl = document.getElementById('expirySummaryText');
+            if (!dateVal || !textEl) return;
+
+            const parts = dateVal.split('-');
+            if (parts.length === 3) {
+                const d = parseInt(parts[2], 10);
+                const mIdx = parseInt(parts[1], 10) - 1;
+                const y = parseInt(parts[0], 10);
+                const thaiYear = y + 543;
+                const monthName = THAI_MONTHS[mIdx] || '';
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const expDate = new Date(y, mIdx, d);
+                const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+
+                let relativeText = '';
+                if (diffDays < 0) {
+                    relativeText = ' ⚠️ หมดอายุแล้ว';
+                } else if (diffDays <= 30) {
+                    relativeText = ` ⚠️ ใกล้หมดอายุ (อีก ${diffDays} วัน)`;
+                } else {
+                    const months = Math.floor(diffDays / 30);
+                    const years = Math.floor(months / 12);
+                    const remMonths = months % 12;
+                    if (years > 0) {
+                        relativeText = ` (อีก ${years} ปี ${remMonths > 0 ? remMonths + ' เดือน' : ''})`;
+                    } else {
+                        relativeText = ` (อีก ${months} เดือน)`;
+                    }
+                }
+
+                textEl.textContent = `วันหมดอายุ: ${d} ${monthName} ${thaiYear}${relativeText}`;
+            }
+        }
+
+        let categoriesList = [];
+
         async function loadCategories() {
             const res = await fetch('/api/categories');
             const result = await res.json();
+            categoriesList = result.data || [];
             const select = document.getElementById('pCategory');
             select.innerHTML = '<option value="">-- Select Category --</option>' + 
-                result.data.map(c => `<option value="${c.category_id}">${c.category_name}</option>`).join('');
+                categoriesList.map(c => `<option value="${c.category_id}" data-requires-exp="${c.requires_expiration}">${c.category_name}</option>`).join('');
+        }
+
+        function onCategoryChange() {
+            const select = document.getElementById('pCategory');
+            const selectedCatId = select.value;
+            const cat = categoriesList.find(c => String(c.category_id) === String(selectedCatId));
+            
+            const hasExpCheckbox = document.getElementById('hasExpiryCheckbox');
+            if (cat) {
+                if (parseInt(cat.requires_expiration) === 1) {
+                    hasExpCheckbox.checked = true;
+                    toggleExpiryInput(true);
+                    if (!document.getElementById('pExpiryDate').value) {
+                        setDefaultExpiryDate();
+                    }
+                } else {
+                    hasExpCheckbox.checked = false;
+                    toggleExpiryInput(false);
+                }
+            }
+        }
+
+        function toggleExpiryInput(forceState = null) {
+            const hasExpCheckbox = document.getElementById('hasExpiryCheckbox');
+            const isChecked = forceState !== null ? forceState : hasExpCheckbox.checked;
+            hasExpCheckbox.checked = isChecked;
+
+            const container = document.getElementById('expiryDateContainer');
+            const notice = document.getElementById('noExpiryNotice');
+            const expInput = document.getElementById('pExpiryDate');
+
+            if (isChecked) {
+                container.style.display = 'block';
+                notice.style.display = 'none';
+                if (!expInput.value) {
+                    setDefaultExpiryDate();
+                } else {
+                    updateExpirySummary();
+                }
+            } else {
+                container.style.display = 'none';
+                notice.style.display = 'block';
+                expInput.value = '';
+            }
         }
 
         async function loadPetTypes() {
@@ -243,6 +474,15 @@
             document.getElementById('pWeightUnit').value = p.weight_unit || 'kg';
             document.getElementById('pBarcode').value = p.barcode;
             document.getElementById('pDesc').value = p.description;
+
+            // Handle Expiry Date
+            if (p.expiry_date && p.expiry_date !== '0000-00-00') {
+                setExpiryDate(p.expiry_date);
+            } else {
+                document.getElementById('hasExpiryCheckbox').checked = false;
+                document.getElementById('pExpiryDate').value = '';
+                toggleExpiryInput(false);
+            }
             
             if (p.image_url) {
                 previewImage(p.image_url);
@@ -260,9 +500,13 @@
 
         function previewImage(url) {
             const img = document.getElementById('imgPreview');
+            if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/') && !url.startsWith('data:')) {
+                url = '/' + url;
+            }
             img.src = url || '/image/non-image.png';
             img.style.display = 'block';
         }
+
 
         function previewFile(input) {
             if (input.files && input.files[0]) {
@@ -362,6 +606,15 @@
                 kgWeight = val / 1000;
             }
             formData.set('weight', kgWeight);
+            
+            // Handle Expiry Date
+            const hasExp = document.getElementById('hasExpiryCheckbox').checked;
+            const expDateVal = document.getElementById('pExpiryDate').value;
+            if (hasExp && expDateVal) {
+                formData.set('expiry_date', expDateVal);
+            } else {
+                formData.set('expiry_date', '');
+            }
             
             // If in URL mode, make sure file is removed or clarified
             if (uploadMode === 'url') formData.set('image', '');

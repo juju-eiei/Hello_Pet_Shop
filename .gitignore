@@ -10,3 +10,5 @@ maintenance/
 tmp_*
 scratch_*
 inspect_*
+/uploads
+

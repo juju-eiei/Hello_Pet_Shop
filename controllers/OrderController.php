@@ -12,6 +12,33 @@ class OrderController {
         $this->db = $database->getConnection();
     }
 
+    /**
+     * Safely process slip image: if Base64 string, write to uploads/slips/ and return relative URL path
+     */
+    private function saveSlipImage($slipData, $orderId) {
+        if (empty($slipData)) return null;
+        if (strpos($slipData, '/uploads/') === 0 || strpos($slipData, 'http://') === 0 || strpos($slipData, 'https://') === 0) {
+            return $slipData;
+        }
+        if (preg_match('/^data:image\/(\w+);base64,/', $slipData, $matches)) {
+            $imgData = substr($slipData, strpos($slipData, ',') + 1);
+            $ext = strtolower($matches[1]);
+            if ($ext === 'jpeg') $ext = 'jpg';
+            $decoded = base64_decode($imgData);
+            if ($decoded !== false) {
+                $dir = dirname(__DIR__) . '/uploads/slips/';
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0777, true);
+                }
+                $filename = 'slip_' . (int)$orderId . '_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+                if (file_put_contents($dir . $filename, $decoded)) {
+                    return '/uploads/slips/' . $filename;
+                }
+            }
+        }
+        return $slipData;
+    }
+
     public function createOnlineOrder() {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
@@ -270,7 +297,7 @@ class OrderController {
             // Insert payment record if slip or payment method provided
             try {
                 $payMethod = 1; // Transfer / PromptPay
-                $slipImg = !empty($data['slip_image']) ? $data['slip_image'] : null;
+                $slipImg = !empty($data['slip_image']) ? $this->saveSlipImage($data['slip_image'], $order_id) : null;
                 $stmtPay = $this->db->prepare("INSERT INTO payments (order_id, payment_method, amount, slip_image, status) VALUES (?, ?, ?, ?, 0)");
                 $stmtPay->execute([$order_id, $payMethod, $net_total, $slipImg]);
             } catch (Exception $exPay) {}
@@ -321,13 +348,14 @@ class OrderController {
             
             $this->db->commit();
 
-            // Trigger Automatic LINE Notifications (Fail-safe)
+            // Trigger Automatic LINE Notifications (Fail-safe, non-blocking)
             try {
-                $affectedProductIds = array_column($order_details, 'product_id');
-                LineService::sendNewOrderAlert($order_id, $this->db);
                 if (!empty($data['slip_image'])) {
                     LineService::sendPaymentAlert($order_id, 'submitted', $this->db);
+                } else {
+                    LineService::sendNewOrderAlert($order_id, $this->db);
                 }
+                $affectedProductIds = array_column($order_details, 'product_id');
                 LineService::checkAndNotifyLowStock($affectedProductIds, $this->db);
             } catch (Exception $exLine) {
                 error_log("LINE Auto-Notification failed on order #$order_id: " . $exLine->getMessage());
@@ -672,11 +700,28 @@ class OrderController {
                              o.order_type,
                              c.first_name,
                              c.last_name,
+                             c.phone as customer_phone,
+                             u.email as customer_email,
+                             a.recipient_name,
+                             a.phone as recipient_phone,
+                             a.address_detail,
+                             a.province,
+                             a.zip_code,
+                             del.company_id,
+                             del.company_name,
+                             del.tracking_number,
                              p.slip_image,
                              p.payment_method,
                              p.status as payment_status
                       FROM orders o 
                       LEFT JOIN customers c ON o.customer_id = c.customer_id
+                      LEFT JOIN users u ON c.user_id = u.user_id
+                      LEFT JOIN addresses a ON o.address_id = a.address_id
+                      LEFT JOIN (
+                          SELECT d1.order_id, d1.company_id, d1.tracking_number, dc1.company_name
+                          FROM deliveries d1
+                          LEFT JOIN delivery_companies dc1 ON d1.company_id = dc1.company_id
+                      ) del ON o.order_id = del.order_id
                       LEFT JOIN (
                           SELECT p1.order_id, p1.slip_image, p1.payment_method, p1.status
                           FROM payments p1
@@ -691,14 +736,15 @@ class OrderController {
                 $query = $baseQuery . " ORDER BY o.order_date DESC";
                 $stmt = $this->db->query($query);
             } else {
-                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
-                $stmtCust->execute([$user['user_id']]);
-                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
-                $cid = $cRow ? (int)$cRow['customer_id'] : -1;
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ? OR customer_id = ?");
+                $stmtCust->execute([$user['user_id'], $user['user_id']]);
+                $cIds = $stmtCust->fetchAll(PDO::FETCH_COLUMN);
+                $targetIds = array_values(array_unique(array_filter(array_merge($cIds, [(int)$user['user_id']]))));
+                $inClause = implode(',', array_fill(0, count($targetIds), '?'));
 
-                $query = $baseQuery . " WHERE o.customer_id = ? ORDER BY o.order_date DESC";
+                $query = $baseQuery . " WHERE o.customer_id IN ($inClause) ORDER BY o.order_date DESC";
                 $stmt = $this->db->prepare($query);
-                $stmt->execute([$cid]);
+                $stmt->execute($targetIds);
             }
 
             $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -747,8 +793,10 @@ class OrderController {
                 $order['items'] = $itemsByOrder[$order['id']] ?? [];
                 $order['amount'] = (float)$order['amount'];
                 $order['total_amount'] = (float)$order['amount'];
+                $order['total'] = (float)$order['amount'];
                 $order['subtotal'] = (float)($order['subtotal'] ?? 0);
                 $order['shipping_fee'] = (float)($order['shipping_fee'] ?? 0);
+                $order['shipping'] = (float)($order['shipping_fee'] ?? 0);
                 $order['discount_amount'] = (float)($order['discount_amount'] ?? 0);
                 $order['points_used'] = (int)($order['points_used'] ?? 0);
                 $order['points_discount'] = (float)($order['points_used'] > 0 ? ($order['points_used'] / 10) * 10.0 : 0.0);
@@ -769,8 +817,35 @@ class OrderController {
                 $order['order_type_label'] = ($order['order_type'] == 2) ? 'ขายหน้าร้าน (POS)' : 'ออนไลน์';
                 $order['has_slip'] = !empty($order['slip_image']);
                 $order['slip_image'] = $order['slip_image'] ?? null;
-                $custName = trim(($order['first_name'] ?? '') . ' ' . ($order['last_name'] ?? ''));
-                $order['customer_name'] = !empty($custName) ? $custName : 'ลูกค้าออนไลน์';
+                $order['payment_status'] = $order['payment_status'] !== null ? (int)$order['payment_status'] : null;
+
+                $cName = trim(($order['first_name'] ?? '') . ' ' . ($order['last_name'] ?? ''));
+                if (empty($cName)) {
+                    $cName = !empty($order['recipient_name']) ? $order['recipient_name'] : 'ลูกค้าออนไลน์';
+                }
+                $cPhone = !empty($order['recipient_phone']) ? $order['recipient_phone'] : (!empty($order['customer_phone']) ? $order['customer_phone'] : '-');
+                $addressParts = array_filter([$order['address_detail'] ?? '', $order['province'] ?? '', $order['zip_code'] ?? '']);
+                $cAddress = count($addressParts) > 0 ? implode(' ', $addressParts) : '-';
+
+                $order['customer_name'] = $cName;
+                $order['customer_phone'] = $cPhone;
+                $order['customer'] = [
+                    'name' => $cName,
+                    'email' => !empty($order['customer_email']) ? $order['customer_email'] : '-',
+                    'phone' => $cPhone,
+                    'address' => $cAddress
+                ];
+                $order['shippingAddress'] = [
+                    'fullName' => !empty($order['recipient_name']) ? $order['recipient_name'] : $cName,
+                    'phone' => $cPhone,
+                    'address' => $order['address_detail'] ?? '',
+                    'province' => $order['province'] ?? '',
+                    'zipcode' => $order['zip_code'] ?? ''
+                ];
+                $order['company_name'] = $order['company_name'] ?: 'ขนส่งเอกชน';
+                $order['deliveryMethod'] = $order['company_name'];
+                $order['shipping_provider'] = $order['company_name'];
+                $order['tracking_number'] = $order['tracking_number'] ?? null;
             }
 
             Response::json(200, "Orders retrieved successfully", $orders);
@@ -973,15 +1048,20 @@ class OrderController {
             $tracking = isset($data['tracking_number']) ? trim($data['tracking_number']) : null;
             $companyIdReq = isset($data['company_id']) && $data['company_id'] != '' ? (int)$data['company_id'] : null;
 
-            $map = [
-                'Pending' => 1,
-                'Processing' => 2,
-                'In Transit' => 3,
-                'Completed' => 4,
-                'Cancelled' => 5
-            ];
-
-            $sId = isset($map[$statusStr]) ? $map[$statusStr] : 1;
+            $s = trim(strval($statusStr));
+            if ($s === '1' || strcasecmp($s, 'Pending') === 0 || $s === 'รอดำเนินการ' || $s === 'Pending Payment' || $s === 'ที่ต้องชำระ') {
+                $sId = 1;
+            } elseif ($s === '2' || strcasecmp($s, 'Processing') === 0 || strcasecmp($s, 'Preparing') === 0 || $s === 'กำลังแพ็คสินค้า' || $s === 'ที่ต้องจัดส่ง' || $s === 'กำลังดำเนินการ') {
+                $sId = 2;
+            } elseif ($s === '3' || strcasecmp($s, 'In Transit') === 0 || strcasecmp($s, 'Shipping') === 0 || $s === 'กำลังจัดส่ง' || $s === 'ที่ต้องได้รับ' || $s === 'ส่งแล้ว') {
+                $sId = 3;
+            } elseif ($s === '4' || strcasecmp($s, 'Completed') === 0 || $s === 'จัดส่งสำเร็จ' || $s === 'สำเร็จแล้ว' || $s === 'สำเร็จ' || $s === 'ลูกค้าได้รับสินค้า') {
+                $sId = 4;
+            } elseif ($s === '5' || strcasecmp($s, 'Cancelled') === 0 || $s === 'ยกเลิกแล้ว' || $s === 'ยกเลิก') {
+                $sId = 5;
+            } else {
+                $sId = 1;
+            }
 
             $roleLower = strtolower($user['role'] ?? '');
             $isStaffOrAdmin = in_array($roleLower, ['admin', 'employee', 'staff', 'manager']);
@@ -998,18 +1078,23 @@ class OrderController {
 
             if (!$isStaffOrAdmin) {
                 // Verify customer ownership
-                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ?");
-                $stmtCust->execute([$user['user_id']]);
-                $cRow = $stmtCust->fetch(PDO::FETCH_ASSOC);
-                $cid = $cRow ? (int)$cRow['customer_id'] : -1;
+                $stmtCust = $this->db->prepare("SELECT customer_id FROM customers WHERE user_id = ? OR customer_id = ?");
+                $stmtCust->execute([(int)($user['user_id'] ?? 0), (int)($user['user_id'] ?? 0)]);
+                $custIds = $stmtCust->fetchAll(PDO::FETCH_COLUMN);
+                $reqCustId = isset($data['customer_id']) ? (int)$data['customer_id'] : -1;
 
-                if (!$orderRow || (int)$orderRow['customer_id'] !== $cid) {
+                $isOwner = $orderRow && (
+                    in_array((int)$orderRow['customer_id'], array_map('intval', $custIds)) || 
+                    (int)$orderRow['customer_id'] === (int)($user['user_id'] ?? -1) ||
+                    ($reqCustId > 0 && (int)$orderRow['customer_id'] === $reqCustId)
+                );
+                if (!$isOwner) {
                     Response::json(403, "Forbidden: You do not have permission to modify this order");
                     return;
                 }
 
                 // Allowed transitions for customer:
-                // 1. Confirm receive: status -> Completed (4) from In Transit (3) or Processing (2)
+                // 1. Confirm receive: status -> Completed (4) from In Transit (3) or Processing (2) or Pending (1)
                 // 2. Cancel: status -> Cancelled (5) ONLY if not paid yet and status is Pending (1)
                 if ($sId === 5) {
                     if ($wasPaid) {
@@ -1021,7 +1106,14 @@ class OrderController {
                         return;
                     }
                 } elseif ($sId === 4) {
-                    if ($currentStatus !== 2 && $currentStatus !== 3) {
+                    if ($currentStatus === 4) {
+                        Response::json(200, "Order is already completed", [
+                            "order_id" => $orderId,
+                            "status" => 4
+                        ]);
+                        return;
+                    }
+                    if ($currentStatus < 1 || $currentStatus > 3) {
                         Response::json(403, "Forbidden: Invalid status transition for customer");
                         return;
                     }
@@ -1242,14 +1334,17 @@ class OrderController {
                 }
             }
 
+            // Save slip image to disk safely
+            $savedSlipUrl = $this->saveSlipImage($slipImage, $orderId);
+
             // Check if payment record exists
             $chkStmt = $this->db->prepare("SELECT payment_id FROM payments WHERE order_id = ? ORDER BY payment_id DESC LIMIT 1");
             $chkStmt->execute([$orderId]);
             $paymentRow = $chkStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($paymentRow) {
-                $uStmt = $this->db->prepare("UPDATE payments SET slip_image = ?, payment_date = NOW() WHERE payment_id = ?");
-                $uStmt->execute([$slipImage, $paymentRow['payment_id']]);
+                $uStmt = $this->db->prepare("UPDATE payments SET slip_image = ?, status = 0, payment_date = NOW() WHERE payment_id = ?");
+                $uStmt->execute([$savedSlipUrl, $paymentRow['payment_id']]);
             } else {
                 // Fetch net_total from order
                 $oStmt = $this->db->prepare("SELECT net_total FROM orders WHERE order_id = ?");
@@ -1258,10 +1353,11 @@ class OrderController {
                 $netTotal = $oRow ? (float)$oRow['net_total'] : 0;
 
                 $iStmt = $this->db->prepare("INSERT INTO payments (order_id, payment_method, amount, slip_image, status, payment_date) VALUES (?, 1, ?, ?, 0, NOW())");
-                $iStmt->execute([$orderId, $netTotal, $slipImage]);
+                $iStmt->execute([$orderId, $netTotal, $savedSlipUrl]);
             }
 
-            // Order status remains Pending (1) awaiting admin/staff verification
+            // Ensure order status is Pending (1) awaiting admin/staff verification
+            $this->db->prepare("UPDATE orders SET status = 1 WHERE order_id = ?")->execute([$orderId]);
 
             // Trigger Automatic LINE Payment Notification (Slip Submitted)
             try {
@@ -1272,7 +1368,9 @@ class OrderController {
 
             Response::json(200, "Slip uploaded and updated successfully", [
                 "order_id" => $orderId,
-                "has_slip" => true
+                "has_slip" => true,
+                "slip_image" => $savedSlipUrl,
+                "payment_status" => 0
             ]);
         } catch (Exception $e) {
             Response::json(500, "Error uploading slip", ["error" => $e->getMessage()]);
@@ -1320,71 +1418,28 @@ class OrderController {
                     "payment_status" => 1
                 ]);
             } else {
-                // Retrieve current order info before cancel
-                $curStmt = $this->db->prepare("SELECT status, customer_id, points_earned, points_used FROM orders WHERE order_id = ?");
-                $curStmt->execute([$orderId]);
-                $curOrder = $curStmt->fetch(PDO::FETCH_ASSOC);
-                $prevStatus = $curOrder ? (int)$curOrder['status'] : 1;
-
-                // 1. Update order status to 5 (Cancelled / ยกเลิกแล้ว)
-                $uOrder = $this->db->prepare("UPDATE orders SET status = 5 WHERE order_id = ?");
-                $uOrder->execute([$orderId]);
-
-                // 2. Update payment status to 2 (Rejected / Failed)
+                // Reject slip action:
+                // 1. Update payment status to 2 (Rejected / Invalid Slip)
                 $uPay = $this->db->prepare("UPDATE payments SET status = 2 WHERE order_id = ?");
                 $uPay->execute([$orderId]);
 
-                // 3. Restock inventory if previous status was not already 5 (Cancelled)
-                if ($prevStatus !== 5) {
-                    try {
-                        $qItems = "SELECT product_id, quantity, unit_cost FROM order_details WHERE order_id = ?";
-                        $stmtItems = $this->db->prepare($qItems);
-                        $stmtItems->execute([$orderId]);
-                        $details = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+                // 2. Keep order in status 1 (Pending Payment) so customer can upload a new valid slip
+                $uOrder = $this->db->prepare("UPDATE orders SET status = 1 WHERE order_id = ?");
+                $uOrder->execute([$orderId]);
 
-                        $uStock = $this->db->prepare("UPDATE products SET stock_qty = stock_qty + ? WHERE product_id = ?");
-                        $iLog = $this->db->prepare("INSERT INTO inventory_logs (product_id, employee_id, reference_id, quantity, movement_type, unit_cost) VALUES (?, 1, ?, ?, 1, ?)");
-
-                        foreach ($details as $det) {
-                            $uStock->execute([$det['quantity'], $det['product_id']]);
-                            $iLog->execute([$det['product_id'], $orderId, $det['quantity'], $det['unit_cost']]);
-                        }
-
-                        // Reverse points if earned
-                        if (!empty($curOrder['customer_id']) && !empty($curOrder['points_earned']) && (int)$curOrder['points_earned'] > 0) {
-                            $pts = (int)$curOrder['points_earned'];
-                            $cid = (int)$curOrder['customer_id'];
-                            $this->db->prepare("UPDATE customers SET points = GREATEST(0, points - ?) WHERE customer_id = ?")->execute([$pts, $cid]);
-                            $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)")
-                                     ->execute([$cid, $orderId, -$pts, "ดึงแต้มคืนเนื่องจากคำสั่งซื้อ #$orderId ถูกยกเลิก"]);
-                        }
-
-                        // Refund points used back to customer if any
-                        if (!empty($curOrder['customer_id']) && !empty($curOrder['points_used']) && (int)$curOrder['points_used'] > 0) {
-                            $ptsUsed = (int)$curOrder['points_used'];
-                            $cid = (int)$curOrder['customer_id'];
-                            $this->db->prepare("UPDATE customers SET points = points + ? WHERE customer_id = ?")->execute([$ptsUsed, $cid]);
-                            $this->db->prepare("INSERT INTO reward_point_logs (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)")
-                                     ->execute([$cid, $orderId, $ptsUsed, "คืนแต้มสะสม {$ptsUsed} แต้ม เนื่องจากคำสั่งซื้อ #$orderId ถูกยกเลิก"]);
-                        }
-                    } catch (Exception $exRestock) {
-                        error_log("Restock on reject slip order #$orderId error: " . $exRestock->getMessage());
-                    }
-
-                    // Trigger Automatic LINE Cancellation Notification
-                    try {
-                        LineService::sendOrderCancelledAlert($orderId, $reason ?: 'สลิปการโอนเงินไม่ถูกต้อง', 'เจ้าหน้าที่ตรวจสอบสลิป', $this->db);
-                    } catch (Exception $exLine) {
-                        error_log("LINE sendOrderCancelledAlert on verifySlip error: " . $exLine->getMessage());
-                    }
+                // Trigger Automatic LINE Notification (Slip Rejected, Re-upload needed)
+                try {
+                    LineService::sendPaymentAlert($orderId, 'rejected', $this->db, ['reason' => $reason ?: 'สลิปการโอนเงินไม่ถูกต้อง']);
+                } catch (Exception $exLine) {
+                    error_log("LINE sendPaymentAlert rejected error: " . $exLine->getMessage());
                 }
 
-                Response::json(200, "ระบุเป็นสลิปไม่ถูกต้อง และยกเลิกคำสั่งซื้อเรียบร้อยแล้ว", [
+                Response::json(200, "ปฏิเสธสลิปเรียบร้อยแล้ว (สถานะ: ชำระเงินไม่สำเร็จ / รอลูกค้าแนบสลิปใหม่)", [
                     "order_id" => $orderId,
-                    "status" => "Cancelled",
-                    "status_id" => 5,
+                    "status" => "Pending",
+                    "status_id" => 1,
                     "payment_status" => 2,
-                    "reason" => $reason
+                    "reason" => $reason ?: 'สลิปการโอนเงินไม่ถูกต้อง'
                 ]);
             }
         } catch (Exception $e) {
